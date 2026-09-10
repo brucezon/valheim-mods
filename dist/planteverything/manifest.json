@@ -1,0 +1,9 @@
+{
+  "name": "PlantEverything_TEMP",
+  "version_number": "1.20.1",
+  "website_url": "https://github.com/AdvizeGH/Advize_ValheimMods",
+  "description": "Temporary Valheim 1.0 build of Advize's PlantEverything 1.20.0 (GPLv3). No code changes, rebuilt against 1.0.7 with current ServerSync. Stamped 1.20.0.99 so the official update wins.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2350"
+  ]
+}

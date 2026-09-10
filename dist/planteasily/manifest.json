@@ -1,0 +1,9 @@
+{
+  "name": "PlantEasily_TEMP",
+  "version_number": "2.1.1",
+  "website_url": "https://github.com/AdvizeGH/Advize_ValheimMods",
+  "description": "Temporary Valheim 1.0 build of Advize's PlantEasily 2.1.1 (GPLv3). Two call sites fixed. Stamped 2.1.1.99 so the official update wins automatically.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2350"
+  ]
+}

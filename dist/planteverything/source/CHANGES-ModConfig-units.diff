@@ -1,0 +1,453 @@
+﻿diff --git a/Advize_PlantEverything/Configuration/ModConfig.cs b/Advize_PlantEverything/Configuration/ModConfig.cs
+index 5cfd6be..44e5213 100644
+--- a/Advize_PlantEverything/Configuration/ModConfig.cs
++++ b/Advize_PlantEverything/Configuration/ModConfig.cs
+@@ -332,47 +332,47 @@ sealed class ModConfig
+             "Berries",
+             "RaspberryCost",
+             5,
+-            "Number of raspberries required to place a raspberry bush. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Number of raspberries required to place a raspberry bush. Set to 0 to disable the ability to plant this resource.");
+         blueberryCost = Config(
+             "Berries",
+             "BlueberryCost",
+             5,
+-            "Number of blueberries required to place a blueberry bush. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Number of blueberries required to place a blueberry bush. Set to 0 to disable the ability to plant this resource.");
+         cloudberryCost = Config(
+             "Berries",
+             "CloudberryCost",
+             5,
+-            "Number of cloudberries required to place a cloudberry bush. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Number of cloudberries required to place a cloudberry bush. Set to 0 to disable the ability to plant this resource.");
+         raspberryRespawnTime = Config(
+             "Berries",
+             "RaspberryRespawnTime",
+             300,
+-            "Number of minutes it takes for a raspberry bush to respawn berries.");
++            "[MINUTES] Number of minutes it takes for a raspberry bush to respawn berries.");
+         blueberryRespawnTime = Config(
+             "Berries",
+             "BlueberryRespawnTime",
+             300,
+-            "Number of minutes it takes for a blueberry bush to respawn berries.");
++            "[MINUTES] Number of minutes it takes for a blueberry bush to respawn berries.");
+         cloudberryRespawnTime = Config(
+             "Berries",
+             "CloudberryRespawnTime",
+             300,
+-            "Number of minutes it takes for a cloudberry bush to respawn berries.");
++            "[MINUTES] Number of minutes it takes for a cloudberry bush to respawn berries.");
+         raspberryReturn = Config(
+             "Berries",
+             "RaspberryReturn",
+             1,
+-            "Number of berries a raspberry bush will spawn.");
++            "[ITEM COUNT] Number of berries a raspberry bush will spawn.");
+         blueberryReturn = Config(
+             "Berries",
+             "BlueberryReturn",
+             1,
+-            "Number of berries a blueberry bush will spawn.");
++            "[ITEM COUNT] Number of berries a blueberry bush will spawn.");
+         cloudberryReturn = Config(
+             "Berries",
+             "CloudberryReturn",
+             1,
+-            "Number of berries a cloudberry bush will spawn.");
++            "[ITEM COUNT] Number of berries a cloudberry bush will spawn.");
+ 
+         //Crops
+         enableCropOverrides = Config(
+@@ -434,109 +434,109 @@ sealed class ModConfig
+             "Crops",
+             "BarleyCost",
+             1,
+-            new ConfigDescription("Resource cost of planting barley.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resource cost of planting barley.", null, cropSettingAttributes[0]));
+         barleyReturn = Config(
+             "Crops",
+             "BarleyReturn",
+             2,
+-            new ConfigDescription("Resources gained upon harvesting barley (does not apply to wild barley).", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resources gained upon harvesting barley (does not apply to wild barley).", null, cropSettingAttributes[0]));
+         carrotCost = Config(
+             "Crops",
+             "CarrotCost",
+             1,
+-            new ConfigDescription("Resource cost of planting carrots.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resource cost of planting carrots.", null, cropSettingAttributes[0]));
+         carrotReturn = Config(
+             "Crops",
+             "CarrotReturn",
+             1,
+-            new ConfigDescription("Resources gained upon harvesting carrots.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resources gained upon harvesting carrots.", null, cropSettingAttributes[0]));
+         flaxCost = Config(
+             "Crops",
+             "FlaxCost",
+             1,
+-            new ConfigDescription("Resource cost of planting flax.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resource cost of planting flax.", null, cropSettingAttributes[0]));
+         flaxReturn = Config(
+             "Crops",
+             "FlaxReturn",
+             2,
+-            new ConfigDescription("Resources gained upon harvesting flax (does not apply to wild flax).", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resources gained upon harvesting flax (does not apply to wild flax).", null, cropSettingAttributes[0]));
+         onionCost = Config(
+             "Crops",
+             "OnionCost",
+             1,
+-            new ConfigDescription("Resource cost of planting onions.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resource cost of planting onions.", null, cropSettingAttributes[0]));
+         onionReturn = Config(
+             "Crops",
+             "OnionReturn",
+             1,
+-            new ConfigDescription("Resources gained upon harvesting onions.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resources gained upon harvesting onions.", null, cropSettingAttributes[0]));
+         seedCarrotCost = Config(
+             "Crops",
+             "SeedCarrotCost",
+             1,
+-            new ConfigDescription("Resource cost of planting seed carrots.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resource cost of planting seed carrots.", null, cropSettingAttributes[0]));
+         seedCarrotReturn = Config(
+             "Crops",
+             "SeedCarrotReturn",
+             3,
+-            new ConfigDescription("Resources gained upon harvesting seed carrots.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resources gained upon harvesting seed carrots.", null, cropSettingAttributes[0]));
+         seedOnionCost = Config(
+             "Crops",
+             "SeedOnionCost",
+             1,
+-            new ConfigDescription("Resource cost of planting seed onions.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resource cost of planting seed onions.", null, cropSettingAttributes[0]));
+         seedOnionReturn = Config(
+             "Crops",
+             "SeedOnionReturn",
+             3,
+-            new ConfigDescription("Resources gained upon harvesting seed onions.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resources gained upon harvesting seed onions.", null, cropSettingAttributes[0]));
+         seedTurnipCost = Config(
+             "Crops",
+             "SeedTurnipCost",
+             1,
+-            new ConfigDescription("Resource cost of planting seed turnips.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resource cost of planting seed turnips.", null, cropSettingAttributes[0]));
+         seedTurnipReturn = Config(
+             "Crops",
+             "SeedTurnipReturn",
+             3,
+-            new ConfigDescription("Resources gained upon harvesting seed turnips.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resources gained upon harvesting seed turnips.", null, cropSettingAttributes[0]));
+         turnipCost = Config(
+             "Crops",
+             "TurnipCost",
+             1,
+-            new ConfigDescription("Resource cost of planting turnips.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resource cost of planting turnips.", null, cropSettingAttributes[0]));
+         turnipReturn = Config(
+             "Crops",
+             "TurnipReturn",
+             1,
+-            new ConfigDescription("Resources gained upon harvesting turnips.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resources gained upon harvesting turnips.", null, cropSettingAttributes[0]));
+         magecapCost = Config(
+             "Crops",
+             "MagecapCost",
+             1,
+-            new ConfigDescription("Resource cost of planting magecap.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resource cost of planting magecap.", null, cropSettingAttributes[0]));
+         magecapReturn = Config(
+             "Crops",
+             "MagecapReturn",
+             3,
+-            new ConfigDescription("Resources gained upon harvesting magecap.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resources gained upon harvesting magecap.", null, cropSettingAttributes[0]));
+         jotunPuffsCost = Config(
+             "Crops",
+             "JotunPuffsCost",
+             1,
+-            new ConfigDescription("Resource cost of planting Jotun puffs.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resource cost of planting Jotun puffs.", null, cropSettingAttributes[0]));
+         jotunPuffsReturn = Config(
+             "Crops",
+             "JotunPuffsReturn",
+             3,
+-            new ConfigDescription("Resources gained upon harvesting Jotun puffs.", null, cropSettingAttributes[0]));
++            new ConfigDescription("[ITEM COUNT] Resources gained upon harvesting Jotun puffs.", null, cropSettingAttributes[0]));
+ 
+         //Debris
+         pickableBranchCost = Config(
+             "Debris",
+             "PickableBranchCost",
+             5,
+-            "Amount of wood required to place branch debris. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Amount of wood required to place branch debris. Set to 0 to disable the ability to plant this resource.");
+         pickableBranchReturn = Config(
+             "Debris",
+             "PickableBranchReturn",
+@@ -546,12 +546,12 @@ sealed class ModConfig
+             "Debris",
+             "PickableBranchRespawnTime",
+             240,
+-            "Number of minutes it takes for a pickable branch to respawn.");
++            "[MINUTES] Number of minutes it takes for a pickable branch to respawn.");
+         pickableStoneCost = Config(
+             "Debris",
+             "PickableStoneCost",
+             1,
+-            "Amount of stone required to place stone debris. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Amount of stone required to place stone debris. Set to 0 to disable the ability to plant this resource.");
+         pickableStoneReturn = Config(
+             "Debris",
+             "PickableStoneReturn",
+@@ -561,12 +561,12 @@ sealed class ModConfig
+             "Debris",
+             "PickableStoneRespawnTime",
+             0,
+-            "Number of minutes it takes for a pickable Stone to respawn.");
++            "[MINUTES] Number of minutes it takes for a pickable Stone to respawn.");
+         pickableFlintCost = Config(
+             "Debris",
+             "PickableFlintCost",
+             5,
+-            "Amount of flint required to place flint debris. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Amount of flint required to place flint debris. Set to 0 to disable the ability to plant this resource.");
+         pickableFlintReturn = Config(
+             "Debris",
+             "PickableFlintReturn",
+@@ -576,116 +576,116 @@ sealed class ModConfig
+             "Debris",
+             "PickableFlintRespawnTime",
+             240,
+-            "Number of minutes it takes for pickable flint to respawn.");
++            "[MINUTES] Number of minutes it takes for pickable flint to respawn.");
+ 
+         //Mushrooms
+         mushroomCost = Config(
+             "Mushrooms",
+             "MushroomCost",
+             5,
+-            "Number of mushrooms required to place a pickable mushroom spawner. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Number of mushrooms required to place a pickable mushroom spawner. Set to 0 to disable the ability to plant this resource.");
+         yellowMushroomCost = Config(
+             "Mushrooms",
+             "YellowMushroomCost",
+             5,
+-            "Number of yellow mushrooms required to place a pickable yellow mushroom spawner. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Number of yellow mushrooms required to place a pickable yellow mushroom spawner. Set to 0 to disable the ability to plant this resource.");
+         blueMushroomCost = Config(
+             "Mushrooms",
+             "BlueMushroomCost",
+             5,
+-            "Number of blue mushrooms required to place a pickable blue mushroom spawner. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Number of blue mushrooms required to place a pickable blue mushroom spawner. Set to 0 to disable the ability to plant this resource.");
+         smokePuffCost = Config(
+             "Mushrooms",
+             "SmokepuffCost",
+             5,
+-            "Number of smoke puffs required to place a pickable smoke puff spawner. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Number of smoke puffs required to place a pickable smoke puff spawner. Set to 0 to disable the ability to plant this resource.");
+         mushroomRespawnTime = Config(
+             "Mushrooms",
+             "MushroomRespawnTime",
+             240,
+-            "Number of minutes it takes for mushrooms to respawn.");
++            "[MINUTES] Number of minutes it takes for mushrooms to respawn.");
+         yellowMushroomRespawnTime = Config(
+             "Mushrooms",
+             "YellowMushroomRespawnTime",
+             240,
+-            "Number of minutes it takes for yellow mushrooms to respawn.");
++            "[MINUTES] Number of minutes it takes for yellow mushrooms to respawn.");
+         blueMushroomRespawnTime = Config(
+             "Mushrooms",
+             "BlueMushroomRespawnTime",
+             240,
+-            "Number of minutes it takes for blue mushrooms to respawn.");
++            "[MINUTES] Number of minutes it takes for blue mushrooms to respawn.");
+         smokePuffRespawnTime = Config(
+             "Mushrooms",
+             "SmokepuffRespawnTime",
+             240,
+-            "Number of minutes it takes for smoke puffs to respawn.");
++            "[MINUTES] Number of minutes it takes for smoke puffs to respawn.");
+         mushroomReturn = Config(
+             "Mushrooms",
+             "MushroomReturn",
+             1,
+-            "Number of mushrooms a pickable mushroom spawner will spawn.");
++            "[ITEM COUNT] Number of mushrooms a pickable mushroom spawner will spawn.");
+         yellowMushroomReturn = Config(
+             "Mushrooms",
+             "YellowMushroomReturn",
+             1,
+-            "Number of yellow mushrooms a pickable yellow mushroom spawner will spawn.");
++            "[ITEM COUNT] Number of yellow mushrooms a pickable yellow mushroom spawner will spawn.");
+         blueMushroomReturn = Config(
+             "Mushrooms",
+             "BlueMushroomReturn",
+             1,
+-            "Number of blue mushrooms a pickable blue mushroom spawner will spawn.");
++            "[ITEM COUNT] Number of blue mushrooms a pickable blue mushroom spawner will spawn.");
+         smokePuffReturn = Config(
+             "Mushrooms",
+             "SmokepuffReturn",
+             1,
+-            "Number of smoke puffs a pickable smoke puff spawner will spawn.");
++            "[ITEM COUNT] Number of smoke puffs a pickable smoke puff spawner will spawn.");
+ 
+         //Flowers
+         thistleCost = Config(
+             "Flowers",
+             "ThistleCost",
+             5,
+-            "Number of thistle required to place a pickable thistle spawner. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Number of thistle required to place a pickable thistle spawner. Set to 0 to disable the ability to plant this resource.");
+         dandelionCost = Config(
+             "Flowers",
+             "DandelionCost",
+             5,
+-            "Number of dandelion required to place a pickable dandelion spawner. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Number of dandelion required to place a pickable dandelion spawner. Set to 0 to disable the ability to plant this resource.");
+         fiddleheadCost = Config(
+             "Flowers",
+             "FiddleheadCost",
+             15,
+-            "Number of fiddlehead required to place a pickable fiddlehead spawner. Set to 0 to disable the ability to plant this resource.");
++            "[ITEM COUNT] Number of fiddlehead required to place a pickable fiddlehead spawner. Set to 0 to disable the ability to plant this resource.");
+         thistleRespawnTime = Config(
+             "Flowers",
+             "ThistleRespawnTime",
+             240,
+-            "Number of minutes it takes for thistle to respawn.");
++            "[MINUTES] Number of minutes it takes for thistle to respawn.");
+         dandelionRespawnTime = Config(
+             "Flowers",
+             "DandelionRespawnTime",
+             240,
+-            "Number of minutes it takes for dandelion to respawn.");
++            "[MINUTES] Number of minutes it takes for dandelion to respawn.");
+         fiddleheadRespawnTime = Config(
+             "Flowers",
+             "FiddleheadRespawnTime",
+             300,
+-            "Number of minutes it takes for fiddlehead to respawn.");
++            "[MINUTES] Number of minutes it takes for fiddlehead to respawn.");
+         thistleReturn = Config(
+             "Flowers",
+             "ThistleReturn",
+             1,
+-            "Number of thistle a pickable thistle spawner will spawn.");
++            "[ITEM COUNT] Number of thistle a pickable thistle spawner will spawn.");
+         dandelionReturn = Config(
+             "Flowers",
+             "DandelionReturn",
+             1,
+-            "Number of dandelion a pickable dandelion spawner will spawn.");
++            "[ITEM COUNT] Number of dandelion a pickable dandelion spawner will spawn.");
+         fiddleheadReturn = Config(
+             "Flowers",
+             "FiddleheadReturn",
+             3,
+-            "Number of fiddlehead a pickable fiddlehead spawner will spawn.");
++            "[ITEM COUNT] Number of fiddlehead a pickable fiddlehead spawner will spawn.");
+ 
+         //Saplings
+         overrideModdedSaplings = Config(
+@@ -707,7 +707,7 @@ sealed class ModConfig
+             "Saplings",
+             "ModdedSaplingGrowthTime",
+             3000f,
+-            new ConfigDescription("Number of seconds it takes for a 3rd party modded tree to grow from its modded sapling (will take at least 10 seconds after planting to grow).", null, new ConfigurationManagerAttributes { Order = 39 }));
++            new ConfigDescription("[SECONDS] Number of seconds it takes for a 3rd party modded tree to grow from its modded sapling (will take at least 10 seconds after planting to grow).", null, new ConfigurationManagerAttributes { Order = 39 }));
+         moddedSaplingGrowRadius = Config(
+             "Saplings",
+             "ModdedSaplingGrowRadius",
+@@ -747,17 +747,17 @@ sealed class ModConfig
+             "Saplings",
+             "BirchGrowthTime",
+             3000f,
+-            "Number of seconds it takes for a birch tree to grow from a birch sapling (will take at least 10 seconds after planting to grow).");
++            "[SECONDS] Number of seconds it takes for a birch tree to grow from a birch sapling (will take at least 10 seconds after planting to grow).");
+         oakGrowthTime = Config(
+             "Saplings",
+             "OakGrowthTime",
+             3000f,
+-            "Number of seconds it takes for an oak tree to grow from an oak sapling (will take at least 10 seconds after planting to grow).");
++            "[SECONDS] Number of seconds it takes for an oak tree to grow from an oak sapling (will take at least 10 seconds after planting to grow).");
+         ancientGrowthTime = Config(
+             "Saplings",
+             "AncientGrowthTime",
+             3000f,
+-            "Number of seconds it takes for an ancient tree to grow from an ancient sapling (will take at least 10 seconds after planting to grow).");
++            "[SECONDS] Number of seconds it takes for an ancient tree to grow from an ancient sapling (will take at least 10 seconds after planting to grow).");
+         birchGrowRadius = Config(
+             "Saplings",
+             "BirchGrowRadius",
+@@ -777,17 +777,17 @@ sealed class ModConfig
+             "Saplings",
+             "BeechGrowthTime",
+             3000f,
+-            "Number of seconds it takes for a beech tree to grow from a beech sapling (will take at least 10 seconds after planting to grow).");
++            "[SECONDS] Number of seconds it takes for a beech tree to grow from a beech sapling (will take at least 10 seconds after planting to grow).");
+         pineGrowthTime = Config(
+             "Saplings",
+             "PineGrowthTime",
+             3000f,
+-            "Number of seconds it takes for a pine tree to grow from a pine sapling (will take at least 10 seconds after planting to grow).");
++            "[SECONDS] Number of seconds it takes for a pine tree to grow from a pine sapling (will take at least 10 seconds after planting to grow).");
+         firGrowthTime = Config(
+             "Saplings",
+             "FirGrowthTime",
+             3000f,
+-            "Number of seconds it takes for a fir tree to grow from a fir sapling (will take at least 10 seconds after planting to grow).");
++            "[SECONDS] Number of seconds it takes for a fir tree to grow from a fir sapling (will take at least 10 seconds after planting to grow).");
+         beechMinScale = Config(
+             "Saplings",
+             "BeechMinScale",
+@@ -847,7 +847,7 @@ sealed class ModConfig
+             "Saplings",
+             "YggaGrowthTime",
+             3000f,
+-            "Number of seconds it takes for a ygga tree to grow from a ygga sapling (will take at least 10 seconds after planting to grow).");
++            "[SECONDS] Number of seconds it takes for a ygga tree to grow from a ygga sapling (will take at least 10 seconds after planting to grow).");
+         yggaGrowRadius = Config(
+             "Saplings",
+             "YggaGrowRadius",
+@@ -867,7 +867,7 @@ sealed class ModConfig
+             "Saplings",
+             "AutumnBirchGrowthTime",
+             3000f,
+-            "Number of seconds it takes for an autumn birch tree to grow from an autumn birch sapling (will take at least 10 seconds after planting to grow).");
++            "[SECONDS] Number of seconds it takes for an autumn birch tree to grow from an autumn birch sapling (will take at least 10 seconds after planting to grow).");
+         autumnBirchGrowRadius = Config(
+             "Saplings",
+             "AutumnBirchGrowRadius",
+@@ -887,7 +887,7 @@ sealed class ModConfig
+             "Saplings",
+             "AshwoodGrowthTime",
+             3000f,
+-            "Number of seconds it takes for an ashwood tree to grow from an ashwood sapling (will take at least 10 seconds after planting to grow).");
++            "[SECONDS] Number of seconds it takes for an ashwood tree to grow from an ashwood sapling (will take at least 10 seconds after planting to grow).");
+         ashwoodGrowRadius = Config(
+             "Saplings",
+             "AshwoodGrowRadius",
+@@ -981,7 +981,7 @@ sealed class ModConfig
+             "Vines",
+             "VineBerryReturn",
+             3,
+-            "Resources gained upon harvesting vine berries.");
++            "[ITEM COUNT] Resources gained upon harvesting vine berries.");
+     }
+ 
+     private void SetupSettingChangedSubscriptions()
+@@ -1314,3 +1314,4 @@ sealed class ModConfig
+     internal bool InitialSyncDone => ConfigSync.InitialSyncDone;
+     //internal bool IsAdmin => ConfigSync.IsAdmin;
+ }
++

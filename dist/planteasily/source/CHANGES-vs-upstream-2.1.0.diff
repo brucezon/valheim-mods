@@ -1,0 +1,31 @@
+diff --git a/Advize_PlantEasily/Core/PlacementController.cs b/Advize_PlantEasily/Core/PlacementController.cs
+index ac767f9..cff8071 100644
+--- a/Advize_PlantEasily/Core/PlacementController.cs
++++ b/Advize_PlantEasily/Core/PlacementController.cs
+@@ -1,3 +1,4 @@
++using Splatform;
+ ﻿namespace Advize_PlantEasily;
+ 
+ using System.Collections;
+@@ -102,7 +103,7 @@ internal sealed class PlacementController : MonoBehaviour
+         GameObject clone = Instantiate(piecePrefab, position, rotation);
+         TerrainModifier.SetTriggerOnPlaced(trigger: false);
+ 
+-        clone.GetComponent<Piece>().SetCreator(player.GetPlayerID());
++        clone.GetComponent<Piece>().SetCreator(player.GetPlayerID(), PlatformManager.DistributionPlatform.LocalUser.PlatformUserID);
+ 
+         Game.instance.IncrementPlayerStat(PlayerStatType.Builds);
+         player.RaiseSkill(Skills.SkillType.Farming, 1f);
+diff --git a/Advize_PlantEasily/Patches/KeyHintPatches.cs b/Advize_PlantEasily/Patches/KeyHintPatches.cs
+index 6f76f73..32990ba 100644
+--- a/Advize_PlantEasily/Patches/KeyHintPatches.cs
++++ b/Advize_PlantEasily/Patches/KeyHintPatches.cs
+@@ -57,7 +57,7 @@ static class KeyHintPatches
+     }
+ 
+     //Patch to a completely different class to support all of this thanks to bog witch update
+-    [HarmonyPatch(typeof(ZInput), nameof(ZInput.AddButton))]
++    [HarmonyPatch(typeof(ZInput), nameof(ZInput.AddButton), typeof(string), typeof(string), typeof(bool), typeof(bool), typeof(bool), typeof(float), typeof(float))]
+     [HarmonyPrefix]
+     static void AddButton(string name, string path) => _inputBindingPathToButtonDefNames[path] = name;
+ 

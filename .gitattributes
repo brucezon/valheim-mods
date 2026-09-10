@@ -1,0 +1,7 @@
+# Normalise line endings in the repo; shell/mac files must stay LF on checkout everywhere.
+* text=auto
+*.sh text eol=lf
+*.command text eol=lf
+*.bat text eol=crlf
+*.png binary
+*.yml text

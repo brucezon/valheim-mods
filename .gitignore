@@ -1,0 +1,53 @@
+# --- secrets ---------------------------------------------------------------
+.secrets/
+
+# --- game binaries, decompiles, other people's code: never publish ---------
+server/
+refs/
+snapshots/*/src/
+snapshots/*/managed/
+snapshots/utils-decomp-*/
+baseline/
+downloads/
+backups/
+mods/*-decomp*/
+mods/broken-on-1.0/
+mods/benched-plugins/
+mods/temp-builds/
+mods/betternetworking/
+mods/network-smoothbrain/
+mods/vbnettweaks/
+mods/structuredamagetweaks/
+mods/odinsqol/
+mods/randyknapp-src/
+mods/stamina-src/
+mods/serverside-simulations/
+mods/locman-src/
+mods/serversync-src/
+# Advize's clone is its own git repo; our modified source + diffs are kept under dist/*/source instead
+mods/advize-src/
+
+# --- build output ----------------------------------------------------------
+**/bin/
+**/obj/
+tools/steamcmd/
+tools/ilrepack/
+*.pdb
+
+# --- packaged artifacts (reproducible from source; dlls are not source) ----
+*.dll
+*.exe
+dist/*.zip
+dist/stage/
+dist/server-kit/server-overlay/
+dist/mac-kit/mods/
+dist/bundle/
+dist/synctest/
+dist/docs-update/
+
+# --- editor / OS noise -----------------------------------------------------
+.vs/
+*.user
+*.suo
+Thumbs.db
+desktop.ini

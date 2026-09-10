@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>BruceNetworking</AssemblyName>
+    <RootNamespace>BruceNetworking</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <OutputPath>bin\Release\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <NoWarn>CS0618;CS0108;CS0114;CS0649;CS0169;CS8632</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Plugin.cs" />
+    <Compile Include="PeerClassifier.cs" />
+    <Compile Include="PrefabClasses.cs" />
+    <Compile Include="SendPriority.cs" />
+    <Compile Include="OwnershipSteering.cs" />
+    <Compile Include="SendLoop.cs" />
+    <Compile Include="RpcAreaOfInterest.cs" />
+    <Compile Include="WearThrottle.cs" />
+    <Compile Include="SkipVerification.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="0Harmony"><HintPath>$(GamePath)\BepInEx\core\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx"><HintPath>$(GamePath)\BepInEx\core\BepInEx.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="assembly_valheim"><HintPath>$(GamePath)\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="assembly_utils"><HintPath>$(GamePath)\valheim_Data\Managed\publicized_assemblies\assembly_utils_publicized.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="com.rlabrecque.steamworks.net"><HintPath>$(GamePath)\valheim_Data\Managed\com.rlabrecque.steamworks.net.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(GamePath)\valheim_Data\Managed\UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(GamePath)\valheim_Data\Managed\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

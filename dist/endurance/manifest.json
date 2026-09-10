@@ -1,0 +1,9 @@
+{
+  "name": "Endurance",
+  "version_number": "1.0.0",
+  "website_url": "",
+  "description": "Food gives Endurance: extra stamina regen that scales with the food's stamina value along a configurable curve (sqrt by default), with diminishing stacking and a cap. Server-synced.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2350"
+  ]
+}
