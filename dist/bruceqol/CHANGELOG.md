@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.0 - 2026-09-11
+- New in [13 - Combat]: **Parry difficulty compensation** and **Held block difficulty compensation** (0-1,
+  default 0 = vanilla). The block is judged against enemy damage divided by R^c (R = Combat enemy damage
+  rate, 1.5 on Hard) and whatever leaks is multiplied back, so at 1 the parry window, stagger fill and
+  stamina cost equal Combat Normal while damage taken stays Hard. Reason: 1.0's armor-style block puts
+  the square of the damage into the stagger bar, so Combat Hard cut the largest parryable hit by 1.5x.
+
 ## 1.7.1 - 2026-09-10
 - The skill's own `Skill gain factor` and `Skill loss` entries now live in `[7 - Hauling]` instead of
   a `[skill_2143584628]` section (SkillManager's name lookup has no localisation on a dedicated

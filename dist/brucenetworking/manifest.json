@@ -1,9 +1,9 @@
 {
-  "name": "BruceNetworking",
-  "version_number": "0.2.1",
-  "website_url": "",
-  "description": "Server-only netcode tweaks for Valheim 1.0 dedicated servers: LAN-first zone ownership, prefab-class send priority, multi-peer send loop, RPC area-of-interest, wear-tick throttle. Coexists with BetterNetworking.",
-  "dependencies": [
-    "denikson-BepInExPack_Valheim-5.4.2350"
-  ]
+    "name":  "BruceNetworking",
+    "version_number":  "0.3.0",
+    "website_url":  "",
+    "description":  "Server-only netcode tweaks for Valheim 1.0 dedicated servers: LAN-first zone ownership (creatures only, never chests), prefab-class send priority, multi-peer send loop, RPC area-of-interest, wear-tick throttle. Coexists with BetterNetworking.",
+    "dependencies":  [
+                         "denikson-BepInExPack_Valheim-5.4.2350"
+                     ]
 }

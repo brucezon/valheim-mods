@@ -16,9 +16,17 @@ BruceNetworking walks peers **LAN first, then lowest ping**, and moves ownership
 a better one when the object is well inside the better peer's area (vanilla's own active-area rule,
 pulled inward by 12 m), with a 10 s per-object cooldown and a per-pass cap so nothing flaps.
 
+**What gets moved (0.3.0):** only the classes in `Steer classes`, default **Creature** (mobs, tames,
+anything with AI). Chests, doors, stations, signs, item stands, build pieces, plants, rocks and dropped
+items are never moved, because only the owner's client writes an object's data and taking ownership
+discards the write it had in flight; a remote player's chest deposit vanished that way in 0.2.1. On top of
+the class list: an object flagged in use (`Skip objects in use`) or within `Owner keep radius` (40 m) of
+its current owner is left alone, so the mob you are personally fighting stays yours.
+
 LAN = the connection's IPv4 is inside `LAN subnets` (defaults 10/8, 172.16/12, 192.168/16, 127/8).
 Tailscale's 100.64/10 is deliberately remote. `Force LAN players` / `Force remote players` override by
-character name. Players are never moved; ships and carts only if `Steer ships and carts` is on.
+character name. Players are never moved; ships and carts only if `Steer ships and carts` is on and
+`Dynamic` is in the class list.
 
 ## 2. Send priority
 
@@ -48,7 +56,9 @@ Ashlands / Deep North, the wear tick (which includes the support physics check) 
 
 Every `Stats interval` (60 s): `peers (preference order): Alice[LAN 192.168.8.20 3ms] owns 812;
 Bob[remote 100.101.4.7 48ms] owns 40; server owns 0 | peer sends N | rpc forwarded N suppressed N |
-wear ticks skipped N`. Ownership moves log as `moved ownership of N objects: ...`.
+wear ticks skipped N | steer skipped: class N in-use N near-owner N`. Ownership moves log as
+`moved ownership of N objects: ...`; the steerable class list is logged at load as
+`ownership steering may move: Creature`.
 
 MIT. Source included under `source/`. Ideas borrowed from FiresGhettoNetworking and VBNetTweaks are
 credited in `source/IDEAS.md`.

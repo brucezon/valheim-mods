@@ -13,16 +13,48 @@ namespace BruceNetworking;
 // We keep the vanilla pass but run it in preference order (LAN first, then lowest ping), then run a
 // steering pass that moves ownership from a worse peer to a better peer when the object is well inside
 // the better peer's active area, at most once per object per cooldown.
+//
+// 0.3.0: the steering pass is restricted to classes that carry no player-authored state (default:
+// Creature only), never touches an object flagged InUse, and never takes an object that is close to its
+// current owner. Reason: the owner's client is the only one that writes an object's data, and SetOwner
+// bumps the owner revision, so any update the old owner had in flight is discarded. For a chest that
+// means "items I just put in are gone" (seen 10 Sep 2026 with remote players sharing a base with LAN
+// players: 494 single-object moves in 20 minutes, one of them a chest mid-deposit).
 [HarmonyPatch(typeof(ZDOMan), "ReleaseZDOS")]
 internal static class ReleaseZDOS_Patch
 {
 	private static readonly List<ZDOMan.ZDOPeer> s_ordered = new();
 	private static readonly Dictionary<long, PeerClassifier.PeerInfo> s_infoByUid = new();
+	private static readonly Dictionary<long, ZNetPeer> s_peerByUid = new();
 	private static readonly Dictionary<ZDOID, float> s_cooldown = new();
 	private static readonly List<ZDO> s_near = new();
 	private static readonly Dictionary<string, int> s_moves = new();
+	private static readonly HashSet<PrefabClass> s_steerClasses = new();
 	private static float s_lastPrune;
 	private static float s_lastStats = -1000f;
+	private static int s_skippedInUse;
+	private static int s_skippedNearOwner;
+	private static int s_skippedClass;
+
+	// Parses "Steer classes" (comma-separated PrefabClass names). Player is never steerable.
+	internal static void ReloadSteerClasses()
+	{
+		s_steerClasses.Clear();
+		foreach (string part in (BruceNetworkingPlugin.SteerClasses.Value ?? "").Split(',', ';'))
+		{
+			string t = part.Trim();
+			if (t.Length == 0) continue;
+			if (Enum.TryParse(t, true, out PrefabClass cls) && cls != PrefabClass.Player)
+			{
+				s_steerClasses.Add(cls);
+			}
+			else
+			{
+				BruceNetworkingPlugin.Log.LogWarning($"Ignoring unknown steer class '{t}' (valid: Creature, Interactive, Dynamic, Structure, Nature, Default)");
+			}
+		}
+		BruceNetworkingPlugin.Log.LogInfo($"ownership steering may move: {(s_steerClasses.Count == 0 ? "nothing" : string.Join(", ", s_steerClasses))}");
+	}
 
 	private static bool Prefix(ZDOMan __instance, float dt)
 	{
@@ -61,11 +93,13 @@ internal static class ReleaseZDOS_Patch
 	{
 		s_ordered.Clear();
 		s_infoByUid.Clear();
+		s_peerByUid.Clear();
 		foreach (ZDOMan.ZDOPeer peer in zdoMan.m_peers)
 		{
 			if (peer?.m_peer == null || !peer.m_peer.IsReady()) continue;
 			PeerClassifier.PeerInfo info = PeerClassifier.Get(peer.m_peer);
 			s_infoByUid[peer.m_peer.m_uid] = info;
+			s_peerByUid[peer.m_peer.m_uid] = peer.m_peer;
 			s_ordered.Add(peer);
 		}
 		s_ordered.Sort((a, b) => PeerClassifier.Compare(s_infoByUid[a.m_peer.m_uid], s_infoByUid[b.m_peer.m_uid]));
@@ -74,6 +108,7 @@ internal static class ReleaseZDOS_Patch
 	private static void Steer(ZDOMan zdoMan)
 	{
 		if (s_ordered.Count < 2) return; // nothing to steer between
+		if (s_steerClasses.Count == 0) return; // configured to move nothing
 		float now = Time.time;
 		if (now - s_lastPrune > 60f)
 		{
@@ -94,6 +129,9 @@ internal static class ReleaseZDOS_Patch
 		float cooldownSeconds = BruceNetworkingPlugin.TransferCooldown.Value;
 		int budget = BruceNetworkingPlugin.MaxTransfersPerPass.Value;
 		bool steerVehicles = BruceNetworkingPlugin.SteerVehicles.Value;
+		bool skipInUse = BruceNetworkingPlugin.SkipInUse.Value;
+		float keep = Mathf.Max(0f, BruceNetworkingPlugin.OwnerKeepRadius.Value);
+		float keepSq = keep * keep;
 		s_moves.Clear();
 		int moved = 0;
 
@@ -122,9 +160,24 @@ internal static class ReleaseZDOS_Patch
 				int prefab = zdo.GetPrefab();
 				PrefabClass cls = PrefabClasses.Classify(prefab);
 				if (cls == PrefabClass.Player) continue;
+				if (!s_steerClasses.Contains(cls)) { s_skippedClass++; continue; }
 				if (!steerVehicles && PrefabClasses.IsVehicle(prefab)) continue;
 
-				if (!WellInsideActiveArea(candZone, zdo.GetPosition(), synced, margin)) continue;
+				// Someone has it open (chest, station...). Its next inventory write comes from that client.
+				if (skipInUse && zdo.GetBool(ZDOVars.s_inUse, false)) { s_skippedInUse++; continue; }
+
+				Vector3 pos = zdo.GetPosition();
+
+				// The current owner is standing next to it: they are the one interacting with it, and
+				// whatever they change next would be discarded by the owner-revision bump. Leave it.
+				if (keepSq > 0f && s_peerByUid.TryGetValue(owner, out ZNetPeer ownerPeer))
+				{
+					float ox = ownerPeer.m_refPos.x - pos.x;
+					float oz = ownerPeer.m_refPos.z - pos.z;
+					if (ox * ox + oz * oz < keepSq) { s_skippedNearOwner++; continue; }
+				}
+
+				if (!WellInsideActiveArea(candZone, pos, synced, margin)) continue;
 
 				if (s_cooldown.TryGetValue(zdo.m_uid, out float last) && now - last < cooldownSeconds) continue;
 
@@ -198,6 +251,7 @@ internal static class ReleaseZDOS_Patch
 		sb.Append($" | peer sends {SendZDOToPeers2_Patch.PeerSends}");
 		sb.Append($" | rpc forwarded {RPC_RoutedRPC_Patch.Forwarded} suppressed {RPC_RoutedRPC_Patch.Suppressed}");
 		sb.Append($" | wear ticks skipped {UpdateWear_Patch.Skipped}");
+		sb.Append($" | steer skipped: class {s_skippedClass} in-use {s_skippedInUse} near-owner {s_skippedNearOwner}");
 		BruceNetworkingPlugin.Log.LogInfo(sb.ToString());
 	}
 }

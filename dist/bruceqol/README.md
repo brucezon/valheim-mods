@@ -77,6 +77,10 @@ All four numbers are configurable here; the toggle Off restores vanilla.
 - **Enemy damage to players** (1), **Enemy damage to tames** (1), **Player damage to enemies** (1):
   multipliers applied where vanilla applies the Combat slider, so they stack with it. Edit live.
 - **Enemy health** (1) and **Boss health** (1): max-health multipliers applied at spawn.
+- **Parry difficulty compensation** (0) and **Held block difficulty compensation** (0): 0 = vanilla,
+  1 = blocks are judged as on Combat Normal (damage that gets through is still scaled). Hard makes the
+  same swing fill the stagger bar 2.25x faster; 1 undoes that for the block check only. Suggested on a
+  Hard server: parry 1, held 0.5.
 These replace world-key edits like `enemydamage`, which the game treats as cheating.
 
 ## 14 - Raids

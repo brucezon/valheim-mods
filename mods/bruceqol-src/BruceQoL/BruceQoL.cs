@@ -17,7 +17,7 @@ namespace BruceQoL;
 public class BruceQoLPlugin : BaseUnityPlugin
 {
 	private const string ModName = "BruceQoL";
-	private const string ModVersion = "1.7.1";
+	private const string ModVersion = "1.8.0";
 	private const string ModGUID = "bruceirons.BruceQoL";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion, ModRequired = true };
@@ -278,6 +278,12 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		secondsPerHoney = config("12 - Beehives", "Honey time (seconds)", 1200f, "Seconds to produce one honey. Vanilla 1200 (20 min).");
 
 		enemyDamageToPlayers = config("13 - Combat", "Enemy damage to players", 1f, "Multiplier on damage creatures and bosses deal to players. Stacks with the Combat world slider. 1 = as the world is set.");
+		BlockCompensation.ParryCompensation = config("13 - Combat", "Parry difficulty compensation", 0f,
+			new ConfigDescription("0 = vanilla: a timed block is judged against Combat-scaled enemy damage (Hard = 1.5x; the stagger bar fills 2.25x faster than Normal). 1 = parry timing, stagger fill and stamina cost are exactly what they are on Combat Normal; damage that still gets through is scaled as usual. Values between are partial. No effect when Combat is Normal.",
+				new AcceptableValueRange<float>(0f, 1f)));
+		BlockCompensation.HeldBlockCompensation = config("13 - Combat", "Held block difficulty compensation", 0f,
+			new ConfigDescription("Same as above for held (non-timed) blocks. Keep lower than the parry value if held blocks should stay punishing.",
+				new AcceptableValueRange<float>(0f, 1f)));
 		enemyDamageToTames = config("13 - Combat", "Enemy damage to tames", 1f, "Multiplier on damage creatures deal to tamed animals. 1 = vanilla.");
 		playerDamageToEnemies = config("13 - Combat", "Player damage to enemies", 1f, "Multiplier on damage players deal to creatures and bosses. Stacks with the Combat world slider. 1 = as the world is set.");
 		enemyHealthMult = config("13 - Combat", "Enemy health", 1f, "Max health multiplier for creatures, applied when they spawn. 1 = vanilla.");

@@ -38,7 +38,13 @@ steering pass moves ownership from a worse peer to a better one when:
 
 - the better peer is in the world, runs at least the server's near simulation distance, and the object is at least `Inner margin` metres inside its active
   area, which mirrors vanilla's 1.5-zone box / 1.75-zone circle (default 12 m, so nothing on the edge bounces),
-- the object is not a player, and not a ship/cart unless `Steer ships and carts` is on,
+- the object's class is in `Steer classes` (default `Creature` only — 0.3.0; chests, doors, stations,
+  signs, item stands, build pieces, plants, rocks and dropped items are never moved because only the
+  owner's client writes their data and `SetOwner` discards its in-flight write; a remote player's chest
+  deposit vanished this way in 0.2.1),
+- the object is not a player, not flagged in use (`Skip objects in use`), not within `Owner keep radius`
+  (40 m) of its current owner, and not a ship/cart unless `Steer ships and carts` is on and `Dynamic` is
+  in the class list,
 - the object has not been moved in the last `Transfer cooldown` seconds (default 10),
 - the pass has not exceeded `Max transfers per pass` (default 300).
 
@@ -77,6 +83,7 @@ server-owned pieces are affected: the spawn area under our ownership rules, or e
 
 ## Log lines to look for
 
-- `peers (preference order): Alice[LAN 192.168.8.20 3ms] owns 812; Bob[remote 100.101.4.7 48ms] owns 40; server owns 0`
-- `moved ownership of 37 objects: 37 Bob(remote 48ms) -> Alice(LAN 3ms);`
+- `ownership steering may move: Creature` (at load and on every `Steer classes` change)
+- `peers (preference order): Alice[LAN 192.168.8.20 3ms] owns 812; Bob[remote 100.101.4.7 48ms] owns 40; server owns 0 | ... | steer skipped: class N in-use N near-owner N`
+- `moved ownership of 37 objects: 37 Bob(remote 48ms) -> Alice(LAN 3ms);` — rare after 0.3.0 (creatures only)
 - with `Log send order sample`: `send order for Alice (140 queued): Player:Player:-410  piece_chest:Interactive:-180 ...`

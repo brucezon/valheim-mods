@@ -25,7 +25,7 @@ Unshamed, Endurance, BruceQoL, PlantEasily_TEMP, PlantEverything_TEMP.
 | ~~FortifySkillsRedux~~ | dropped — death floor not wanted; BruceQoL skills section (peak catch-up ×2 XP) + `skillreductionrate` key handle death | — | — | — | never re-add |
 | PlantEasily | TEMP 2.1.1.99 (GPLv3; = Advize 2.1.1 source) | — | ✔ | Hexium `bruceirons-team/PlantEasily_TEMP` (published 9 Sep) | add Advize's build → auto-wins, then unlist ours |
 | PlantEverything | TEMP 1.20.0.99 (GPLv3; zero code changes, ServerSync from source; on server) | ✔ | ✔ | Hexium `bruceirons-team/PlantEverything_TEMP` (`dist/PlantEverything_TEMP-1.20.0.zip`, source inside) | add Advize's build → auto-wins, then unlist ours |
-| **BruceQoL 1.3.3** (ours, MIT, `mods/bruceqol-src`; config `bruceirons.BruceQoL.cfg`) | structures (creature 0.5 / boss 0.75 dmg, stone health 1.5, per-material damage taken, weather toggle, **wear-check throttle 10 s**), **Hauling** skill (+100% carry at 100), player stamina multipliers, area repair 15 m, stack mult, infinite torches (**no per-tick ZDO writes**), SmartSkills-style XP, **per-skill XP % modifiers + death penalty %** (section 8), **multiplayer scaling knobs** (section 9), **chest sizes / hover contents / station range+roof / beehives / re-equip after swim** (1.3.0), **ignore cheated world keys**; 1.1.1 fixed the client Awake crash (Hauling skill vs Steam init) | ✔ | ✔ | Hexium `bruceirons-team/BruceQoL` | n/a — ours. ModRequired: clients without it are refused |
+| **BruceQoL 1.8.0** (ours, MIT, `mods/bruceqol-src`; config `bruceirons.BruceQoL.cfg`) | structures (creature 0.5 / boss 0.75 dmg, stone health 1.5, per-material damage taken, weather toggle, **wear-check throttle 10 s**), **Hauling** skill (+300 carry at 100, cart knobs), player stamina multipliers, area repair 15 m, stack mult, infinite torches (**no per-tick ZDO writes**), SmartSkills-style XP, **per-skill XP % modifiers + death penalty %** (section 8), **multiplayer scaling knobs** (section 9), **chest sizes / hover contents / station range+roof / beehives / re-equip after swim** (1.3.0), **combat multipliers + enemy/boss health** (13), **raid knobs** (14), **parry / held-block difficulty compensation** (1.8.0; server cfg: parry 1, held 0.5 so Hard blocks are judged as Normal), **ignore cheated world keys**; 1.1.1 fixed the client Awake crash (Hauling skill vs Steam init) | ✔ | ✔ | Hexium `bruceirons-team/BruceQoL` | n/a — ours. ModRequired: clients without it are refused |
 
 Server = the same set minus client-only mods (Unshamed, PlantEasily); update the server's
 `BepInEx/plugins` by hand whenever the profile changes.
@@ -37,9 +37,10 @@ StructureDamageTweaks (unlicensed, 2024).
 Backpacks, SleepSkip.
 **Benched toggle:** Serverside Simulations, ported to 1.0 (`mods/serverside-simulations`), server-only:
 `tools\sss-on.bat` / `sss-off.bat` + restart.
-**Benched toggle #2: BruceNetworking 0.2.1** (ours, server-only, `mods/brucenetworking-src`, README + IDEAS there; Hexium `bruceirons-team/BruceNetworking`, do NOT put it in the client profile):
+**Benched toggle #2: BruceNetworking 0.3.0** (ours, server-only, `mods/brucenetworking-src`, README + IDEAS there; Hexium `bruceirons-team/BruceNetworking`):
 (1) prefab-class ZDO send priority, (2) LAN-first zone ownership (LAN subnet > lowest ping, vanilla
-active-area predicate with 12 m inner margin, 10 s cooldown), (3) multi-peer send loop (vanilla services
+active-area predicate with 12 m inner margin, 10 s cooldown; **0.3.0: moves Creature class only, never
+chests/doors/stations — 0.2.1 lost a remote player's chest deposit**), (3) multi-peer send loop (vanilla services
 one peer per frame), (4) RPC area-of-interest (broadcasts with a target object only go to peers within
 300 m), (5) wear-tick throttle for server-owned intact pieces. Each has its own toggle. Coexists with BN.
 `tools\bn-on.bat` / `bn-off.bat` + restart. Boots clean on 1.0.7; live two-peer validation pending

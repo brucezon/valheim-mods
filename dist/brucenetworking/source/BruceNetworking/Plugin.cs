@@ -7,20 +7,25 @@ using UnityEngine.Rendering;
 
 namespace BruceNetworking;
 
-// Server-only. Two features, each behind its own toggle:
+// Server-only. Five features, each behind its own toggle:
 //   1. Send priority  - the server's per-peer ZDO send order gets a per-prefab-class bias, so players,
 //                       creatures, doors, chests and other things you interact with go out before plain
 //                       build pieces, plants and rocks when a peer's send budget is saturated.
 //   2. Ownership      - 1.0 arbitrates zone ownership on the server (ZDOMan.ReleaseZDOS runs only there).
 //                       We claim in preference order (LAN peers first, then by ping) and periodically move
 //                       ownership from a worse peer to a better one that is well inside the object's zone,
-//                       with a per-object cooldown so it never flaps.
+//                       with a per-object cooldown so it never flaps. Since 0.3.0 the steering pass only
+//                       moves creatures by default, skips objects in use and objects next to their owner:
+//                       moving player-authored state (a chest being filled) discards the owner's last write.
+//   3. Send loop      - service every peer per tick instead of one peer per frame.
+//   4. RPC AoI        - forward object-targeted broadcast RPCs only to peers that can have the object loaded.
+//   5. Wear throttle  - server-owned intact pieces run their wear tick at most every N seconds.
 [BepInPlugin(GUID, Name, Version)]
 public class BruceNetworkingPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.BruceNetworking";
 	public const string Name = "BruceNetworking";
-	public const string Version = "0.2.1";
+	public const string Version = "0.3.0";
 
 	internal static ManualLogSource Log;
 
@@ -49,6 +54,9 @@ public class BruceNetworkingPlugin : BaseUnityPlugin
 	internal static ConfigEntry<float> TransferCooldown;
 	internal static ConfigEntry<int> MaxTransfersPerPass;
 	internal static ConfigEntry<bool> SteerVehicles;
+	internal static ConfigEntry<string> SteerClasses;
+	internal static ConfigEntry<bool> SkipInUse;
+	internal static ConfigEntry<float> OwnerKeepRadius;
 	internal static ConfigEntry<bool> LogTransfers;
 
 	// --- 4 Send loop
@@ -72,7 +80,7 @@ public class BruceNetworkingPlugin : BaseUnityPlugin
 		PriorityEnabled = Config.Bind("1 - General", "Send priority", true,
 			"Bias the server's ZDO send order by prefab class (players, creatures, doors, chests first; build pieces, plants, rocks last).");
 		OwnershipEnabled = Config.Bind("1 - General", "Ownership steering", true,
-			"Prefer LAN peers (then lowest ping) as zone owners. Claims go to the best peer in range, and ownership held by a worse peer is moved to a better one that is well inside the zone.");
+			"Prefer LAN peers (then lowest ping) as zone owners. Claims go to the best peer in range, and ownership held by a worse peer is moved to a better one that is well inside the zone (only for the classes in 'Steer classes').");
 		LogStats = Config.Bind("1 - General", "Log peer stats", true,
 			"Periodically log every peer's address, LAN/remote class, ping and owned-object count.");
 		StatsInterval = Config.Bind("1 - General", "Stats interval", 60f,
@@ -104,7 +112,13 @@ public class BruceNetworkingPlugin : BaseUnityPlugin
 		MaxTransfersPerPass = Config.Bind("3 - Ownership", "Max transfers per pass", 300,
 			"Cap on ownership moves per 2-second pass, to spread the sync cost.");
 		SteerVehicles = Config.Bind("3 - Ownership", "Steer ships and carts", false,
-			"Also move ships and carts. Off by default: their physics authority is sensitive to owner changes mid-motion.");
+			"Also move ships and carts (they are Dynamic, so 'Steer classes' must include Dynamic too). Off by default: their physics authority is sensitive to owner changes mid-motion.");
+		SteerClasses = Config.Bind("3 - Ownership", "Steer classes", "Creature",
+			"Comma-separated prefab classes the steering pass may move: Creature, Interactive, Dynamic, Structure, Nature, Default. Players are never moved. Default is Creature only. Interactive (chests, doors, stations, signs, item stands) is unsafe: the owner's client is the only one that writes the object's data, and taking ownership discards whatever it was about to write - a remote player's chest deposit vanished this way in 0.2.1.");
+		SkipInUse = Config.Bind("3 - Ownership", "Skip objects in use", true,
+			"Never move an object whose InUse flag is set (a chest or station someone currently has open), whatever its class.");
+		OwnerKeepRadius = Config.Bind("3 - Ownership", "Owner keep radius", 40f,
+			"Metres. Never take an object that is within this distance of its current owner's position: they are probably interacting with it (fighting that mob, loading that cart). 0 disables the check.");
 		LogTransfers = Config.Bind("3 - Ownership", "Log transfers", true,
 			"Log a one-line summary whenever a pass moves ownership.");
 
@@ -127,6 +141,8 @@ public class BruceNetworkingPlugin : BaseUnityPlugin
 		LanSubnets.SettingChanged += (_, _) => PeerClassifier.Reload();
 		ForceLanPlayers.SettingChanged += (_, _) => PeerClassifier.Reload();
 		ForceRemotePlayers.SettingChanged += (_, _) => PeerClassifier.Reload();
+		ReleaseZDOS_Patch.ReloadSteerClasses();
+		SteerClasses.SettingChanged += (_, _) => ReleaseZDOS_Patch.ReloadSteerClasses();
 		foreach (ConfigEntry<float> e in new[] { BiasPlayer, BiasCreature, BiasInteractive, BiasDynamic, BiasStructure, BiasNature })
 		{
 			e.SettingChanged += (_, _) => PrefabClasses.ClearCache();

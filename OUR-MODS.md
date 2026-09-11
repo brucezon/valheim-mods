@@ -17,7 +17,7 @@ core is 5.4.23.5). Reference tree for building: `refs\1.0\gamepath\` (`BepInEx\c
 |---|---|---|---|---|---|
 | **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.7.1 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
 | **Endurance** | yes (MIT) | `mods\endurance-src\Endurance` | 1.0.0 | both | `bruceirons.Endurance.cfg` |
-| **BruceNetworking** | yes (fork session) | `mods\brucenetworking-src` (README + IDEAS there) | 0.2.1 | **server only** | `bruceirons.BruceNetworking.cfg` |
+| **BruceNetworking** | yes (fork session) | `mods\brucenetworking-src` (README + IDEAS there) | 0.3.0 | **server only** | `bruceirons.BruceNetworking.cfg` |
 | **PlantEasily_TEMP** | no — Advize, GPLv3 rebuild | `mods\advize-src\Advize_PlantEasily` | 2.1.1 (plugin 2.1.1.99) | client | `advize.PlantEasily.cfg` |
 | **PlantEverything_TEMP** | no — Advize, GPLv3 rebuild | `mods\advize-src\Advize_PlantEverything` | 1.20.1 (plugin 1.20.0.99) | both | `advize.PlantEverything.cfg` |
 
@@ -97,8 +97,11 @@ Never add Smoothbrain's original alongside it.
 Built by the fork session; formerly LanServerOptimizations. Server-only: ZDO send priority by prefab
 class, LAN-first zone ownership (LAN subnet > lowest ping, hysteresis), multi-peer send loop, RPC
 area-of-interest, wear-tick throttle; each toggleable. Coexists with BetterNetworking. Delivered via the
-Gale profile (harmless on clients) → `sync-server-from-gale.ps1` puts it on the server. Two-peer live
-validation was still pending as of 9 Sep — check `mods\brucenetworking-src\README.md` for status.
+Gale profile (harmless on clients) → `sync-server-from-gale.ps1` puts it on the server.
+**0.3.0 (10 Sep, built on the laptop, live on the server since 10:14 on 11 Sep):** steering only moves
+`Steer classes` (default `Creature`), skips objects in use and objects within `Owner keep radius` 40 m of
+their owner. 0.2.1 moved chests mid-deposit and the items vanished (owner-revision bump discards the old
+owner's in-flight write). Never widen `Steer classes` to Interactive.
 
 ## PlantEasily_TEMP / PlantEverything_TEMP (Advize, GPLv3)
 
