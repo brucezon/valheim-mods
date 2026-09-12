@@ -15,7 +15,7 @@ core is 5.4.23.5). Reference tree for building: `refs\1.0\gamepath\` (`BepInEx\c
 
 | Mod | Ours? | Source | Live | Sides | Config file |
 |---|---|---|---|---|---|
-| **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.7.1 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
+| **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.10.0 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
 | **Endurance** | yes (MIT) | `mods\endurance-src\Endurance` | 1.0.0 | both | `bruceirons.Endurance.cfg` |
 | **BruceNetworking** | yes (fork session) | `mods\brucenetworking-src` (README + IDEAS there) | 0.3.0 | **server only** | `bruceirons.BruceNetworking.cfg` |
 | **PlantEasily_TEMP** | no — Advize, GPLv3 rebuild | `mods\advize-src\Advize_PlantEasily` | 2.1.1 (plugin 2.1.1.99) | client | `advize.PlantEasily.cfg` |
@@ -29,8 +29,10 @@ added later — check the Gale profile `LAN-1.0`, that is the truth).
 
 ## BruceQoL (the big one)
 
-One server-synced config, 14 sections, every value live-editable (ServerSync file watcher + admin
-F1 via Configuration Manager). `ModRequired = true`: clients without it are refused.
+One server-synced config, 16 sections, every value live-editable (ServerSync file watcher + admin
+F1 via Configuration Manager). `ModRequired = true`: clients without it are refused. Sections 13
+(block compensation) and 16 live in their own files (`BlockCompensation.cs`, `Gathering.cs`) with
+`internal static ConfigEntry` fields that Awake fills; the `Toggle` enum is `internal` for that reason.
 
 Sections (see `dist\bruceqol\README.md` for the player-facing wording):
 1. General — config lock; **Ignore cheated world keys** (launch-line keys no longer flag the world cheated).
@@ -54,6 +56,14 @@ Sections (see `dist\bruceqol\README.md` for the player-facing wording):
 13. Combat — enemy→player, enemy→tame, player→enemy damage ×; enemy/boss health ×. Same code path as
     the Combat world slider, so they **multiply with** `-preset Hard`.
 14. Raids — on/off, interval ×, chance ×, duration ×, raids-anywhere, disabled-raid list (names logged at boot).
+15. Tames — commandable tames list (default Boar): `Tameable.m_commandable` flipped on Awake (fork-added, 1.9.0).
+16. Gathering — extra ore/stone and wood scaled by the finishing hit's Pickaxes / WoodCutting level
+    (default 1 = double at 100). `HitData.m_skillLevel` rides on the damage RPC, so the object's owner
+    can scale drops without skill sync; the attacker-side prefix on `*.Damage` corrects the level to
+    WoodCutting for axes on trees (vanilla sends the Axes level). Owner-side prefixes on
+    `TreeBase/TreeLog/Destructible.RPC_Damage`, `MineRock.RPC_Hit`, `MineRock5.DamageArea` open a
+    window in which a `DropTable.GetDropList()` postfix appends copies. Follows Smoothbrain
+    Mining/Lumberjacking (which add their own skills instead; not used).
 
 Build:
 ```

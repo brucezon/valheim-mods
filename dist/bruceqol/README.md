@@ -90,8 +90,23 @@ These replace world-key edits like `enemydamage`, which the game treats as cheat
 - **Raids anywhere** (Off): On lets raids start away from bases.
 - **Disabled raids**: comma-separated names, e.g. `wolves, army_goblin`. The full list is logged at startup.
 
+## 15 - Tames
+- **Commandable tames** (`Boar`): comma-separated creature prefabs whose tamed animals follow or stay
+  when you interact with them, like wolves and lox. Walk boars to a new pen. Tames never use portals.
+  Empty = vanilla.
+
+## 16 - Gathering
+- **Skill based yield** (On): ore deposits, rocks, trees and logs drop extra items scaled by the
+  Pickaxes or Wood cutting skill of whoever lands the finishing hit.
+- **Extra ore and stone at level 100** (1) and **Extra wood at level 100** (1): extra drops as a
+  fraction of the vanilla drop. 1 = double at level 100; at level 50 every item has a 50% chance of a
+  second copy. Stacks with the Resources world slider. 0 = off.
+The level travels with the hit, so it works whoever is simulating the rock or tree (the server, or
+another player). Vanilla puts the Axes level in a tree hit; this mod corrects it to Wood cutting.
+
 Skill ideas follow Smoothbrain's SmartSkills and PackHorse; the container, station, beehive and
-swim features follow OdinsQOL. All are independent implementations.
+swim features follow OdinsQOL; skill-scaled gathering follows Smoothbrain's Mining and Lumberjacking.
+All are independent implementations.
 
 ## License
 

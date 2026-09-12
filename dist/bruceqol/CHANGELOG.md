@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.10.0 - 2026-09-12
+- New **16 - Gathering**: **Skill based yield** (On), **Extra ore and stone at level 100** (1) and
+  **Extra wood at level 100** (1). Ore deposits, rocks, trees and logs drop extra copies of what they
+  roll, scaled by the finishing hit's Pickaxes or Wood cutting level: double at 100, a 50% chance of a
+  second copy at 50. Works whoever simulates the object because the level rides on the hit; the hit's
+  level is corrected to Wood cutting for axes on trees (vanilla sends the Axes level).
+
+## 1.9.0 - 2026-09-12
+- New **15 - Tames**: **Commandable tames** (default `Boar`). Tamed animals of the listed prefabs can be
+  told to follow or stay by interacting with them, the same way wolves and lox already can. Lets you
+  walk boars to a new pen instead of shoving them onto a boat. Tames still cannot use portals.
+
 ## 1.8.0 - 2026-09-11
 - New in [13 - Combat]: **Parry difficulty compensation** and **Held block difficulty compensation** (0-1,
   default 0 = vanilla). The block is judged against enemy damage divided by R^c (R = Combat enemy damage

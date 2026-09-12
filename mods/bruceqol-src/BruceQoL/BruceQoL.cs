@@ -6,6 +6,7 @@ using SkillManager;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -17,13 +18,13 @@ namespace BruceQoL;
 public class BruceQoLPlugin : BaseUnityPlugin
 {
 	private const string ModName = "BruceQoL";
-	private const string ModVersion = "1.8.0";
+	private const string ModVersion = "1.10.0";
 	private const string ModGUID = "bruceirons.BruceQoL";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion, ModRequired = true };
 	internal static BruceQoLPlugin mod;
 
-	private enum Toggle
+	internal enum Toggle
 	{
 		On = 1,
 		Off = 0,
@@ -127,6 +128,9 @@ public class BruceQoLPlugin : BaseUnityPlugin
 	private static ConfigEntry<float> raidDurationMult;
 	private static ConfigEntry<Toggle> raidsAnywhere;
 	private static ConfigEntry<string> disabledRaids;
+
+	// 15 - Tames
+	private static ConfigEntry<string> commandableTames;
 
 	// 13 - Combat
 	private static ConfigEntry<float> enemyDamageToPlayers;
@@ -301,6 +305,12 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		raidDurationMult = config("14 - Raids", "Raid duration (x vanilla)", 1f, "Multiplier on how long a raid lasts (most vanilla raids are 60-150 s).");
 		raidsAnywhere = config("14 - Raids", "Raids anywhere", Toggle.Off, "On = raids can also start away from player bases. Off = vanilla (near a base only).");
 		disabledRaids = config("14 - Raids", "Disabled raids", "", "Comma-separated raid names that never happen, e.g. 'army_eikthyr, wolves, army_goblin'. Names are logged at startup.");
+
+		commandableTames = config("15 - Tames", "Commandable tames", "Boar", "Comma-separated creature prefab names whose tamed animals can be told to follow or stay by interacting with them, like wolves and lox. Vanilla boars cannot. Applies to animals as they load; tames never use portals. Empty = vanilla.");
+
+		Gathering.Enabled = config("16 - Gathering", "Skill based yield", Toggle.On, "Ore deposits, rocks, trees and logs drop extra items scaled by the Pickaxes or Wood cutting skill of whoever lands the finishing hit. Off = vanilla.");
+		Gathering.OreBonusAt100 = config("16 - Gathering", "Extra ore and stone at level 100 (x)", 1f, "Extra drops from ore deposits and rocks at Pickaxes 100, as a fraction of the vanilla drop (1 = +100% = double). Scales linearly with level: at 50 each item has a 50% chance of a second copy. Stacks with the Resources world slider. 0 = off.");
+		Gathering.WoodBonusAt100 = config("16 - Gathering", "Extra wood at level 100 (x)", 1f, "Extra drops from trees, logs and stumps at Wood cutting 100, as a fraction of the vanilla drop (1 = +100% = double). Scales linearly with level. Stacks with the Resources world slider. 0 = off.");
 		foreach (ConfigEntry<float> e in new[] { raidIntervalMult, raidChanceMult, raidDurationMult })
 		{
 			e.SettingChanged += (_, _) => ApplyRaids();
@@ -1070,6 +1080,31 @@ public class BruceQoLPlugin : BaseUnityPlugin
 			bool wasFull = __instance.GetHealth() >= oldMax - 0.01f;
 			__instance.SetMaxHealth(oldMax * mult);
 			if (wasFull) __instance.SetHealth(__instance.GetMaxHealth());
+		}
+	}
+
+	// ---------------------------------------------------------------- 15 - Tames
+
+	// m_commandable is prefab data (true on Wolf and Lox, false on Boar). Tameable.Interact only offers
+	// follow/stay when it is set, and the follow logic itself lives in MonsterAI, which every tame has.
+	// Flipping the flag on each instance as it wakes covers both freshly spawned and already-saved animals.
+	[HarmonyPatch(typeof(Tameable), "Awake")]
+	private static class CommandableTamePatch
+	{
+		private static void Postfix(Tameable __instance)
+		{
+			if (__instance.m_commandable) return;
+			string list = commandableTames.Value;
+			if (string.IsNullOrWhiteSpace(list)) return;
+			string prefab = Utils.GetPrefabName(__instance.gameObject);
+			foreach (string entry in list.Split(','))
+			{
+				if (entry.Trim().Equals(prefab, StringComparison.OrdinalIgnoreCase))
+				{
+					__instance.m_commandable = true;
+					return;
+				}
+			}
 		}
 	}
 }
