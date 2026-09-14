@@ -19,6 +19,7 @@ core is 5.4.23.5). Reference tree for building: `refs\1.0\gamepath\` (`BepInEx\c
 | **Endurance** | yes (MIT) | `mods\endurance-src\Endurance` | 1.0.0 | both | `bruceirons.Endurance.cfg` |
 | **BruceNetworking** | yes (fork session) | `mods\brucenetworking-src` (README + IDEAS there) | 0.3.0 | **server only** | `bruceirons.BruceNetworking.cfg` |
 | **Oarsmen** | yes (MIT) | `mods\oarsmen-src\Oarsmen` | 0.1.0 | both (not required) | `bruceirons.Oarsmen.cfg` |
+| **ServerBasedRanch** | yes (MIT) | `mods\serverbasedranch-src\ServerBasedRanch` | 1.0.2 | **server only**, not in the profile | `bruceirons.ServerBasedRanch.cfg` |
 | **PlantEasily_TEMP** | no — Advize, GPLv3 rebuild | `mods\advize-src\Advize_PlantEasily` | 2.1.1 (plugin 2.1.1.99) | client | `advize.PlantEasily.cfg` |
 | **PlantEverything_TEMP** | no — Advize, GPLv3 rebuild | `mods\advize-src\Advize_PlantEverything` | 1.20.1 (plugin 1.20.0.99) | both | `advize.PlantEverything.cfg` |
 
@@ -165,6 +166,38 @@ pull; otherwise held at `Stowed angle`. Console `oarsmen ship | rowers | dump <p
 registered in a `Terminal.InitTerminal` postfix, logs to LogOutput.log.
 ServerSync, `ModRequired = false`. **Untuned:** pivot offsets and hole positions are guesses until the
 first in-game session with `oarsmen ship`.
+
+## ServerBasedRanch
+
+Server-only, nothing on clients, and **not in the Gale profile** — copy the dll to the server by hand.
+A dedicated server holds every object's saved state (ZDO) whether or not a zone is loaded, but vanilla
+only advances taming and breeding through components, which exist only in loaded zones. This ticks the
+unloaded ones directly on their saved fields with vanilla's own numbers, at `Unloaded speed` 50% by
+default: hungry animals eat real item stacks in the pen, fed wild ones tame, fed tame ones gain love,
+conceive and give birth. `Plugin.cs` is config + a timer; all the work is `Ranch.cs`.
+
+What it ticks is decided by `IsLoadedOrClientOwned` (`Ranch.cs:157`): anything inside vanilla's active
+area for a connected peer, owned by a connected peer, or within a 32 m margin outside that area is left
+to the client. The margin exists because peer positions reach the server a moment late. The `BQ_lastSim`
+ZDO key is shared with BruceQoL's client-side replay so whoever ticks an animal stamps it and the other
+side finds no elapsed time to double-count.
+
+**Two accepted limits — decided 14 Sep, don't re-litigate without live evidence.** Both are written up
+in README's closed-items list with the full reasoning; briefly:
+
+- The 32 m margin leaves a ring (96–128 m from a player) that neither side ticks. Accepted: players
+  move, so nothing sits there for long. 1.0.2 already cut this from a whole zone. Never widen the mod
+  into the ring — that means writing to ZDOs a client may own, the BruceNetworking 0.2.1 chest bug.
+- Pens freeze while the server is empty, because `ZNet.UpdateNetTime` only advances `m_netTime` when
+  `GetNrOfPlayers() > 0` and `Ranch.Tick` reads `ZNet.instance.GetTime()`. Accepted deliberately: it
+  keeps this mod, newborn `s_spawnTime` (`Ranch.cs:385`) and vanilla `Growup` on one clock. Switching
+  only this mod to wall time breeds animals that cannot grow — `Growup.GrowUpdate` needs a loaded,
+  owned instance and measures age on the world clock — so pens fill with young that count toward
+  `Max animals per pen` and stall further breeding.
+
+Version drift to watch: `dist\serverbasedranch\` and the source were both on **1.0.2** (13 Sep) while
+both docs still said 1.0.1 until 14 Sep. Check `Plugin.cs`, `dist\serverbasedranch\manifest.json` and
+the changelog agree before any bump.
 
 ## PlantEasily_TEMP / PlantEverything_TEMP (Advize, GPLv3)
 

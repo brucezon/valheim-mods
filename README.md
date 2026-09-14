@@ -247,7 +247,7 @@ a file before editing it and check `ModVersion` before bumping.
 | **BruceQoL** | 1.12.0 | server + clients, version-locked | 16 config sections now. Added after 1.1.0: skill XP % modifiers + death penalty (8), multiplayer scaling knobs (9), container sizes / hover (10), station range + roof (11), beehives (12), combat multipliers + enemy/boss health + parry/held-block compensation (13), raid knobs (14), commandable boars + passive taming replay, Off (15), skill-scaled ore/wood yield (16), bow draw tuning, Off (13). All server-synced and live. |
 | **Endurance** | 1.0.0 | server + clients | unchanged |
 | **BruceNetworking** | 0.3.0 | server only (in the profile, no-op on clients) | ownership steering moves **creatures only**, skips objects in use and anything within 40 m of its owner. 0.2.1 lost a chest deposit by moving a chest mid-write; never widen `Steer classes`. Post-LAN settings: see `LAUNCH.md` and the note below. |
-| **ServerBasedRanch** | 1.0.1 | server only, **not in the profile**, copy by hand | ticks unloaded pens on the server (eat, tame, breed, birth) with vanilla numbers at 50% speed. Runs on the world clock, which freezes when nobody is online. |
+| **ServerBasedRanch** | 1.0.2 | server only, **not in the profile**, copy by hand | ticks unloaded pens on the server (eat, tame, breed, birth) with vanilla numbers at 50% speed. Runs on the world clock, which freezes when nobody is online — deliberate, see below. |
 | **Oarsmen** | 0.1.0 | server + clients (not required) | new 14 Sep: seated players row the Longship/Karve (+25% paddle force per bench, oars drawn through the hull beside occupied benches). Oar placement untuned until the first in-game session. |
 | **PlantEasily_TEMP** | 2.1.1 | clients | Advize GPL rebuild, retire when Advize ships 1.0 |
 | **PlantEverything_TEMP** | 1.20.1 | server + clients | Advize GPL rebuild, unit tags in descriptions |
@@ -267,8 +267,22 @@ with `tools\hexium-publish.ps1`, commit, push; then Gale update + `sync-server-f
 laptop. Details and gotchas: `OUR-MODS.md`.
 
 **Open items, not built:** cart XP scaled by cargo weight (design in chat, 13 Sep); dungeon reset;
-per-boat rudder speed override for OdinShip boats; ServerBasedRanch's one-zone dead band and frozen
-clock while the server is empty.
+per-boat rudder speed override for OdinShip boats.
 
-Closed without a fix: Hauling training counts intended velocity, so walking into a wall still trains
-it. Judged acceptable 14 Sep — not worth a displacement check.
+**Closed 14 Sep without a fix** — all three judged acceptable rather than worth the code. Do not
+reopen these without new evidence from a live server:
+
+- *Hauling trains against a wall.* Training counts intended velocity, so walking into a rock still
+  earns XP. Not worth a real-displacement check.
+- *ServerBasedRanch's dead band.* The item was already stale: 1.0.2 (13 Sep) cut it from a whole zone
+  to 32 m. What remains is a ring from 96 m to 128 m around a player where ServerBasedRanch defers to
+  the client but the client has not loaded the pen, so nobody ticks it. Accepted because players move
+  around constantly — an animal only sits in that ring in passing, never for long. Widening
+  ServerBasedRanch into the ring would mean writing to ZDOs a client may own, which is the bug class
+  that ate a chest deposit in BruceNetworking 0.2.1.
+- *ServerBasedRanch's frozen clock while the server is empty.* `ZNet.UpdateNetTime` only advances
+  `m_netTime` when `GetNrOfPlayers() > 0`, so an empty server advances no pens. Kept deliberately:
+  it holds ServerBasedRanch, newborn `s_spawnTime` and vanilla `Growup` on one clock. Moving only
+  ServerBasedRanch to wall time would breed animals that cannot grow (`Growup` needs a loaded, owned
+  instance and measures age on the world clock), filling pens with young that count toward the pen cap
+  and stall further breeding.
