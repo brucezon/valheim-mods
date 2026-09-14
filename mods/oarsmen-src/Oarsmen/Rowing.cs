@@ -30,6 +30,32 @@ internal static class Rowing
 		return ships.Count == 0 || ships.Contains(prefabName);
 	}
 
+	// Vanilla applies every one of its forces - buoyancy, damping, paddle, rudder - inside a single gate,
+	// and that gate is the hull still being in the water (Ship.CustomFixedUpdate, `if (!(num2 >
+	// m_disableLevel))`). Lift a boat off a wave crest and vanilla stops pushing it entirely, leaving
+	// gravity and momentum to finish the jump. A postfix does not inherit that gate, so without this check
+	// the crew would carry on rowing a boat through mid-air - and along transform.forward, which points at
+	// the sky when the bow is pitched up, so they would be rowing it higher.
+	//
+	// Mirrored exactly rather than approximated with the centre point alone: vanilla averages five samples
+	// across the float collider, and a pitching hull is precisely when one sample and five disagree. The
+	// WaterVolume fields are lookup caches, not accumulated state, so re-reading them here is free and
+	// cannot disturb vanilla's own call earlier in the same tick.
+	private static bool InWater(Ship ship)
+	{
+		if (ship.m_floatCollider == null || ship.m_body == null) return false;
+		Vector3 com = ship.m_body.worldCenterOfMass;
+		Transform fc = ship.m_floatCollider.transform;
+		Vector3 size = ship.m_floatCollider.size;
+		Vector3 pos = fc.position, fwd = fc.forward, right = fc.right;
+		float average = (Floating.GetWaterLevel(com, ref ship.m_previousCenter)
+			+ Floating.GetWaterLevel(pos - right * (size.x / 2f), ref ship.m_previousLeft)
+			+ Floating.GetWaterLevel(pos + right * (size.x / 2f), ref ship.m_previousRight)
+			+ Floating.GetWaterLevel(pos + fwd * (size.z / 2f), ref ship.m_previousForward)
+			+ Floating.GetWaterLevel(pos - fwd * (size.z / 2f), ref ship.m_previousBack)) / 5f;
+		return !(com.y - average - ship.m_waterLevelOffset > ship.m_disableLevel);
+	}
+
 	private static bool HasBenches(GameObject go)
 	{
 		foreach (Chair chair in go.GetComponentsInChildren<Chair>(true))
@@ -83,6 +109,9 @@ internal static class Rowing
 			if (__instance.m_body == null || __instance.m_players.Count == 0) return;
 			OarsBehaviour oars = __instance.GetComponent<OarsBehaviour>();
 			if (oars == null || !oars.Active) return;
+			// Oars in air move nothing. Vanilla stops pushing here too, so this keeps the crew inside the
+			// same gate rather than rowing the hull through the top of a wave.
+			if (!InWater(__instance)) return;
 			Ship.Speed speed = __instance.m_speed;
 			bool paddling = speed == Ship.Speed.Slow || speed == Ship.Speed.Back;
 			bool sailing = speed == Ship.Speed.Half || speed == Ship.Speed.Full;

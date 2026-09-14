@@ -53,6 +53,12 @@
   Both only ever remove force the crew added, so a ship rowing vanilla can never be slowed by either.
 - `oarsmen ship` and `oarsmen rowers` now print live turn rate in degrees per second alongside the
   rudder value, so the cap can be set from a measurement of your own hull rather than a guess.
+- **Fix: the crew no longer rows a boat that has left the water.** Vanilla applies all of its forces —
+  buoyancy, damping, paddle, rudder — inside one gate, and that gate is the hull still being in the
+  water; lift a boat off a wave crest and vanilla stops pushing entirely. Oarsmen's force is added in a
+  postfix, which does not inherit that gate, so in heavy seas the crew kept rowing through mid-air —
+  and along the hull's forward axis, which points at the sky when the bow is pitched up, so they were
+  rowing it higher. The same five-sample water test vanilla uses now gates the crew's force too.
 - Oar placement is still untuned; see the note at the top of the README.
 
 ## 0.1.1 - 2026-09-14

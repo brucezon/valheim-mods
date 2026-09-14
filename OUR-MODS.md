@@ -213,6 +213,24 @@ explicitly. Scaling is proportional, not absolute — the share multiplies that 
 `m_backwardForce` — so twelve benches at 0.25 is ×4 paddle force, about ×2 speed after quadratic drag,
 paddle mode only. Vanilla hulls are unchanged because the Longship has four seats anyway.
 
+**The water gate — the trap a postfix sets for you.** `Ship.CustomFixedUpdate` wraps *every* force it
+applies in `if (!(num2 > m_disableLevel))`, where `num2` is the centre of mass against the average of
+five water samples across the float collider. Out of the water, vanilla applies nothing at all and lets
+the jump finish ballistically. A postfix runs regardless, so until 0.2.0 the crew kept rowing an
+airborne hull, along `transform.forward`, which in a heavy sea points at the sky. `InWater()` mirrors
+the test exactly — five samples, not just the centre, because a pitching hull is exactly when one
+sample and five disagree. The `m_previous*` fields are `WaterVolume` lookup caches rather than
+accumulated state, so re-reading them cannot disturb vanilla's own call earlier in the tick.
+**Any future force added here must sit behind that gate too.**
+
+Known and accepted: thrust follows the hull's pitch, because it is `transform.forward` exactly as
+vanilla's paddle is. On a 30° wave face half the crew's push becomes vertical, and a twelve-bench crew
+is pushing four times a hull's paddle force, so roughly 2x that force goes into the launch. It is
+vanilla's own behaviour amplified rather than anything new, and it only applies in the water where
+buoyancy and damping answer. If heavy-sea testing shows boats leaping, the lever is a toggle to flatten
+the crew's push to the horizontal — deliberately not added yet, since it would diverge from vanilla on
+a guess.
+
 **Two steering guards, deliberately at opposite ends.** Uncapping the crew made these necessary.
 `Max steering share` (1) ceilings the crew's requested share before the force is built — the provably
 safe half, since it only trims something we are adding. `Max turn rate` (45 deg/s) clamps the result
