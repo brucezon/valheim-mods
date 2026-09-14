@@ -87,7 +87,10 @@ internal static class Rowing
 			bool paddling = speed == Ship.Speed.Slow || speed == Ship.Speed.Back;
 			bool sailing = speed == Ship.Speed.Half || speed == Ship.Speed.Full;
 			if (!paddling && !(sailing && OarsmenPlugin.RowUnderSail.Value == OarsmenPlugin.Toggle.On)) return;
-			int rowers = Math.Min(oars.RowerCount, Math.Max(0, OarsmenPlugin.MaxRowers.Value));
+			// 0 means uncapped, so every bench on a big hull pulls. Guard the ordering here: a naive
+			// Min(count, cap) would read 0 as "nobody rows" and silently disable the whole mod.
+			int cap = OarsmenPlugin.MaxRowers.Value;
+			int rowers = cap > 0 ? Math.Min(oars.RowerCount, cap) : oars.RowerCount;
 			if (rowers <= 0) return;
 
 			// Reverse pulls the same oars the other way: vanilla's Back term is its Slow term negated.

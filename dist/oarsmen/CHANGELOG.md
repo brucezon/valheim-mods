@@ -39,6 +39,11 @@
   meaning no restriction) plus a new `Excluded ships` blocklist. Both apply live, so boats already in
   the water follow an edit; previously the ship list was only read when a boat loaded. If you had
   customised `Ships`, re-enter it under `Only these ships` — the old key is ignored.
+- **`Max rowers` now defaults to 0, meaning every bench counts.** It was 4, which would have left most
+  of a big modded hull's seats decorative — OdinShip's warship has far more than four. Vanilla boats
+  are unaffected, the Longship having only four seats in the first place. A twelve-bench ship with a
+  full crew lands at about four times its own vanilla paddle force, so roughly twice the speed once
+  drag answers, and still only in paddle mode.
 - Oar placement is still untuned; see the note at the top of the README.
 
 ## 0.1.1 - 2026-09-14

@@ -43,6 +43,13 @@ from other mods, OdinShip's rowing canoes included, the moment they exist. A hul
 rows, because there is nowhere to sit. The tiller is not a seat in this sense — it is a different
 component — so the helmsman is never counted as a rower.
 
+**A big hull rewards a big crew.** Every bench counts by default, so a warship with twelve seats is
+pulled by twelve rowers, not by the first four. The gain is proportional rather than absolute — the
+crew's share multiplies that hull's own paddle force — so a full twelve puts a warship at about four
+times its vanilla paddle force, which is roughly twice the speed once the water fights back. It is
+still paddle mode only; the sail is untouched. Cap it with `Max rowers` if a modded ship turns out
+too quick, though lowering `Paddle force per rower` is the gentler lever.
+
 Use `Excluded ships` to opt a boat out, and `Only these ships` to restrict rowing to a named few.
 Both take comma-separated prefab names and both apply live, so a boat already in the water follows the
 change. `oarsmen dump <prefab>` shows whether a hull has chairs at all.
@@ -55,7 +62,7 @@ Config is server-synced and live.
 
 **2 - Rowing:** `Rowing` (On), `Only these ships` (empty = every boat with seats),
 `Excluded ships` (empty), `Paddle force per rower (x)` (0.25),
-`Steering force per rower (x)` (0.15, set 0 to turn the steering help off), `Max rowers` (4),
+`Steering force per rower (x)` (0.15, set 0 to turn the steering help off), `Max rowers` (0 = every bench counts),
 `Row under sail` (Off: rowers only add forward force in paddle mode and reverse; steering help is
 never added under sail either way), `Show rowers on the tiller` (On).
 

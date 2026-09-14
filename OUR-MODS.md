@@ -206,6 +206,13 @@ hull's seats cannot change. That split is deliberate: it makes the lists behave 
 config (edit and boats already afloat follow) without a component scan per frame. Going inactive clears
 the crew and hides the oars, so the hull reverts to vanilla cleanly.
 
+**`Max rowers` defaults to 0 = uncapped**, so every bench on a big modded hull pulls (OdinShip's
+warship is the case that forced it). Watch the ordering in `RowForcePatch`: a plain
+`Min(count, cap)` reads 0 as "nobody rows" and silently disables the mod, so 0 is branched on
+explicitly. Scaling is proportional, not absolute — the share multiplies that hull's own
+`m_backwardForce` — so twelve benches at 0.25 is ×4 paddle force, about ×2 speed after quadratic drag,
+paddle mode only. Vanilla hulls are unchanged because the Longship has four seats anyway.
+
 **Config key renamed, once.** `Ships` ("VikingShip, Karve") became `Only these ships` (empty). The
 rename was the point — BepInEx keeps an existing value in the cfg, so had the key stayed, every server
 that already had a cfg would have silently kept the old whitelist and never seen auto-discovery. Safe
