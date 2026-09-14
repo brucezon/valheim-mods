@@ -106,6 +106,11 @@ internal static class Rowing
 			// Rowers amplify the helmsman's rudder rather than choosing a direction, so this is zero with
 			// the rudder centred and needs no per-rower control: sitting down is the whole opt-in.
 			float steer = Math.Max(0f, OarsmenPlugin.SteerPerRower.Value) * rowers;
+			// Ceiling on what the crew may ask for. Uncapped crews made this necessary: twelve rowers would
+			// otherwise reach nearly three times the hull's own rudder force. Only ever trims force we are
+			// adding, so a boat rowing vanilla cannot be affected.
+			float steerCap = OarsmenPlugin.MaxSteerShare.Value;
+			if (steerCap > 0f) steer = Math.Min(steer, steerCap);
 			if (paddling && steer > 0f)
 			{
 				add += __instance.transform.right * (__instance.m_stearForce * (0f - __instance.m_rudderValue) * dir * steer);
@@ -114,6 +119,24 @@ internal static class Rowing
 			if (add == Vector3.zero) return;
 			Vector3 at = __instance.transform.position + __instance.transform.forward * __instance.m_stearForceOffset;
 			__instance.m_body.AddForceAtPosition(add * (__instance.m_body.mass * fixedDeltaTime), at, ForceMode.Impulse);
+
+			// Backstop on the result, for anything the share ceiling does not catch. Angular velocity is the
+			// quantity that actually misbehaves: vanilla overwrites linear velocity every tick from a
+			// quadratic drag model, but rotation is only damped, and gently, so torque accumulates.
+			// Only the yaw about the ship's own up axis is limited, and only the excess is taken off, so
+			// wave roll and pitch survive untouched - clamping the whole vector would flatten the sea.
+			float maxTurn = OarsmenPlugin.MaxTurnRate.Value;
+			if (maxTurn > 0f)
+			{
+				Vector3 spin = __instance.m_body.angularVelocity;
+				Vector3 up = __instance.transform.up;
+				float yaw = Vector3.Dot(spin, up);
+				float limit = maxTurn * Mathf.Deg2Rad;
+				if (Mathf.Abs(yaw) > limit)
+				{
+					__instance.m_body.angularVelocity = spin - up * (yaw - Mathf.Sign(yaw) * limit);
+				}
+			}
 		}
 	}
 
@@ -432,6 +455,9 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		int fake = 0;
 		foreach (Bench b in benches) if (b.simulated) fake++;
 		string note = fake > 0 ? $" ({fake} simulated)" : "";
-		return $"rowers {rowerCount}/{benches.Count}{note} setting {ship.m_speed} speed {ship.GetSpeed():F2} m/s rudder {ship.m_rudderValue:F2} | {string.Join(" ", parts)}";
+		// Turn rate is printed so the Max turn rate cap can be set from a measurement rather than a guess:
+		// swing the rudder hard with no crew to read what the hull does on its own.
+		float turn = ship.m_body != null ? Vector3.Dot(ship.m_body.angularVelocity, transform.up) * Mathf.Rad2Deg : 0f;
+		return $"rowers {rowerCount}/{benches.Count}{note} setting {ship.m_speed} speed {ship.GetSpeed():F2} m/s rudder {ship.m_rudderValue:F2} turn {turn:F1} deg/s | {string.Join(" ", parts)}";
 	}
 }

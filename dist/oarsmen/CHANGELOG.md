@@ -44,6 +44,15 @@
   are unaffected, the Longship having only four seats in the first place. A twelve-bench ship with a
   full crew lands at about four times its own vanilla paddle force, so roughly twice the speed once
   drag answers, and still only in paddle mode.
+- **Turning is capped now that crews are uncapped.** Twelve rowers at the default share would have
+  reached nearly three times a hull's own rudder force, which is where the physics gets silly.
+  `Max steering share (x)` (1) ceilings the crew's total contribution at double the ship's own rudder
+  force regardless of headcount — a Longship's four rowers never reach it, a warship's twenty are held
+  there. `Max turn rate (degrees per second)` (45) then backstops the result, removing only excess yaw
+  and leaving wave roll and pitch alone; it is set clear of vanilla so it guards rather than handles.
+  Both only ever remove force the crew added, so a ship rowing vanilla can never be slowed by either.
+- `oarsmen ship` and `oarsmen rowers` now print live turn rate in degrees per second alongside the
+  rudder value, so the cap can be set from a measurement of your own hull rather than a guess.
 - Oar placement is still untuned; see the note at the top of the README.
 
 ## 0.1.1 - 2026-09-14

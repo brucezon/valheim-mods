@@ -213,6 +213,17 @@ explicitly. Scaling is proportional, not absolute — the share multiplies that 
 `m_backwardForce` — so twelve benches at 0.25 is ×4 paddle force, about ×2 speed after quadratic drag,
 paddle mode only. Vanilla hulls are unchanged because the Longship has four seats anyway.
 
+**Two steering guards, deliberately at opposite ends.** Uncapping the crew made these necessary.
+`Max steering share` (1) ceilings the crew's requested share before the force is built — the provably
+safe half, since it only trims something we are adding. `Max turn rate` (45 deg/s) clamps the result
+afterwards, and only the yaw about `transform.up`, subtracting just the excess: clamping
+`m_body.angularVelocity` wholesale would kill wave roll and pitch and make every sea look flat. It runs
+only on ticks where the crew contributed, so an uncrewed hull is never touched by either. Angular
+velocity is the right thing to guard because vanilla overwrites *linear* velocity each tick from a
+quadratic drag model but only damps rotation, and gently (`m_angularDamping` 0.01), so torque is what
+accumulates. `Describe()` prints live turn rate so the cap can be set from a measurement — the 45
+default is a guard rail chosen clear of vanilla, not a measured figure.
+
 **Config key renamed, once.** `Ships` ("VikingShip, Karve") became `Only these ships` (empty). The
 rename was the point — BepInEx keeps an existing value in the cfg, so had the key stayed, every server
 that already had a cfg would have silently kept the old whitelist and never seen auto-discovery. Safe

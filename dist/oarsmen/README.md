@@ -50,6 +50,13 @@ times its vanilla paddle force, which is roughly twice the speed once the water 
 still paddle mode only; the sail is untouched. Cap it with `Max rowers` if a modded ship turns out
 too quick, though lowering `Paddle force per rower` is the gentler lever.
 
+**Turning is capped, so a huge crew cannot throw the boat around.** Two guards, both of which only
+ever remove force the crew added — a ship rowing vanilla is never touched by either. `Max steering
+share` ceilings the crew's total contribution at double the hull's own rudder force, so twenty rowers
+turn no harder than twelve; a Longship's four never reach it. `Max turn rate` then limits how fast the
+bow may actually swing, taking off only the excess yaw and leaving roll and pitch from the waves
+alone. Run `oarsmen ship` while turning hard to read your hull's real turn rate before changing it.
+
 Use `Excluded ships` to opt a boat out, and `Only these ships` to restrict rowing to a named few.
 Both take comma-separated prefab names and both apply live, so a boat already in the water follows the
 change. `oarsmen dump <prefab>` shows whether a hull has chairs at all.
@@ -62,7 +69,8 @@ Config is server-synced and live.
 
 **2 - Rowing:** `Rowing` (On), `Only these ships` (empty = every boat with seats),
 `Excluded ships` (empty), `Paddle force per rower (x)` (0.25),
-`Steering force per rower (x)` (0.15, set 0 to turn the steering help off), `Max rowers` (0 = every bench counts),
+`Steering force per rower (x)` (0.15, set 0 to turn the steering help off), `Max steering share (x)` (1 = the crew can at most double the ship's own rudder force),
+`Max turn rate (degrees per second)` (45, a backstop on yaw only), `Max rowers` (0 = every bench counts),
 `Row under sail` (Off: rowers only add forward force in paddle mode and reverse; steering help is
 never added under sail either way), `Show rowers on the tiller` (On).
 
