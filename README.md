@@ -266,8 +266,10 @@ live, and the client log's `Received N configs` line is the proof. Mod update: b
 with `tools\hexium-publish.ps1`, commit, push; then Gale update + `sync-server-from-gale.ps1` on the
 laptop. Details and gotchas: `OUR-MODS.md`.
 
-**Open items, not built:** cart XP scaled by cargo weight (design in chat, 13 Sep); dungeon reset;
-per-boat rudder speed override for OdinShip boats.
+**Nothing is queued.** The mod set is where it should be; there is no backlog to work through. Ideas
+that were on the list up to 14 Sep (cart XP scaled by cargo weight, dungeon reset, a per-boat rudder
+override for OdinShip boats) were dropped as not wanted — they are in this file's git history if one
+of them ever comes back.
 
 **Closed 14 Sep without a fix** — all three judged acceptable rather than worth the code. Do not
 reopen these without new evidence from a live server:
