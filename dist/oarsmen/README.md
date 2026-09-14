@@ -37,10 +37,15 @@ holes are decoration. With Oarsmen, every player sitting on one of the ship's be
 ship turns on its speed through the water, and that is left exactly as it was. The crew helps you
 paddle and manoeuvre; it does not help you tack.
 
-Works on the **Longship** (4 benches) and the **Karve** (2 benches). Any ship prefab with benches
-can be added to `Ships` in the config, including boats from other mods such as OdinShip — the mod
-finds benches by looking for `Chair` components on the ship, so it does not care who built it. Use
-`oarsmen dump <prefab>` to check a modded boat actually has them before adding it.
+**Every boat with seats rows — nothing needs listing in the config.** The mod looks for `Chair`
+components on the hull, so the Longship (4 benches) and Karve (2) work out of the box and so do boats
+from other mods, OdinShip's rowing canoes included, the moment they exist. A hull with no seats never
+rows, because there is nowhere to sit. The tiller is not a seat in this sense — it is a different
+component — so the helmsman is never counted as a rower.
+
+Use `Excluded ships` to opt a boat out, and `Only these ships` to restrict rowing to a named few.
+Both take comma-separated prefab names and both apply live, so a boat already in the water follows the
+change. `oarsmen dump <prefab>` shows whether a hull has chairs at all.
 
 Install on the server and on every client. A client without the mod sees no oars, and if that client
 happens to own the ship (it is the one simulating it) the ship rows at vanilla speed; nothing breaks.
@@ -48,7 +53,8 @@ Config is server-synced and live.
 
 ## Config (`BepInEx/config/bruceirons.Oarsmen.cfg`)
 
-**2 - Rowing:** `Rowing` (On), `Ships` (VikingShip, Karve), `Paddle force per rower (x)` (0.25),
+**2 - Rowing:** `Rowing` (On), `Only these ships` (empty = every boat with seats),
+`Excluded ships` (empty), `Paddle force per rower (x)` (0.25),
 `Steering force per rower (x)` (0.15, set 0 to turn the steering help off), `Max rowers` (4),
 `Row under sail` (Off: rowers only add forward force in paddle mode and reverse; steering help is
 never added under sail either way), `Show rowers on the tiller` (On).

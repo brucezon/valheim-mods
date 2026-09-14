@@ -197,6 +197,21 @@ two thirds; at 5 m/s they are equal. So a full crew at 0.15 is roughly +40% turn
 speed and less as you accelerate — help where you manoeuvre, not where you cruise. Prefabs may override
 `m_stearForce`; `oarsmen ship` prints the real value for whatever you are standing on.
 
+**Ship discovery (0.2.0).** Rowability is a property of the hull, not of a list: `Ship.Awake` attaches
+`OarsBehaviour` to anything with a `Chair` child, so other mods' boats (OdinShip's canoes) row without
+being named. `Chair` is also what excludes the helm — the tiller is a `ShipControlls`. The two config
+lists (`Only these ships`, `Excluded ships`) are then re-read every frame via `AllowedByLists`, which
+only touches two `HashSet`s, and flip `OarsBehaviour.Active`; the bench scan stays at Awake because a
+hull's seats cannot change. That split is deliberate: it makes the lists behave like the rest of the
+config (edit and boats already afloat follow) without a component scan per frame. Going inactive clears
+the crew and hides the oars, so the hull reverts to vanilla cleanly.
+
+**Config key renamed, once.** `Ships` ("VikingShip, Karve") became `Only these ships` (empty). The
+rename was the point — BepInEx keeps an existing value in the cfg, so had the key stayed, every server
+that already had a cfg would have silently kept the old whitelist and never seen auto-discovery. Safe
+here only because 0.2.0 was unpublished and 0.1.0 had ~12 downloads; the usual rule in this repo still
+stands — do not rename keys after something is deployed.
+
 **Testing it single-handed.** `Simulate rowers` (section 4, default 0) tops the crew up with phantoms:
 `Scan()` fills empty benches bow to stern until the total reaches the target, after counting the real
 ones, and flags them `simulated` so `oarsmen rowers` can mark them. They are indistinguishable to

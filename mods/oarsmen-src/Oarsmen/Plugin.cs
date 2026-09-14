@@ -45,6 +45,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 	internal static ConfigEntry<Toggle> serverConfigLocked;
 	internal static ConfigEntry<Toggle> Enabled;
 	internal static ConfigEntry<string> Ships;
+	internal static ConfigEntry<string> ExcludedShips;
 	internal static ConfigEntry<float> BonusPerRower;
 	internal static ConfigEntry<float> SteerPerRower;
 	internal static ConfigEntry<int> MaxRowers;
@@ -81,7 +82,8 @@ public class OarsmenPlugin : BaseUnityPlugin
 		configSync.AddLockingConfigEntry(serverConfigLocked);
 
 		Enabled = config("2 - Rowing", "Rowing", Toggle.On, "Seated players row: each player sitting on one of the ship's benches adds paddle force in paddle mode. Off = vanilla.");
-		Ships = config("2 - Rowing", "Ships", "VikingShip, Karve", "Comma-separated ship prefab names that row. VikingShip = Longship (4 benches), Karve (2 benches). Ships without benches never row.");
+		Ships = config("2 - Rowing", "Only these ships", "", "Leave empty - the default - and every ship with benches rows, including boats added by other mods such as OdinShip. Nothing has to be named here for a new boat to work. Set a comma-separated list of prefab names to restrict rowing to just those (VikingShip = Longship, Karve). A ship with no benches never rows either way, because there is nowhere to sit.");
+		ExcludedShips = config("2 - Rowing", "Excluded ships", "", "Comma-separated prefab names that never row, even though they have seats. For a boat whose only chair is a helm seat, or one whose handling you would rather leave alone. Checked before 'Only these ships'.");
 		BonusPerRower = config("2 - Rowing", "Paddle force per rower (x)", 0.25f, "Extra paddle force per seated rower, as a fraction of the ship's paddle force. 0.25 with 4 rowers = twice the vanilla paddle force. Speed rises less than force because water drag grows with speed. Applies to reverse as well as forward.");
 		SteerPerRower = config("2 - Rowing", "Steering force per rower (x)", 0.15f, "Extra turning force per seated rower, as a fraction of the ship's own rudder force. Rowers amplify whatever the helmsman is already asking for, so it is zero with the rudder centred and there is nothing for a rower to aim. Paddle and reverse only, which is exactly where vanilla gives the rudder a push - under sail the ship turns as it always did. 0 = no steering help. Deliberately lower than the paddle share: the game damps turning linearly but speed quadratically, so a given multiplier moves the turn rate far more than it moves the top speed. A full crew at 0.15 is roughly +40% turning force at paddle speed, because vanilla's other, speed-proportional turning force is untouched.");
 		MaxRowers = config("2 - Rowing", "Max rowers", 4, "Rowers counted at most, whatever the number of benches.");
@@ -171,7 +173,18 @@ public class OarsmenPlugin : BaseUnityPlugin
 				Say(args, $"  renderer '{r.name}' material '{(r.sharedMaterial != null ? r.sharedMaterial.name : "none")}' shader '{(r.sharedMaterial != null && r.sharedMaterial.shader != null ? r.sharedMaterial.shader.name : "")}' bounds centre {Fmt(t.InverseTransformPoint(b.center))} size {Fmt(b.size)}");
 			}
 			OarsBehaviour oars = ship.GetComponent<OarsBehaviour>();
-			Say(args, oars != null ? $"  oarsmen: {oars.RowerCount} rowing of {oars.BenchCount} benches" : "  oarsmen: not a rowing ship (see 'Ships' in the config)");
+			if (oars == null)
+			{
+				Say(args, "  oarsmen: no benches on this hull, so nothing to row with. Any ship with a Chair rows; 'oarsmen dump <prefab>' shows whether it has one.");
+			}
+			else if (!oars.Active)
+			{
+				Say(args, $"  oarsmen: {oars.BenchCount} benches, but this hull is switched off by the config (check 'Excluded ships' and 'Only these ships').");
+			}
+			else
+			{
+				Say(args, $"  oarsmen: {oars.RowerCount} rowing of {oars.BenchCount} benches");
+			}
 		}
 
 		private static void DumpPrefab(Terminal.ConsoleEventArgs args)

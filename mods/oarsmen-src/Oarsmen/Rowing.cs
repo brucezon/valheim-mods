@@ -9,20 +9,48 @@ internal static class Rowing
 {
 	private static readonly HashSet<string> ships = new(StringComparer.OrdinalIgnoreCase);
 	private static string shipsParsed;
+	private static readonly HashSet<string> excluded = new(StringComparer.OrdinalIgnoreCase);
+	private static string excludedParsed;
 
-	internal static bool IsRowingShip(GameObject go)
+	// What makes a ship rowable is having somewhere to sit, so a boat from another mod (OdinShip's canoes,
+	// say) rows the moment it exists without anyone naming it in the config. The tiller is a ShipControlls,
+	// not a Chair, so the helm is never mistaken for a bench; a boat whose only seat IS a chair at the helm
+	// is what 'Excluded ships' is for.
+	//
+	// Only the bench scan happens at Awake, because a ship's seats cannot change. The two config lists are
+	// re-read every frame instead, so editing them takes effect on boats that already exist - the rest of
+	// the config is live and these should not be the exception.
+	internal static bool IsRowingShip(GameObject go) => HasBenches(go);
+
+	internal static bool AllowedByLists(string prefabName)
 	{
-		string list = OarsmenPlugin.Ships.Value ?? "";
-		if (!ReferenceEquals(list, shipsParsed))
+		Parse(OarsmenPlugin.ExcludedShips.Value, excluded, ref excludedParsed);
+		if (excluded.Contains(prefabName)) return false;
+		Parse(OarsmenPlugin.Ships.Value, ships, ref shipsParsed);
+		return ships.Count == 0 || ships.Contains(prefabName);
+	}
+
+	private static bool HasBenches(GameObject go)
+	{
+		foreach (Chair chair in go.GetComponentsInChildren<Chair>(true))
 		{
-			ships.Clear();
-			foreach (string part in list.Split(',', ';'))
-			{
-				if (part.Trim().Length > 0) ships.Add(part.Trim());
-			}
-			shipsParsed = list;
+			if (chair != null) return true;
 		}
-		return ships.Contains(Utils.GetPrefabName(go));
+		return false;
+	}
+
+	// ConfigEntry hands back the same string instance until the value changes, so a reference check is
+	// enough to keep this off the per-ship path.
+	private static void Parse(string list, HashSet<string> into, ref string cache)
+	{
+		list ??= "";
+		if (ReferenceEquals(list, cache)) return;
+		into.Clear();
+		foreach (string part in list.Split(',', ';'))
+		{
+			if (part.Trim().Length > 0) into.Add(part.Trim());
+		}
+		cache = list;
 	}
 
 	[HarmonyPatch(typeof(Ship), "Awake")]
@@ -54,7 +82,7 @@ internal static class Rowing
 			if (__instance.m_nview == null || !__instance.m_nview.IsValid() || !__instance.m_nview.IsOwner()) return;
 			if (__instance.m_body == null || __instance.m_players.Count == 0) return;
 			OarsBehaviour oars = __instance.GetComponent<OarsBehaviour>();
-			if (oars == null) return;
+			if (oars == null || !oars.Active) return;
 			Ship.Speed speed = __instance.m_speed;
 			bool paddling = speed == Ship.Speed.Slow || speed == Ship.Speed.Back;
 			bool sailing = speed == Ship.Speed.Half || speed == Ship.Speed.Full;
@@ -124,7 +152,12 @@ internal sealed class OarsBehaviour : MonoBehaviour
 	private const float StrokeStagger = 0.04f;
 
 	private Ship ship;
+	private string prefabName;
 	private readonly List<Bench> benches = new();
+
+	// Whether the config lists currently let this hull row. Re-evaluated every frame so the lists behave
+	// like every other setting: edit them and boats already in the water follow.
+	internal bool Active { get; private set; }
 	private Material oarMaterial;
 	private float scanTimer;
 	private int rowerCount;
@@ -137,6 +170,7 @@ internal sealed class OarsBehaviour : MonoBehaviour
 	private void Awake()
 	{
 		ship = GetComponent<Ship>();
+		prefabName = Utils.GetPrefabName(gameObject);
 		Transform t = transform;
 		foreach (Chair chair in GetComponentsInChildren<Chair>(true))
 		{
@@ -155,6 +189,19 @@ internal sealed class OarsBehaviour : MonoBehaviour
 
 	private void Update()
 	{
+		bool allowed = Rowing.AllowedByLists(prefabName);
+		if (allowed != Active)
+		{
+			Active = allowed;
+			if (!Active)
+			{
+				// Excluded while afloat: drop the oars and the crew so the hull goes back to vanilla.
+				foreach (Bench b in benches) { b.occupied = false; b.simulated = false; if (b.oar != null) b.oar.SetActive(false); }
+				rowerCount = 0;
+			}
+		}
+		if (!Active) return;
+
 		scanTimer += Time.deltaTime;
 		if (scanTimer >= 0.25f)
 		{

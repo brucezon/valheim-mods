@@ -32,6 +32,13 @@
   first, so it is a floor on the crew rather than an extra, and it only applies while somebody is
   aboard. `oarsmen rowers` marks the fake benches `SIMULATED`, and that line now also prints the
   rudder value, which is what the stroke split keys off.
+- **Every boat with seats rows now, without being named in the config.** Rowability is decided by the
+  hull actually having `Chair` components rather than by a whitelist, so boats from other mods —
+  OdinShip's rowing canoes among them — work the moment they exist. A hull with no seats still never
+  rows. **Config change:** the old `Ships` key is replaced by `Only these ships` (empty by default,
+  meaning no restriction) plus a new `Excluded ships` blocklist. Both apply live, so boats already in
+  the water follow an edit; previously the ship list was only read when a boat loaded. If you had
+  customised `Ships`, re-enter it under `Only these ships` — the old key is ignored.
 - Oar placement is still untuned; see the note at the top of the README.
 
 ## 0.1.1 - 2026-09-14
