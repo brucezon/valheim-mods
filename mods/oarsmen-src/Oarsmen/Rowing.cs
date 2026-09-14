@@ -37,8 +37,14 @@ internal static class Rowing
 		}
 	}
 
-	// Vanilla applies its paddle force at the end of CustomFixedUpdate, owner only. Add the rowers' share
-	// at the same point, same direction, same steering falloff, so rowing feels like a stronger paddle.
+	// Vanilla applies its paddle force and its rudder push at the end of CustomFixedUpdate, owner only,
+	// both at the stern (transform.position + forward * m_stearForceOffset, where the offset is negative).
+	// Add the rowers' share at the same point and in the same shape, so rowing reads as a stronger crew
+	// on the same boat rather than a second set of physics.
+	//
+	// Steering deliberately follows vanilla's own gating: vanilla only gives the rudder a push in Slow and
+	// Back, and under sail a ship turns purely on the velocity term. Rowers respect that, so the sailing
+	// game is untouched - the crew helps the helmsman paddle and manoeuvre, not tack.
 	[HarmonyPatch(typeof(Ship), nameof(Ship.CustomFixedUpdate))]
 	private static class RowForcePatch
 	{
@@ -50,16 +56,51 @@ internal static class Rowing
 			OarsBehaviour oars = __instance.GetComponent<OarsBehaviour>();
 			if (oars == null) return;
 			Ship.Speed speed = __instance.m_speed;
-			bool paddling = speed == Ship.Speed.Slow;
+			bool paddling = speed == Ship.Speed.Slow || speed == Ship.Speed.Back;
 			bool sailing = speed == Ship.Speed.Half || speed == Ship.Speed.Full;
 			if (!paddling && !(sailing && OarsmenPlugin.RowUnderSail.Value == OarsmenPlugin.Toggle.On)) return;
 			int rowers = Math.Min(oars.RowerCount, Math.Max(0, OarsmenPlugin.MaxRowers.Value));
 			if (rowers <= 0) return;
-			float share = Math.Max(0f, OarsmenPlugin.BonusPerRower.Value) * rowers;
-			if (share <= 0f) return;
-			Vector3 force = __instance.transform.forward * (__instance.m_backwardForce * (1f - Mathf.Abs(__instance.m_rudderValue)) * share);
+
+			// Reverse pulls the same oars the other way: vanilla's Back term is its Slow term negated.
+			float dir = speed == Ship.Speed.Back ? -1f : 1f;
+			Vector3 add = Vector3.zero;
+
+			float thrust = Math.Max(0f, OarsmenPlugin.BonusPerRower.Value) * rowers;
+			if (thrust > 0f)
+			{
+				add += __instance.transform.forward * (dir * __instance.m_backwardForce * (1f - Mathf.Abs(__instance.m_rudderValue)) * thrust);
+			}
+
+			// Rowers amplify the helmsman's rudder rather than choosing a direction, so this is zero with
+			// the rudder centred and needs no per-rower control: sitting down is the whole opt-in.
+			float steer = Math.Max(0f, OarsmenPlugin.SteerPerRower.Value) * rowers;
+			if (paddling && steer > 0f)
+			{
+				add += __instance.transform.right * (__instance.m_stearForce * (0f - __instance.m_rudderValue) * dir * steer);
+			}
+
+			if (add == Vector3.zero) return;
 			Vector3 at = __instance.transform.position + __instance.transform.forward * __instance.m_stearForceOffset;
-			__instance.m_body.AddForceAtPosition(force * (__instance.m_body.mass * fixedDeltaTime), at, ForceMode.Impulse);
+			__instance.m_body.AddForceAtPosition(add * (__instance.m_body.mass * fixedDeltaTime), at, ForceMode.Impulse);
+		}
+	}
+
+	// The tiller's hover text gains a rower count, so the helmsman can see the crew without the console.
+	// Local and cosmetic; the count comes from the same synced bench state every client already reads.
+	[HarmonyPatch(typeof(ShipControlls), nameof(ShipControlls.GetHoverText))]
+	private static class HoverTextPatch
+	{
+		private static void Postfix(ShipControlls __instance, ref string __result)
+		{
+			if (OarsmenPlugin.Enabled.Value != OarsmenPlugin.Toggle.On) return;
+			if (OarsmenPlugin.ShowRowersOnTiller.Value != OarsmenPlugin.Toggle.On) return;
+			if (__instance.m_ship == null || string.IsNullOrEmpty(__result)) return;
+			// Out of reach, vanilla returns only the greyed "too far" string; leave that one alone.
+			if (!__instance.InUseDistance(Player.m_localPlayer)) return;
+			OarsBehaviour oars = __instance.m_ship.GetComponent<OarsBehaviour>();
+			if (oars == null || oars.BenchCount <= 0) return;
+			__result += $"\nRowers {oars.RowerCount}/{oars.BenchCount}";
 		}
 	}
 }

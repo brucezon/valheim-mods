@@ -18,7 +18,7 @@ core is 5.4.23.5). Reference tree for building: `refs\1.0\gamepath\` (`BepInEx\c
 | **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.12.0 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
 | **Endurance** | yes (MIT) | `mods\endurance-src\Endurance` | 1.0.0 | both | `bruceirons.Endurance.cfg` |
 | **BruceNetworking** | yes (fork session) | `mods\brucenetworking-src` (README + IDEAS there) | 0.3.0 | **server only** | `bruceirons.BruceNetworking.cfg` |
-| **Oarsmen** | yes (MIT) | `mods\oarsmen-src\Oarsmen` | 0.1.0 | both (not required) | `bruceirons.Oarsmen.cfg` |
+| **Oarsmen** | yes (MIT) | `mods\oarsmen-src\Oarsmen` | 0.2.0 | both (not required) | `bruceirons.Oarsmen.cfg` |
 | **ServerBasedRanch** | yes (MIT) | `mods\serverbasedranch-src\ServerBasedRanch` | 1.0.2 | **server only**, not in the profile | `bruceirons.ServerBasedRanch.cfg` |
 | **PlantEasily_TEMP** | no — Advize, GPLv3 rebuild | `mods\advize-src\Advize_PlantEasily` | 2.1.1 (plugin 2.1.1.99) | client | `advize.PlantEasily.cfg` |
 | **PlantEverything_TEMP** | no — Advize, GPLv3 rebuild | `mods\advize-src\Advize_PlantEverything` | 1.20.1 (plugin 1.20.0.99) | both | `advize.PlantEverything.cfg` |
@@ -166,6 +166,30 @@ pull; otherwise held at `Stowed angle`. Console `oarsmen ship | rowers | dump <p
 registered in a `Terminal.InitTerminal` postfix, logs to LogOutput.log.
 ServerSync, `ModRequired = false`. **Untuned:** pivot offsets and hole positions are guesses until the
 first in-game session with `oarsmen ship`.
+
+**0.2.0 (14 Sep)** — rowers now help steer, and work in reverse. Both terms are added to the same
+`Vector3` at the same stern point vanilla uses (`transform.position + forward * m_stearForceOffset`,
+offset −10), mirroring `Ship.CustomFixedUpdate`'s own two terms: thrust
+`forward * m_backwardForce * (1 - |rudder|)` and rudder push `right * m_stearForce * -rudder`, each
+negated for `Speed.Back`. Vanilla steers by pushing the **stern sideways**, not by `AddTorque` — match
+that shape if this is ever extended, or it stops feeling like the same boat.
+
+Two design decisions worth keeping:
+
+- **No per-rower UI, by construction.** The steering share scales with `m_rudderValue`, so rowers
+  amplify the helmsman rather than choosing a direction. It is zero with the rudder centred, which
+  means there is nothing to aim, nothing to toggle, and no extra state to sync — sitting down is the
+  opt-in. A rower-chosen direction (back-water one bank) would need real UI and is a different mod.
+- **Steering is gated to Slow and Back, even when `Row under sail` is on.** That is vanilla's own
+  gating: under sail the rudder gets no push at all and turning comes from the velocity term. Adding
+  steering there would change how sailing works, which was explicitly out of scope.
+
+Not done, and deliberately: differential rowing by applying force at bench positions. Moving the
+application point off the stern induces pitch (`AddForceAtPosition` forward of the centre of mass), so
+if it is ever wanted, build it as a pure couple — equal and opposite lateral forces on the two banks —
+rather than by relocating thrust. Rower state also still rides on per-client animation flags rather
+than the ship's ZDO; disagreement is cosmetic only (which oars are drawn), because
+`RowForcePatch` returns early unless `m_nview.IsOwner()`.
 
 ## ServerBasedRanch
 

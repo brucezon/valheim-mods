@@ -13,8 +13,14 @@ namespace Oarsmen;
 //
 // Vanilla ships paddle with one fixed force whoever is aboard, and the Longship's benches and oar holes
 // are decoration. Here every player sitting on one of the ship's benches (a Chair on the ship) is a rower:
-// in paddle mode each rower adds a share of the paddle force, and an oar appears through the hull beside
-// their bench and strokes in time with the rudder paddle. The helmsman at the tiller is not a rower.
+// in paddle mode and reverse each rower adds a share of the paddle force and a share of the rudder push,
+// and an oar appears through the hull beside their bench and strokes in time with the rudder paddle. The
+// helmsman at the tiller is not a rower.
+//
+// Rowers amplify the helmsman's rudder instead of steering independently, which is what keeps the feature
+// free of per-rower controls: the contribution is zero with the rudder centred, so there is nothing a
+// rower could aim and no state to sync beyond who is sitting down. Sailing is untouched - vanilla only
+// pushes the rudder in Slow and Back, and the crew respects that gating.
 //
 // Rowers are counted on every client from synced state (the bench's attach animation flag and the
 // player's position at the bench), so everyone sees the same oars; only the ship's owner applies the
@@ -25,7 +31,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.Oarsmen";
 	public const string Name = "Oarsmen";
-	public const string Version = "0.1.0";
+	public const string Version = "0.2.0";
 
 	internal static ManualLogSource Log;
 	private static readonly ConfigSync configSync = new(Name) { DisplayName = Name, CurrentVersion = Version, MinimumRequiredVersion = Version, ModRequired = false };
@@ -40,8 +46,10 @@ public class OarsmenPlugin : BaseUnityPlugin
 	internal static ConfigEntry<Toggle> Enabled;
 	internal static ConfigEntry<string> Ships;
 	internal static ConfigEntry<float> BonusPerRower;
+	internal static ConfigEntry<float> SteerPerRower;
 	internal static ConfigEntry<int> MaxRowers;
 	internal static ConfigEntry<Toggle> RowUnderSail;
+	internal static ConfigEntry<Toggle> ShowRowersOnTiller;
 	internal static ConfigEntry<Toggle> ShowOars;
 	internal static ConfigEntry<float> OarLength;
 	internal static ConfigEntry<float> OarInboard;
@@ -72,9 +80,11 @@ public class OarsmenPlugin : BaseUnityPlugin
 
 		Enabled = config("2 - Rowing", "Rowing", Toggle.On, "Seated players row: each player sitting on one of the ship's benches adds paddle force in paddle mode. Off = vanilla.");
 		Ships = config("2 - Rowing", "Ships", "VikingShip, Karve", "Comma-separated ship prefab names that row. VikingShip = Longship (4 benches), Karve (2 benches). Ships without benches never row.");
-		BonusPerRower = config("2 - Rowing", "Paddle force per rower (x)", 0.25f, "Extra paddle force per seated rower, as a fraction of the ship's paddle force. 0.25 with 4 rowers = twice the vanilla paddle force. Speed rises less than force because water drag grows with speed.");
+		BonusPerRower = config("2 - Rowing", "Paddle force per rower (x)", 0.25f, "Extra paddle force per seated rower, as a fraction of the ship's paddle force. 0.25 with 4 rowers = twice the vanilla paddle force. Speed rises less than force because water drag grows with speed. Applies to reverse as well as forward.");
+		SteerPerRower = config("2 - Rowing", "Steering force per rower (x)", 0.25f, "Extra turning force per seated rower, as a fraction of the ship's own rudder force. Rowers amplify whatever the helmsman is already asking for, so it is zero with the rudder centred and there is nothing for a rower to aim. Paddle and reverse only, which is exactly where vanilla gives the rudder a push - under sail the ship turns as it always did. 0 = no steering help.");
 		MaxRowers = config("2 - Rowing", "Max rowers", 4, "Rowers counted at most, whatever the number of benches.");
-		RowUnderSail = config("2 - Rowing", "Row under sail", Toggle.Off, "On = rowers also add their force while the sail is half or fully out. Off = rowing only counts in paddle mode (vanilla's slow setting).");
+		RowUnderSail = config("2 - Rowing", "Row under sail", Toggle.Off, "On = rowers also add their forward force while the sail is half or fully out. Off = rowing only counts in paddle mode and reverse. Steering help is never added under sail either way.");
+		ShowRowersOnTiller = config("2 - Rowing", "Show rowers on the tiller", Toggle.On, "Add a 'Rowers 3/4' line to the tiller's hover text, so the helmsman can see the crew without the console.");
 
 		ShowOars = config("3 - Oars", "Show oars", Toggle.On, "Show an oar through the hull beside every occupied bench. Purely visual; each client draws them from the same seat state.");
 		OarLength = config("3 - Oars", "Oar length (metres)", 3.6f, "Total oar length, handle to blade tip.");

@@ -1,8 +1,8 @@
 {
   "name": "Oarsmen",
-  "version_number": "0.1.1",
+  "version_number": "0.2.0",
   "website_url": "https://github.com/brucezon/valheim-mods",
-  "description": "Seated players row the ship. Every player on a Longship or Karve bench adds paddle force in paddle mode, and an oar appears through the hull beside their bench, stroking in time. Server-synced config.",
+  "description": "Seated players row the ship. Every player on a Longship or Karve bench adds paddle force and helps the helmsman turn, in paddle mode and reverse, and an oar appears through the hull beside their bench, stroking in time. Server-synced config.",
   "dependencies": [
     "denikson-BepInExPack_Valheim-5.4.2350"
   ]

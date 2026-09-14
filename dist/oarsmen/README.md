@@ -17,10 +17,21 @@ holes are decoration. With Oarsmen, every player sitting on one of the ship's be
 - **In paddle mode** (the slow setting, sail furled) each rower adds **Paddle force per rower** of the
   ship's paddle force. Default 0.25, so a full Longship crew of four paddles with twice the force.
   Speed rises less than force, because the water pushes back harder the faster you go.
+- **In reverse** the same crew backs the same way — useful getting off a beach with a loaded ship.
+- **Rowers help the helmsman turn.** Each one adds **Steering force per rower** of the ship's own
+  rudder force, so a crewed ship comes round faster than a single sailor could bring it. The crew
+  amplifies whatever the helmsman is asking for rather than steering on their own: with the rudder
+  centred it does nothing, and there is no direction for a rower to pick. **Nobody needs a control
+  of their own — sitting on a bench is the whole opt-in, and standing up is how you stop.**
 - **An oar appears through the hull beside every occupied bench** and strokes in time with the rudder
   paddle while the ship is rowing. Sail out or ship stopped: the oars are held level and still. Bench
   empty: no oar.
-- The helmsman at the tiller is not a rower. Someone has to steer; the rest sit down and pull.
+- The helmsman at the tiller is not a rower. Someone has to steer; the rest sit down and pull. The
+  tiller's hover text shows `Rowers 3/4` so the helmsman can see who is actually pulling.
+
+**Sailing is untouched.** Vanilla only gives the rudder a push in paddle and reverse — under sail a
+ship turns on its speed through the water, and that is left exactly as it was. The crew helps you
+paddle and manoeuvre; it does not help you tack.
 
 Works on the **Longship** (4 benches) and the **Karve** (2 benches). Any ship prefab with benches
 can be added to `Ships` in the config, including boats from other mods such as OdinShip — the mod
@@ -34,7 +45,9 @@ Config is server-synced and live.
 ## Config (`BepInEx/config/bruceirons.Oarsmen.cfg`)
 
 **2 - Rowing:** `Rowing` (On), `Ships` (VikingShip, Karve), `Paddle force per rower (x)` (0.25),
-`Max rowers` (4), `Row under sail` (Off: rowers only count in paddle mode).
+`Steering force per rower (x)` (0.25, set 0 to turn the steering help off), `Max rowers` (4),
+`Row under sail` (Off: rowers only add forward force in paddle mode and reverse; steering help is
+never added under sail either way), `Show rowers on the tiller` (On).
 
 **3 - Oars:** `Show oars` (On), oar and blade dimensions, and where the oar pivots relative to its
 bench: `Pivot outward`, `Pivot up`, `Pivot forward` (metres). `Oar hole positions`: comma-separated
