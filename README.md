@@ -1,7 +1,9 @@
 # Valheim modding workspace
 
 Prep for the **1.0 release (Wed 9 Sep 2026)** — Deep North, PS5 + Switch 2, end of Early Access.
-Server goes live **Thu 10 Sep 2026**.
+Server went live **Thu 10 Sep 2026** for the cabin LAN; it now runs on for remote play.
+**Start at [Current state](#current-state-13-sep-2026-post-lan--start-here)** at the bottom; the rest of
+this file is the chronological log that got us there. Per-mod handoff: `OUR-MODS.md`.
 
 ## Layout
 
@@ -230,3 +232,40 @@ Everything above is the pre-1.0 history. What actually ships:
   the kit is a snapshot of the profile with the BepInEx pack's macOS launcher).
 - Runbook: `docs\LAUNCH.md`. Per-mod 1.0 findings and lessons: `docs\RESULTS.md`.
   Source for our mods lives on the desktop: `valheim-modding\mods\{endurance-src,bruceqol-src,advize-src}`.
+
+## CURRENT STATE (13 Sep 2026, post-LAN) — start here
+
+The cabin LAN (10–11 Sep) is done. The server stays on the laptop and everyone plays remotely over
+Tailscale. This workspace is a private git repo: `https://github.com/brucezon/valheim-mods`, branch
+`main`; every publish is committed and pushed. Two Claude sessions work in the same folder, so re-read
+a file before editing it and check `ModVersion` before bumping.
+
+**Our Hexium packages (team `bruceirons-team`), all live in the Gale profile `LAN-1.0` unless noted:**
+
+| Package | Version | Where | What changed since launch |
+|---|---|---|---|
+| **BruceQoL** | 1.12.0 | server + clients, version-locked | 16 config sections now. Added after 1.1.0: skill XP % modifiers + death penalty (8), multiplayer scaling knobs (9), container sizes / hover (10), station range + roof (11), beehives (12), combat multipliers + enemy/boss health + parry/held-block compensation (13), raid knobs (14), commandable boars + passive taming replay, Off (15), skill-scaled ore/wood yield (16), bow draw tuning, Off (13). All server-synced and live. |
+| **Endurance** | 1.0.0 | server + clients | unchanged |
+| **BruceNetworking** | 0.3.0 | server only (in the profile, no-op on clients) | ownership steering moves **creatures only**, skips objects in use and anything within 40 m of its owner. 0.2.1 lost a chest deposit by moving a chest mid-write; never widen `Steer classes`. Post-LAN settings: see `LAUNCH.md` and the note below. |
+| **ServerBasedRanch** | 1.0.1 | server only, **not in the profile**, copy by hand | ticks unloaded pens on the server (eat, tame, breed, birth) with vanilla numbers at 50% speed. Runs on the world clock, which freezes when nobody is online. |
+| **PlantEasily_TEMP** | 2.1.1 | clients | Advize GPL rebuild, retire when Advize ships 1.0 |
+| **PlantEverything_TEMP** | 1.20.1 | server + clients | Advize GPL rebuild, unit tags in descriptions |
+
+Profile additions since launch by the host: OdinShip 0.7.9 (Marlthon), BuildCameraCHE, Official
+ConfigurationManager. Final launch line adds `-setkey "playerevents"` to the rules above.
+
+**Post-LAN networking.** Send priority, multi-peer send loop, RPC area of interest and the wear throttle
+stay on. Ownership steering: keep on with LAN-first if the host plays from the server's own network;
+turn `Ping tiebreak` off if everyone is remote, so nobody's fight is handed to whoever lives nearer the
+server. Drop `Log peer stats` or raise `Stats interval` for a long-running server.
+
+**How to change things.** Config: edit the cfg on the laptop or use F1 as admin; ServerSync pushes it
+live, and the client log's `Received N configs` line is the proof. Mod update: bump version in source +
+`AssemblyInfo` + `manifest.json`, changelog, build, load-test on the desktop test server, zip, publish
+with `tools\hexium-publish.ps1`, commit, push; then Gale update + `sync-server-from-gale.ps1` on the
+laptop. Details and gotchas: `OUR-MODS.md`.
+
+**Open items, not built:** Hauling trains while walking into a wall (intended-velocity check; fix =
+count real displacement); cart XP scaled by cargo weight (design in chat, 13 Sep); dungeon reset;
+per-boat rudder speed override for OdinShip boats; ServerBasedRanch's one-zone dead band and frozen
+clock while the server is empty.
