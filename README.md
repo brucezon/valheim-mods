@@ -248,6 +248,7 @@ a file before editing it and check `ModVersion` before bumping.
 | **Endurance** | 1.0.0 | server + clients | unchanged |
 | **BruceNetworking** | 0.3.0 | server only (in the profile, no-op on clients) | ownership steering moves **creatures only**, skips objects in use and anything within 40 m of its owner. 0.2.1 lost a chest deposit by moving a chest mid-write; never widen `Steer classes`. Post-LAN settings: see `LAUNCH.md` and the note below. |
 | **ServerBasedRanch** | 1.0.1 | server only, **not in the profile**, copy by hand | ticks unloaded pens on the server (eat, tame, breed, birth) with vanilla numbers at 50% speed. Runs on the world clock, which freezes when nobody is online. |
+| **Oarsmen** | 0.1.0 | server + clients (not required) | new 14 Sep: seated players row the Longship/Karve (+25% paddle force per bench, oars drawn through the hull beside occupied benches). Oar placement untuned until the first in-game session. |
 | **PlantEasily_TEMP** | 2.1.1 | clients | Advize GPL rebuild, retire when Advize ships 1.0 |
 | **PlantEverything_TEMP** | 1.20.1 | server + clients | Advize GPL rebuild, unit tags in descriptions |
 

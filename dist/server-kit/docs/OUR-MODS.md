@@ -18,6 +18,7 @@ core is 5.4.23.5). Reference tree for building: `refs\1.0\gamepath\` (`BepInEx\c
 | **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.12.0 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
 | **Endurance** | yes (MIT) | `mods\endurance-src\Endurance` | 1.0.0 | both | `bruceirons.Endurance.cfg` |
 | **BruceNetworking** | yes (fork session) | `mods\brucenetworking-src` (README + IDEAS there) | 0.3.0 | **server only** | `bruceirons.BruceNetworking.cfg` |
+| **Oarsmen** | yes (MIT) | `mods\oarsmen-src\Oarsmen` | 0.1.0 | both (not required) | `bruceirons.Oarsmen.cfg` |
 | **PlantEasily_TEMP** | no — Advize, GPLv3 rebuild | `mods\advize-src\Advize_PlantEasily` | 2.1.1 (plugin 2.1.1.99) | client | `advize.PlantEasily.cfg` |
 | **PlantEverything_TEMP** | no — Advize, GPLv3 rebuild | `mods\advize-src\Advize_PlantEverything` | 1.20.1 (plugin 1.20.0.99) | both | `advize.PlantEverything.cfg` |
 
@@ -115,6 +116,24 @@ Gale profile (harmless on clients) → `sync-server-from-gale.ps1` puts it on th
 `Steer classes` (default `Creature`), skips objects in use and objects within `Owner keep radius` 40 m of
 their owner. 0.2.1 moved chests mid-deposit and the items vanished (owner-revision bump discards the old
 owner's in-flight write). Never widen `Steer classes` to Interactive.
+
+## Oarsmen (14 Sep 2026)
+
+Seated players row. `Ship.Awake` postfix adds `OarsBehaviour` to ships listed in `Ships` (VikingShip,
+Karve); it finds the ship's `Chair` benches and, every 0.25 s, marks a bench occupied when a player from
+`Ship.m_players` stands within 1.2 m of its attach point and is in the bench's attach animation
+(`m_animator.GetBool("attach_chair")`, synced by ZSyncAnimation; the local player uses `IsAttached()`).
+The tiller (`ShipControlls`) is not a `Chair`, so the helmsman never counts. `Ship.CustomFixedUpdate`
+postfix, owner only, paddle mode only (or sail too with `Row under sail`): adds
+`forward * m_backwardForce * (1 - |rudder|) * perRower * rowers` at the same point and in the same
+impulse form as vanilla's paddle force. Oars are runtime primitives (cylinder shaft + cube blade, hull
+material borrowed from the first wood-ish `MeshRenderer`) parented to the ship at
+`seat + (side * outward, up, forward)`, optionally snapped to the nearest entry of `Oar hole positions`
+(ship-local Z). Rowing: yaw sweep `sin((t + phase) * 6)` like the rudder paddle, blade dipped on the
+pull; otherwise held at `Stowed angle`. Console `oarsmen ship | rowers | dump <prefab> [depth]`
+registered in a `Terminal.InitTerminal` postfix, logs to LogOutput.log.
+ServerSync, `ModRequired = false`. **Untuned:** pivot offsets and hole positions are guesses until the
+first in-game session with `oarsmen ship`.
 
 ## PlantEasily_TEMP / PlantEverything_TEMP (Advize, GPLv3)
 
