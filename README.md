@@ -266,7 +266,9 @@ live, and the client log's `Received N configs` line is the proof. Mod update: b
 with `tools\hexium-publish.ps1`, commit, push; then Gale update + `sync-server-from-gale.ps1` on the
 laptop. Details and gotchas: `OUR-MODS.md`.
 
-**Open items, not built:** Hauling trains while walking into a wall (intended-velocity check; fix =
-count real displacement); cart XP scaled by cargo weight (design in chat, 13 Sep); dungeon reset;
+**Open items, not built:** cart XP scaled by cargo weight (design in chat, 13 Sep); dungeon reset;
 per-boat rudder speed override for OdinShip boats; ServerBasedRanch's one-zone dead band and frozen
 clock while the server is empty.
+
+Closed without a fix: Hauling training counts intended velocity, so walking into a wall still trains
+it. Judged acceptable 14 Sep — not worth a displacement check.

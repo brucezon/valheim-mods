@@ -28,6 +28,37 @@ added later — check the Gale profile `LAN-1.0`, that is the truth).
 
 ---
 
+## Building on macOS (added 14 Sep 2026)
+
+All five of our mods build on a Mac, so a clone of this repo plus a Steam Valheim install is a
+complete build box — no Windows needed. Verified 14 Sep on macOS 14 / Apple Silicon against the
+same game the docs target (1.0.7, network 39, BepInEx 5.4.2350). Only the *build* is portable:
+ILRepack for Endurance, `tools\*.ps1`, and the Cecil tools still want Windows or PowerShell.
+
+The repo is source-only — `refs/`, `baseline/`, `snapshots/*/src/` and every `*.dll` are gitignored,
+so the reference tree has to be rebuilt locally. Four steps:
+
+1. **.NET SDK** — `brew install --cask dotnet-sdk` fails without a TTY for sudo. Use the official
+   script, which needs no root: `curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 9.0 --install-dir "$HOME/.dotnet"`.
+   Then `export DOTNET_ROOT="$HOME/.dotnet"` and put `$HOME/.dotnet` and `$HOME/.dotnet/tools` on PATH.
+   `DOTNET_ROOT` is not optional — global tools ship an apphost that cannot find `libhostfxr.dylib` without it.
+2. **Reference tree** — the Mac game layout differs from Windows: assemblies live in
+   `Valheim/valheim.app/Contents/Resources/Data/Managed`, not `valheim_Data\Managed`. Copy them plus
+   `Valheim/BepInEx/core/*.dll` into `refs/1.0/gamepath/valheim_Data/Managed/` and
+   `refs/1.0/gamepath/BepInEx/core/` — the csproj HintPaths expect the *Windows* shape, and MSBuild
+   translates their backslashes on Unix, so recreate that shape rather than repointing `GamePath`.
+3. **Publicized assemblies** — `dotnet tool install -g BepInEx.AssemblyPublicizer.Cli`, then run
+   `assembly-publicizer` over `assembly_valheim`, `assembly_guiutils` and `assembly_utils` into
+   `publicized_assemblies/<name>_publicized.dll`. The tool targets net6.0, so it needs
+   `DOTNET_ROLL_FORWARD=LatestMajor` to run on a 9.0-only SDK.
+4. **Build** — unchanged from the Windows instructions, with a POSIX path:
+   `dotnet build mods/bruceqol-src/BruceQoL/BruceQoL.csproj -c Release -p:GamePath="$PWD/refs/1.0/gamepath"`.
+   `net48` targeting works fine off the SDK's reference assemblies; no mono required.
+
+Confirmed clean (0 warnings, 0 errors): BruceQoL, Endurance, BruceNetworking, Oarsmen, ServerBasedRanch.
+Endurance still needs the ILRepack pass on Windows before it is shippable — the Mac build produces a
+`Endurance.dll` that has not had YamlDotNet merged in.
+
 ## BruceQoL (the big one)
 
 One server-synced config, 16 sections, every value live-editable (ServerSync file watcher + admin
