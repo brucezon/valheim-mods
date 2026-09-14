@@ -6,7 +6,7 @@ Seated players row the ship. Built for Valheim 1.0.7.
 > page — Hexium shows that on every package, including server-only ones.) The mod is not required:
 > a client without it simply sees no oars.
 >
-> **0.1.x is untuned.** Oars row and push the ship correctly, but where each oar sits — the pivot
+> **Still untuned.** Oars row and push the ship correctly, but where each oar sits — the pivot
 > offsets and the hull's oar-hole positions — are first guesses that have not been checked in game
 > yet. Expect to nudge `Pivot outward/up/forward` for your ship. `oarsmen ship` prints what you are
 > standing on to help.
@@ -18,11 +18,13 @@ holes are decoration. With Oarsmen, every player sitting on one of the ship's be
   ship's paddle force. Default 0.25, so a full Longship crew of four paddles with twice the force.
   Speed rises less than force, because the water pushes back harder the faster you go.
 - **In reverse** the same crew backs the same way — useful getting off a beach with a loaded ship.
-- **Rowers help the helmsman turn.** Each one adds **Steering force per rower** of the ship's own
-  rudder force, so a crewed ship comes round faster than a single sailor could bring it. The crew
+- **Rowers help the helmsman turn.** Each one adds **Steering force per rower** (0.15) of the ship's
+  own rudder force, so a crewed ship comes round faster than a single sailor could bring it. The crew
   amplifies whatever the helmsman is asking for rather than steering on their own: with the rudder
   centred it does nothing, and there is no direction for a rower to pick. **Nobody needs a control
   of their own — sitting on a bench is the whole opt-in, and standing up is how you stop.**
+  The help is strongest when pivoting or backing off a beach and fades as you pick up speed, because
+  vanilla's other turning force grows with speed and the crew does not scale it.
 - **An oar appears through the hull beside every occupied bench** and strokes in time with the rudder
   paddle while the ship is rowing. Sail out or ship stopped: the oars are held level and still. Bench
   empty: no oar.
@@ -45,7 +47,7 @@ Config is server-synced and live.
 ## Config (`BepInEx/config/bruceirons.Oarsmen.cfg`)
 
 **2 - Rowing:** `Rowing` (On), `Ships` (VikingShip, Karve), `Paddle force per rower (x)` (0.25),
-`Steering force per rower (x)` (0.25, set 0 to turn the steering help off), `Max rowers` (4),
+`Steering force per rower (x)` (0.15, set 0 to turn the steering help off), `Max rowers` (4),
 `Row under sail` (Off: rowers only add forward force in paddle mode and reverse; steering help is
 never added under sail either way), `Show rowers on the tiller` (On).
 

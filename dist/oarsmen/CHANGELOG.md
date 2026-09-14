@@ -1,10 +1,15 @@
 # Changelog
 
 ## 0.2.0 - 2026-09-14
-- **Rowers help the helmsman turn.** New `Steering force per rower (x)` (0.25) adds turning force per
+- **Rowers help the helmsman turn.** New `Steering force per rower (x)` (0.15) adds turning force per
   seated rower on top of the ship's own rudder push. Rowers amplify whatever the helmsman is already
   asking for, so it does nothing with the rudder centred and there is no direction for a rower to
   choose — sitting on a bench is the whole opt-in, and no rower needs a control of their own.
+- The steering share is deliberately lower than the paddle share rather than matching it. Valheim
+  damps a ship's turning linearly but its speed quadratically, so the same multiplier buys far more
+  turn rate than top speed. A full crew at 0.15 is roughly +40% turning force at paddle speed — the
+  crew's share is diluted by vanilla's second, speed-proportional turning force, which is untouched,
+  so the help is strongest when pivoting or backing off a beach and weakest at speed.
 - **Rowers work in reverse.** Backing off a beach with a full crew now counts; previously only the
   forward paddle setting did. Vanilla's own reverse term is its forward term negated, so the crew's
   share is too.

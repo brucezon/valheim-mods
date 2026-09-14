@@ -183,6 +183,19 @@ Two design decisions worth keeping:
 - **Steering is gated to Slow and Back, even when `Row under sail` is on.** That is vanilla's own
   gating: under sail the rudder gets no push at all and turning comes from the velocity term. Adding
   steering there would change how sailing works, which was explicitly out of scope.
+- **The steering share defaults lower than the paddle share (0.15 vs 0.25), on purpose.** The two look
+  symmetric in the config but the physics is not. Linear drag is quadratic (`m_dampingForward` squares
+  the speed) so doubling thrust buys only about √2 speed, while `m_body.angularVelocity -=
+  angularVelocity * m_angularDamping` is linear, so steady-state turn rate tracks applied torque
+  almost proportionally. The same multiplier therefore moves turning far more than it moves speed.
+  Do not "tidy" the two defaults back into matching.
+
+Scale, for tuning: vanilla turns from **two** stern forces, and rowers scale only one. The rudder term
+is `m_stearForce` (class default 0.5) and the other is `speed * m_stearVelForceFactor` (0.1), so they
+compare as `0.5` vs `speed/10`. At a standstill the rudder term is everything; at ~2.5 m/s it is about
+two thirds; at 5 m/s they are equal. So a full crew at 0.15 is roughly +40% turning force at paddle
+speed and less as you accelerate — help where you manoeuvre, not where you cruise. Prefabs may override
+`m_stearForce`; `oarsmen ship` prints the real value for whatever you are standing on.
 
 Not done, and deliberately: differential rowing by applying force at bench positions. Moving the
 application point off the stern induces pitch (`AddForceAtPosition` forward of the centre of mass), so
