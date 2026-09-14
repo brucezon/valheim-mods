@@ -64,6 +64,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 	internal static ConfigEntry<float> TurnStrokeBias;
 	internal static ConfigEntry<float> BladeDip;
 	internal static ConfigEntry<float> StowedAngle;
+	internal static ConfigEntry<int> SimulatedRowers;
 	internal static ConfigEntry<Toggle> LogRowers;
 
 	private ConfigEntry<T> config<T>(string group, string name, T value, string description, bool synced = true)
@@ -102,6 +103,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 		BladeDip = config("3 - Oars", "Blade dip (degrees)", 22f, "How far the oar points down into the water while rowing.");
 		StowedAngle = config("3 - Oars", "Stowed angle (degrees)", 12f, "Oars of seated rowers that are not rowing (sail out, or the ship stopped) are raised out of the water by this angle and held still.");
 
+		SimulatedRowers = config("4 - Debug", "Simulate rowers", 0, "Testing aid: pretend at least this many benches are manned, so one player can see and feel a full crew in single player. Empty benches are filled bow to stern until the total is reached; real rowers always count first, so 4 on a Longship you are already rowing adds three phantoms. They row, draw oars and push the ship exactly as players would - the point is to tune oar placement and the force multipliers without four people. Only applies while somebody is actually aboard, so derelict boats stay still. 0 = off. 'oarsmen rowers' marks the fake ones. Leave this at 0 on a real server.");
 		LogRowers = config("4 - Debug", "Log rower changes", Toggle.Off, "Log a line whenever the number of rowers on a ship changes.", false);
 
 		Harmony harmony = new(GUID);

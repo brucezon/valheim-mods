@@ -60,8 +60,15 @@ of sitting beside its bench. `Stroke sweep`, `Blade dip`, `Stowed angle` (degree
 `Turn stroke bias (x)` (1.6) for how sharply a turn splits the two banks — 0 = both always row
 together. All of section 3 is cosmetic; none of it changes how the ship moves.
 
+**4 - Debug:** `Simulate rowers` (0) — **testing aid for single player.** Pretend at least this many
+benches are manned, filled bow to stern, so one person can see and feel a full crew: the phantoms row,
+draw oars and push the ship exactly as players would. Real rowers count first, so it is a floor on the
+crew rather than an extra. Only applies while somebody is aboard, so derelict boats stay put. This is
+how you tune `Pivot outward/up/forward` and the force multipliers without rounding up three friends —
+set it to 4, take a Longship out, and watch. Leave it at 0 on a real server. `Log rower changes` (Off).
+
 **Console** (F5): `oarsmen ship` prints the ship you stand on (benches, tiller, paddle and sail
-forces, live speed), `oarsmen rowers` lists who is rowing on every ship around, `oarsmen dump
+forces, live speed), `oarsmen rowers` lists who is rowing on every ship around, marking simulated benches `SIMULATED`, `oarsmen dump
 <prefab> [depth]` writes a prefab's hierarchy to `BepInEx/LogOutput.log`. All local, no cheat flag.
 
 ## License

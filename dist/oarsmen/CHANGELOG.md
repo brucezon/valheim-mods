@@ -26,6 +26,12 @@
   back-water stroke while the outside bank keeps pulling, which is how a crew pivots a longship.
   New `Turn stroke bias (x)` (1.6) controls how sharply the banks split; 0 = both always together.
   Both banks keep one stroke frequency even when pulling opposite ways, so the crew stays in time.
+- **`Simulate rowers`** (0, section 4) fills empty benches with phantom rowers so one player can test a
+  full crew in single player. They row, draw oars and push the ship exactly as players would, which is
+  how the oar placement and force multipliers can be tuned without four people. Real rowers count
+  first, so it is a floor on the crew rather than an extra, and it only applies while somebody is
+  aboard. `oarsmen rowers` marks the fake benches `SIMULATED`, and that line now also prints the
+  rudder value, which is what the stroke split keys off.
 - Oar placement is still untuned; see the note at the top of the README.
 
 ## 0.1.1 - 2026-09-14

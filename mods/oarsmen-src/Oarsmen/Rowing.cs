@@ -115,6 +115,7 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		public float side;          // +1 right, -1 left (ship-local X of the seat)
 		public GameObject oar;      // pivot object, child of the ship
 		public bool occupied;
+		public bool simulated;      // filled by the "Simulate rowers" testing aid, not a real player
 		public float phase;
 	}
 
@@ -171,6 +172,7 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		foreach (Bench b in benches)
 		{
 			b.occupied = false;
+			b.simulated = false;
 			foreach (Player p in ship.m_players)
 			{
 				if (p == null) continue;
@@ -182,6 +184,24 @@ internal sealed class OarsBehaviour : MonoBehaviour
 			}
 			if (b.occupied) count++;
 		}
+
+		// Testing aid: top the crew up with phantoms so one player can tune a full ship's worth of oars
+		// and forces. Real rowers are counted first, so this is a floor on the crew rather than an extra.
+		// Gated on somebody being aboard, both so derelict boats stay still and so it cannot quietly move
+		// ships across a whole world if it is ever left switched on.
+		int target = Math.Min(OarsmenPlugin.SimulatedRowers.Value, benches.Count);
+		if (count < target && ship.m_players.Count > 0)
+		{
+			foreach (Bench b in benches)
+			{
+				if (count >= target) break;
+				if (b.occupied) continue;
+				b.occupied = true;
+				b.simulated = true;
+				count++;
+			}
+		}
+
 		if (count != rowerCount)
 		{
 			rowerCount = count;
@@ -356,8 +376,12 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		for (int i = 0; i < benches.Count; i++)
 		{
 			Bench b = benches[i];
-			parts.Add($"bench{i + 1}({(b.side > 0 ? "R" : "L")}):{(b.occupied ? "rowing" : "empty")}");
+			string state = b.simulated ? "SIMULATED" : b.occupied ? "rowing" : "empty";
+			parts.Add($"bench{i + 1}({(b.side > 0 ? "R" : "L")}):{state}");
 		}
-		return $"rowers {rowerCount}/{benches.Count} setting {ship.m_speed} speed {ship.GetSpeed():F2} m/s | {string.Join(" ", parts)}";
+		int fake = 0;
+		foreach (Bench b in benches) if (b.simulated) fake++;
+		string note = fake > 0 ? $" ({fake} simulated)" : "";
+		return $"rowers {rowerCount}/{benches.Count}{note} setting {ship.m_speed} speed {ship.GetSpeed():F2} m/s rudder {ship.m_rudderValue:F2} | {string.Join(" ", parts)}";
 	}
 }

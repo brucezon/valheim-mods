@@ -197,6 +197,14 @@ two thirds; at 5 m/s they are equal. So a full crew at 0.15 is roughly +40% turn
 speed and less as you accelerate — help where you manoeuvre, not where you cruise. Prefabs may override
 `m_stearForce`; `oarsmen ship` prints the real value for whatever you are standing on.
 
+**Testing it single-handed.** `Simulate rowers` (section 4, default 0) tops the crew up with phantoms:
+`Scan()` fills empty benches bow to stern until the total reaches the target, after counting the real
+ones, and flags them `simulated` so `oarsmen rowers` can mark them. They are indistinguishable to
+everything downstream — force, oars, hover text — which is the point. Gated on `ship.m_players.Count > 0`
+so it cannot animate or move derelict boats if it is left on. Server-synced and therefore admin-locked
+like the rest, which matters because it changes physics, not just visuals. This is the intended way to
+tune the oar pivots and the force multipliers without four players.
+
 **Stroke animation (0.2.0).** Cosmetic only — force is computed independently in the postfix. Each
 bench gets a signed `power = clamp(dirSign * (1 - TurnStrokeBias * rudder * side), -1, 1)`: sign picks
 which half of the fore-aft swing the blade is submerged for (aft half pulling ahead, forward half
