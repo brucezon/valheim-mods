@@ -340,3 +340,9 @@ Server rebooted with the fixed set: clean. Bundle rebuilt: `dist/LAN_TempFixes-1
 - 1.0 changes (vs baseline): paint-only regen path (no mesh/collider rebuild for paths/cultivate, hash-deduped saves), RPC_ApplyOperation carries a prefab hash instead of full settings, neighbour grid for zone seams.
 - Remaining per-swing cost: small RPC to the zone owner, whole-zone blob resend to peers with the zone loaded (tens of KB compressed when heavily edited), one heightmap regen on every nearby client (ms stutter, coalesced per frame), and a full regen clears the WearNTear support cache of every piece on that heightmap (BruceQoL wear throttle spreads the re-check).
 - Decision: no mod. One-time cost while shaping the base; idle zones cost nothing beyond the stored blob. Terraform before the crowd arrives.
+
+## ServerBasedRanch 1.0.0 (12 Sep 2026)
+- Server-only passive taming/breeding. Sweeps ZDOMan.m_objectsByID every 30 s; skips animals in any peer's active area (ZNetScene.InActiveArea vs peer.m_refPos) or owned by a connected peer; advances the rest on saved fields (TameLastFeeding, TameTimeLeft, lovePoints, pregnant, tamed) in 10 s steps with the prefab's Tameable/MonsterAI/Procreation numbers.
+- Food: dropped stacks live inside the item ZDO's ItemData package (not a plain 'stack' int in 1.0); decremented via ItemDrop.LoadFromZDO/SaveToZDO on a clone of the prefab ItemData; last item = SetOwner(session) + DestroyZDO.
+- Birth: ZDOMan.CreateNewZDO + Persistent/Type/Distant from the offspring prefab's ZNetView, SetPrefab, rotation, tamed, level (+quality for egg offspring), spawntime backdated, owner released to 0. Vanilla Growup raises it on load.
+- Shares BQ_lastSim with BruceQoL PassiveTames so the two never double count. Untested in play as of writing: needs a pen, food, and a client leaving the zone.

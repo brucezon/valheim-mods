@@ -18,7 +18,7 @@ namespace BruceQoL;
 public class BruceQoLPlugin : BaseUnityPlugin
 {
 	private const string ModName = "BruceQoL";
-	private const string ModVersion = "1.10.0";
+	private const string ModVersion = "1.12.0";
 	private const string ModGUID = "bruceirons.BruceQoL";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion, ModRequired = true };
@@ -292,6 +292,9 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		playerDamageToEnemies = config("13 - Combat", "Player damage to enemies", 1f, "Multiplier on damage players deal to creatures and bosses. Stacks with the Combat world slider. 1 = as the world is set.");
 		enemyHealthMult = config("13 - Combat", "Enemy health", 1f, "Max health multiplier for creatures, applied when they spawn. 1 = vanilla.");
 		bossHealthMult = config("13 - Combat", "Boss health", 1f, "Max health multiplier for bosses, applied when they spawn. 1 = vanilla.");
+		BowDraw.Enabled = config("13 - Combat", "Bow draw tuning", Toggle.Off, "Apply the two bow draw multipliers below. Off = vanilla: most bows take 2.5 s to full draw at Bows 0, 1.5 s at Bows 50 and 0.5 s at Bows 100.");
+		BowDraw.AtSkill0 = config("13 - Combat", "Bow draw time at skill 0 (x)", 1f, "Multiplier on the bow's draw time at Bows 0. Vanilla 1 = 2.5 s for most bows. Examples: 0.8 = 2 s, 0.6 = 1.5 s (easier early game), 1.2 = 3 s.");
+		BowDraw.AtSkill100 = config("13 - Combat", "Bow draw time at skill 100 (x)", 0.2f, "Multiplier on the bow's draw time at Bows 100. Vanilla 0.2 = 0.5 s for most bows. Examples: 0.3 = 0.75 s, 0.4 = 1 s (tones down a maxed archer), 0.6 = 1.5 s. Levels between follow a straight line from the skill-0 value: with 1 and 0.4, Bows 50 draws in 1.75 s (vanilla 1.5 s).");
 
 		cartLoadAt100 = config("7 - Hauling", "Cart load weight at level 100 (x)", 1f, "How much a cart's cargo weighs to the puller at Hauling 100, as a multiplier (scaled linearly with level). 1 = vanilla, no effect. 0.5 = a full cart pulls like a half-full one. Applies on attach and every 5 s while attached.");
 		cartBreakAt100 = config("7 - Hauling", "Cart break force at level 100 (x)", 1f, "Multiplier on the force needed to snap the cart off the player at Hauling 100 (scaled with level). 1 = vanilla. 2 = a skilled hauler keeps the cart on steeper slopes.");
@@ -307,6 +310,10 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		disabledRaids = config("14 - Raids", "Disabled raids", "", "Comma-separated raid names that never happen, e.g. 'army_eikthyr, wolves, army_goblin'. Names are logged at startup.");
 
 		commandableTames = config("15 - Tames", "Commandable tames", "Boar", "Comma-separated creature prefab names whose tamed animals can be told to follow or stay by interacting with them, like wolves and lox. Vanilla boars cannot. Applies to animals as they load; tames never use portals. Empty = vanilla.");
+		PassiveTames.Enabled = config("15 - Tames", "Passive taming and breeding", Toggle.Off, "Off by default: the server-only ServerBasedRanch mod does this continuously on the server and is the preferred way. Turn this on only on a server without ServerBasedRanch. Pens keep working while nobody is near. When an animal loads again, the time it was unloaded is replayed with the vanilla rules: it eats food lying in the pen when hungry, tames while fed, gains love points, conceives and gives birth; newborns then grow up on the world clock. Only animals that are tamed or have been fed once are tracked. Off = vanilla (nothing happens while unloaded).");
+		PassiveTames.FeedRadius = config("15 - Tames", "Passive feed radius (metres)", 8f, "How far from where the animal stands food is taken from during the replay. Vanilla animals walk up to 5 m to eat while loaded.");
+		PassiveTames.MaxHours = config("15 - Tames", "Passive catch-up limit (hours)", 12f, "At most this much unloaded time is replayed per load. Bounds how much food a long absence eats and how many animals appear at once.");
+		PassiveTames.MaxPerPen = config("15 - Tames", "Max animals per pen", 4, "Breeding stops when this many adults plus young of the same kind are within 10 m. Vanilla 4. Applies loaded and in the replay.");
 
 		Gathering.Enabled = config("16 - Gathering", "Skill based yield", Toggle.On, "Ore deposits, rocks, trees and logs drop extra items scaled by the Pickaxes or Wood cutting skill of whoever lands the finishing hit. Off = vanilla.");
 		Gathering.OreBonusAt100 = config("16 - Gathering", "Extra ore and stone at level 100 (x)", 1f, "Extra drops from ore deposits and rocks at Pickaxes 100, as a fraction of the vanilla drop (1 = +100% = double). Scales linearly with level: at 50 each item has a 50% chance of a second copy. Stacks with the Resources world slider. 0 = off.");

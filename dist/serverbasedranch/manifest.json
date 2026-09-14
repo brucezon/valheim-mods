@@ -1,0 +1,9 @@
+{
+  "name": "ServerBasedRanch",
+  "version_number": "1.0.2",
+  "website_url": "",
+  "description": "Server-only: unloaded pens keep eating, taming and breeding on the dedicated server. Nothing to install on clients.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2350"
+  ]
+}

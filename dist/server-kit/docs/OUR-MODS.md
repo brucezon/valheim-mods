@@ -15,7 +15,7 @@ core is 5.4.23.5). Reference tree for building: `refs\1.0\gamepath\` (`BepInEx\c
 
 | Mod | Ours? | Source | Live | Sides | Config file |
 |---|---|---|---|---|---|
-| **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.10.0 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
+| **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.12.0 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
 | **Endurance** | yes (MIT) | `mods\endurance-src\Endurance` | 1.0.0 | both | `bruceirons.Endurance.cfg` |
 | **BruceNetworking** | yes (fork session) | `mods\brucenetworking-src` (README + IDEAS there) | 0.3.0 | **server only** | `bruceirons.BruceNetworking.cfg` |
 | **PlantEasily_TEMP** | no — Advize, GPLv3 rebuild | `mods\advize-src\Advize_PlantEasily` | 2.1.1 (plugin 2.1.1.99) | client | `advize.PlantEasily.cfg` |
@@ -54,7 +54,10 @@ Sections (see `dist\bruceqol\README.md` for the player-facing wording):
 11. Crafting stations — range 30 m, need-roof toggle (fork-added).
 12. Beehives — honey count/time (fork-added).
 13. Combat — enemy→player, enemy→tame, player→enemy damage ×; enemy/boss health ×. Same code path as
-    the Combat world slider, so they **multiply with** `-preset Hard`.
+    the Combat world slider, so they **multiply with** `-preset Hard`. Parry / held-block compensation
+    (fork, 1.8.0, `BlockCompensation.cs`). **Bow draw tuning** (1.12.0, Off, `BowDraw.cs`): both ends of
+    vanilla's `Lerp(drawMin, drawMin*0.2, skill)` as multipliers; prefix replaces
+    `Humanoid.GetAttackDrawPercentage` only when On (idea: WackyMole's Tone Down the Twang).
 14. Raids — on/off, interval ×, chance ×, duration ×, raids-anywhere, disabled-raid list (names logged at boot).
 15. Tames — commandable tames list (default Boar): `Tameable.m_commandable` flipped on Awake (fork-added, 1.9.0).
 16. Gathering — extra ore/stone and wood scaled by the finishing hit's Pickaxes / WoodCutting level

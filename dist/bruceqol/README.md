@@ -81,6 +81,10 @@ All four numbers are configurable here; the toggle Off restores vanilla.
   1 = blocks are judged as on Combat Normal (damage that gets through is still scaled). Hard makes the
   same swing fill the stagger bar 2.25x faster; 1 undoes that for the block check only. Suggested on a
   Hard server: parry 1, held 0.5.
+- **Bow draw tuning** (Off): when On, **Bow draw time at skill 0** (1) and **Bow draw time at skill 100**
+  (0.2) set both ends of the skill curve as multipliers on each bow's draw time. Vanilla is 1 and 0.2, so
+  a 2.5 s bow draws in 0.5 s at Bows 100. Try 0.8 and 0.4 for quicker early bows and less overpowering
+  late ones. Levels between follow a straight line.
 These replace world-key edits like `enemydamage`, which the game treats as cheating.
 
 ## 14 - Raids
@@ -94,6 +98,13 @@ These replace world-key edits like `enemydamage`, which the game treats as cheat
 - **Commandable tames** (`Boar`): comma-separated creature prefabs whose tamed animals follow or stay
   when you interact with them, like wolves and lox. Walk boars to a new pen. Tames never use portals.
   Empty = vanilla.
+- **Passive taming and breeding** (Off; use the server-only ServerBasedRanch mod instead, which does this
+  continuously on the server): when On, pens keep working while nobody is near. Drop a stack of food in
+  the pen and leave; when the pen loads again the unloaded time is replayed by the vanilla rules: the
+  animals eat when hungry, tame while fed, gain love points, conceive and give birth, and newborns grow
+  up on the world clock. **Passive feed radius** (8 m) is how far from each animal food is taken from,
+  **Passive catch-up limit** (12 h) caps one replay. Only tamed or once-fed animals are tracked.
+- **Max animals per pen** (4 = vanilla): breeding stops at this many adults plus young within 10 m.
 
 ## 16 - Gathering
 - **Skill based yield** (On): ore deposits, rocks, trees and logs drop extra items scaled by the

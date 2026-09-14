@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.12.0 - 2026-09-13
+- New in [13 - Combat]: **Bow draw tuning** (Off), **Bow draw time at skill 0 (x)** (1) and **Bow draw
+  time at skill 100 (x)** (0.2). Both ends of vanilla's draw-time-versus-skill line as multipliers on
+  each bow's draw time; vanilla's 0.2 at skill 100 is what makes high Bows fire five times faster than a
+  novice. Off leaves the vanilla code untouched. Same idea as WackyMole's Tone Down the Twang, with the
+  skill-0 end added; independent code.
+
+## 1.11.1 - 2026-09-12
+- **Passive taming and breeding** now defaults to Off. The server-only ServerBasedRanch mod does the same
+  job continuously on the server and is the preferred way; turn this on only where that mod is absent.
+  Existing config files keep their value.
+
+## 1.11.0 - 2026-09-12
+- **15 - Tames**: **Passive taming and breeding** (On). Pens keep working while nobody is near: when an
+  animal loads again, its unloaded time is replayed with the vanilla rules in 10 s steps. It eats food
+  lying in the pen when hungry (real items are removed), tames while fed, gains love points, conceives
+  and gives birth; newborns get a backdated spawn time so they grow up on the world clock. Only tamed or
+  once-fed animals are tracked; a wild herd costs nothing. **Passive feed radius** (8 m), **Passive
+  catch-up limit** (12 h), **Max animals per pen** (4 = vanilla; applies loaded and in the replay).
+  Each replay that did something is logged.
+
 ## 1.10.0 - 2026-09-12
 - New **16 - Gathering**: **Skill based yield** (On), **Extra ore and stone at level 100** (1) and
   **Extra wood at level 100** (1). Ore deposits, rocks, trees and logs drop extra copies of what they
