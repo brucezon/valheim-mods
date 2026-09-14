@@ -18,6 +18,14 @@
   added under sail, including when `Row under sail` is on. Sailing is unchanged.
 - **`Show rowers on the tiller`** (On) appends a `Rowers 3/4` line to the tiller's hover text, so the
   helmsman can see the crew without opening the console.
+- **The crew rows in unison.** Benches previously took a random phase offset each, so the oars never
+  pulled together and — because the randomness ran per client — no two players saw the same stroke.
+  They now share one clock with a slight bow-to-stern ripple, identical on every machine.
+- **The stroke follows the ship.** Oars reverse their drive when backing instead of rowing ahead while
+  the ship moves astern, and on a hard rudder the inside bank of the turn eases off and drops into a
+  back-water stroke while the outside bank keeps pulling, which is how a crew pivots a longship.
+  New `Turn stroke bias (x)` (1.6) controls how sharply the banks split; 0 = both always together.
+  Both banks keep one stroke frequency even when pulling opposite ways, so the crew stays in time.
 - Oar placement is still untuned; see the note at the top of the README.
 
 ## 0.1.1 - 2026-09-14

@@ -118,6 +118,10 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		public float phase;
 	}
 
+	// Seconds of delay between one bench and the next, bow to stern. Small enough to read as a crew
+	// pulling together rather than as rowers each doing their own thing.
+	private const float StrokeStagger = 0.04f;
+
 	private Ship ship;
 	private readonly List<Bench> benches = new();
 	private Material oarMaterial;
@@ -137,10 +141,14 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		{
 			Transform seat = chair.m_attachPoint != null ? chair.m_attachPoint : chair.transform;
 			float x = t.InverseTransformPoint(seat.position).x;
-			benches.Add(new Bench { chair = chair, seat = seat, side = x >= 0f ? 1f : -1f, phase = UnityEngine.Random.Range(0f, 0.3f) });
+			benches.Add(new Bench { chair = chair, seat = seat, side = x >= 0f ? 1f : -1f });
 		}
 		// Bow to stern, so "first rower" is the front bench.
 		benches.Sort((a, b) => t.InverseTransformPoint(b.seat.position).z.CompareTo(t.InverseTransformPoint(a.seat.position).z));
+		// A crew rows in time - that is the whole point of calling the stroke - so the benches share one
+		// clock and keep only a slight bow-to-stern ripple. Derived from the sorted order rather than
+		// Random, which previously gave every client its own stroke pattern for the same ship.
+		for (int i = 0; i < benches.Count; i++) benches[i].phase = i * StrokeStagger;
 		OarsmenPlugin.Log.LogInfo($"Oarsmen: {Utils.GetPrefabName(gameObject)} has {benches.Count} benches");
 	}
 
@@ -195,8 +203,20 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		if (NeedsRebuild()) foreach (Bench b in benches) BuildOar(b);
 
 		Ship.Speed speed = ship.m_speed;
-		bool rowing = speed == Ship.Speed.Slow || ((speed == Ship.Speed.Half || speed == Ship.Speed.Full) && OarsmenPlugin.RowUnderSail.Value == OarsmenPlugin.Toggle.On);
+		bool rowing = speed == Ship.Speed.Slow || speed == Ship.Speed.Back
+			|| ((speed == Ship.Speed.Half || speed == Ship.Speed.Full) && OarsmenPlugin.RowUnderSail.Value == OarsmenPlugin.Toggle.On);
 		if (rowing) strokeTime += dt;
+
+		// Which way each bank pulls. Ahead normally, astern when the ship is backing, and on a hard rudder
+		// the inside bank eases off and drops through zero into a back-water stroke while the outside bank
+		// keeps pulling - how a crew actually pivots a longship. Positive m_rudderValue turns the bow to
+		// starboard (vanilla's steer force is right * m_stearForce * -rudder, applied at the stern), so the
+		// starboard bank is the inside one there.
+		// One shared frequency for both banks even when they pull opposite ways: differing rates would drift
+		// the crew out of time, and rowing in time is the point. Vanilla reverses its own steering paddle the
+		// same way, sin(t * -3) backing against sin(t * 6) ahead.
+		float dirSign = speed == Ship.Speed.Back ? -1f : 1f;
+		float turnBias = Mathf.Max(0f, OarsmenPlugin.TurnStrokeBias.Value) * ship.m_rudderValue;
 
 		float[] holes = ParseHoles(OarsmenPlugin.HolePositions.Value);
 		Transform t = transform;
@@ -219,13 +239,23 @@ internal sealed class OarsBehaviour : MonoBehaviour
 
 			// Oar's +Z points outboard from the pivot. Rowing: swing fore-aft in time with the rudder paddle
 			// (vanilla wiggles the rudder at sin(t * 6)), blade dipped. Not rowing: held level and still.
+			// Signed: + pulls the ship ahead, - backs water. Magnitude is how hard, so a bank the rudder has
+			// cancelled out barely moves its oars. The whole split is multiplied by dirSign, not just the
+			// base: vanilla negates its steer force when backing (num17 = -1), so the same rudder swings the
+			// bow the other way and the banks have to swap with it, or the oars pivot against the boat.
+			float power = Mathf.Clamp(dirSign * (1f - turnBias * b.side), -1f, 1f);
+			float effort = Mathf.Abs(power);
+
 			float sweep = 0f, dip;
-			if (rowing)
+			if (rowing && effort > 0.02f)
 			{
 				float s = Mathf.Sin((strokeTime + b.phase) * 6f);
-				sweep = s * OarsmenPlugin.StrokeSweep.Value * 0.5f;
-				// Blade in the water on the pull (s < 0 -> moving aft), lifted on the recovery.
-				dip = OarsmenPlugin.BladeDip.Value * (s < 0f ? 1f : 0.35f);
+				sweep = s * OarsmenPlugin.StrokeSweep.Value * 0.5f * effort;
+				// The blade is in the water on the drive and lifted on the recovery. Pulling ahead the drive
+				// is the aft half of the swing (s < 0); backing water it is the forward half, so the same
+				// swing pushes the ship the other way.
+				bool drive = power >= 0f ? s < 0f : s > 0f;
+				dip = OarsmenPlugin.BladeDip.Value * (drive ? 1f : 0.35f);
 			}
 			else
 			{

@@ -25,9 +25,11 @@ holes are decoration. With Oarsmen, every player sitting on one of the ship's be
   of their own — sitting on a bench is the whole opt-in, and standing up is how you stop.**
   The help is strongest when pivoting or backing off a beach and fades as you pick up speed, because
   vanilla's other turning force grows with speed and the crew does not scale it.
-- **An oar appears through the hull beside every occupied bench** and strokes in time with the rudder
-  paddle while the ship is rowing. Sail out or ship stopped: the oars are held level and still. Bench
-  empty: no oar.
+- **An oar appears through the hull beside every occupied bench.** The crew pulls in unison, with a
+  slight bow-to-stern ripple, and the stroke follows what the ship is doing: oars drive astern to push
+  you ahead, reverse their drive when you are backing, and on a hard rudder the inside bank of the turn
+  eases off and backs water while the outside bank keeps pulling — how a crew pivots a longship. Sail
+  out or ship stopped: the oars are held level and still. Bench empty: no oar.
 - The helmsman at the tiller is not a rower. Someone has to steer; the rest sit down and pull. The
   tiller's hover text shows `Rowers 3/4` so the helmsman can see who is actually pulling.
 
@@ -54,7 +56,9 @@ never added under sail either way), `Show rowers on the tiller` (On).
 **3 - Oars:** `Show oars` (On), oar and blade dimensions, and where the oar pivots relative to its
 bench: `Pivot outward`, `Pivot up`, `Pivot forward` (metres). `Oar hole positions`: comma-separated
 ship-local Z positions of the hull's oar holes; when set, each oar snaps to the closest hole instead
-of sitting beside its bench. `Stroke sweep`, `Blade dip`, `Stowed angle` (degrees).
+of sitting beside its bench. `Stroke sweep`, `Blade dip`, `Stowed angle` (degrees), and
+`Turn stroke bias (x)` (1.6) for how sharply a turn splits the two banks — 0 = both always row
+together. All of section 3 is cosmetic; none of it changes how the ship moves.
 
 **Console** (F5): `oarsmen ship` prints the ship you stand on (benches, tiller, paddle and sail
 forces, live speed), `oarsmen rowers` lists who is rowing on every ship around, `oarsmen dump

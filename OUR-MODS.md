@@ -197,6 +197,23 @@ two thirds; at 5 m/s they are equal. So a full crew at 0.15 is roughly +40% turn
 speed and less as you accelerate — help where you manoeuvre, not where you cruise. Prefabs may override
 `m_stearForce`; `oarsmen ship` prints the real value for whatever you are standing on.
 
+**Stroke animation (0.2.0).** Cosmetic only — force is computed independently in the postfix. Each
+bench gets a signed `power = clamp(dirSign * (1 - TurnStrokeBias * rudder * side), -1, 1)`: sign picks
+which half of the fore-aft swing the blade is submerged for (aft half pulling ahead, forward half
+backing water), magnitude scales the sweep so a cancelled-out bank barely moves. Two traps, both hit
+while writing it:
+
+- **The `dirSign` multiplies the whole expression, not just the base.** Vanilla negates its steer force
+  when backing (`num17 = -1`), so the same rudder swings the bow the other way; if the bank split does
+  not flip with it, the oars visually pivot the boat against the direction it is actually turning.
+  Verified numerically against vanilla's yaw before committing — the first version was wrong.
+- **One stroke frequency for both banks**, even when they pull opposite ways. Giving the backing bank
+  its own rate (as vanilla does for its steering paddle, `sin(t * -3)` vs `sin(t * 6)`) drifts the crew
+  out of time, and rowing in time is the point.
+
+Bench phase is a deterministic bow-to-stern stagger (`i * 0.04 s`), not `Random`. The old random phase
+meant every client drew the same ship with a different stroke pattern.
+
 Not done, and deliberately: differential rowing by applying force at bench positions. Moving the
 application point off the stern induces pitch (`AddForceAtPosition` forward of the centre of mass), so
 if it is ever wanted, build it as a pure couple — equal and opposite lateral forces on the two banks —

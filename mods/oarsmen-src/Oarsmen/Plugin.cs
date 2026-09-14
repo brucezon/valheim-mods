@@ -61,6 +61,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 	internal static ConfigEntry<float> PivotForward;
 	internal static ConfigEntry<string> HolePositions;
 	internal static ConfigEntry<float> StrokeSweep;
+	internal static ConfigEntry<float> TurnStrokeBias;
 	internal static ConfigEntry<float> BladeDip;
 	internal static ConfigEntry<float> StowedAngle;
 	internal static ConfigEntry<Toggle> LogRowers;
@@ -97,6 +98,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 		PivotForward = config("3 - Oars", "Pivot forward (metres)", 0.0f, "Pivot offset along the ship from the bench seat, positive = toward the bow.");
 		HolePositions = config("3 - Oars", "Oar hole positions", "", "Comma-separated positions of the hull's oar holes along the ship (ship-local Z, metres, bow positive). When set, each oar snaps to the closest hole instead of sitting beside its bench. Empty = no snapping. Find them with the 'oarsmen ship' console command and a bit of trial.");
 		StrokeSweep = config("3 - Oars", "Stroke sweep (degrees)", 40f, "Total fore-aft swing of an oar per stroke while rowing.");
+		TurnStrokeBias = config("3 - Oars", "Turn stroke bias (x)", 1.6f, "How strongly the rudder splits the two banks. The inside bank of a turn eases off and, past 1, drops into a back-water stroke while the outside bank keeps pulling - how a crew actually pivots a longship. 0 = both banks always stroke together whatever the rudder is doing. Purely visual: the turning force itself comes from 'Steering force per rower'.");
 		BladeDip = config("3 - Oars", "Blade dip (degrees)", 22f, "How far the oar points down into the water while rowing.");
 		StowedAngle = config("3 - Oars", "Stowed angle (degrees)", 12f, "Oars of seated rowers that are not rowing (sail out, or the ship stopped) are raised out of the water by this angle and held still.");
 
