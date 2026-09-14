@@ -2,6 +2,15 @@
 
 Seated players row the ship. Built for Valheim 1.0.7.
 
+> **Install on the dedicated server and on every client.** (Ignore the "Client-only" line on this
+> page — Hexium shows that on every package, including server-only ones.) The mod is not required:
+> a client without it simply sees no oars.
+>
+> **0.1.x is untuned.** Oars row and push the ship correctly, but where each oar sits — the pivot
+> offsets and the hull's oar-hole positions — are first guesses that have not been checked in game
+> yet. Expect to nudge `Pivot outward/up/forward` for your ship. `oarsmen ship` prints what you are
+> standing on to help.
+
 Vanilla ships paddle with one fixed force no matter who is aboard, and the Longship's benches and oar
 holes are decoration. With Oarsmen, every player sitting on one of the ship's benches is a rower:
 
@@ -14,7 +23,9 @@ holes are decoration. With Oarsmen, every player sitting on one of the ship's be
 - The helmsman at the tiller is not a rower. Someone has to steer; the rest sit down and pull.
 
 Works on the **Longship** (4 benches) and the **Karve** (2 benches). Any ship prefab with benches
-can be added in the config.
+can be added to `Ships` in the config, including boats from other mods such as OdinShip — the mod
+finds benches by looking for `Chair` components on the ship, so it does not care who built it. Use
+`oarsmen dump <prefab>` to check a modded boat actually has them before adding it.
 
 Install on the server and on every client. A client without the mod sees no oars, and if that client
 happens to own the ship (it is the one simulating it) the ship rows at vanilla speed; nothing breaks.
