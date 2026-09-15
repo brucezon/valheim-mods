@@ -61,7 +61,7 @@
   rowing it higher. The same five-sample water test vanilla uses now gates the crew's force too.
 - **`Row under sail` is no longer a flat bonus.** An oar only bites while the blade is moving through
   the water faster than the hull is, so the crew's contribution now falls away as the square of the
-  speed they have left — `(1 - speed/V)²` — reaching nothing at the new `Rowing cuts out above (m/s)`
+  speed they have left — `(1 - speed/V)²` — reaching nothing at the new `Speed where oars stop helping (m/s)`
   (5). A full crew pulls its whole weight becalmed, about a third of it at 2 m/s, and nothing by 4.
   Rowing gets you out of a calm or a foul wind and is futile once the sail is really pulling, which
   makes the setting a way to get under way rather than a flat speed increase. Squared rather than

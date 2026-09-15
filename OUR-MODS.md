@@ -214,7 +214,7 @@ explicitly. Scaling is proportional, not absolute — the share multiplies that 
 paddle mode only. Vanilla hulls are unchanged because the Longship has four seats anyway.
 
 **Rowing under sail is modelled, not flat.** `Row under sail` (still Off by default) multiplies the
-crew's thrust by `(1 - v/V)²`, v being speed along the hull and V `Rowing cuts out above` (5 m/s).
+crew's thrust by `(1 - v/V)²`, v being speed along the hull and V `Speed where oars stop helping` (5 m/s).
 A blade only bites while it is moving through the water faster than the hull, so thrust goes as the
 square of the speed the blade has left and is zero once the hull outruns it. Squared, not linear:
 linear leaves a twelve-rower crew still adding a full paddle force at 4 m/s, which is exactly the
@@ -231,6 +231,12 @@ and speed-independent there, with quadratic hull drag doing the limiting, so mat
 modes pure augmentation; under sail vanilla applies no paddle force at all, so the model is ours to
 choose rather than vanilla's to contradict. Applying it everywhere would also have cut paddle rowing
 to ~0.36 of its tuned value at 2 m/s.
+
+Real speeds, for picking V without guessing: Longship paddles ~3.16 m/s and sails 3.6 (into wind) to
+9.4 (full tailwind); Karve paddles ~3.14 and sails 2.8 to 7.0 (Valheim wiki). So V=5 puts the crew's
+help almost entirely in the acceleration phase - 14% left at paddle speed, 8% at a Longship's slowest
+sailing speed, nothing at 5 and above. V=7 would be the value if rowers should still count beating
+into a headwind.
 
 Momentum carries across speed changes — `RPC_Forward`/`RPC_Backward` only step the `m_speed` enum, and
 the sole write to `m_body.linearVelocity` derives from the current velocity — so "row up to speed, then

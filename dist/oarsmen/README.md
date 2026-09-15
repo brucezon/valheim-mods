@@ -39,10 +39,15 @@ paddle and manoeuvre; it does not help you tack.
 
 **If you do switch on `Row under sail`, the oars fade out as the ship picks up speed.** A blade only
 bites while it is moving through the water faster than the hull is, so the crew's help falls away as
-the square of the speed they have left, and is worth nothing at all above `Rowing cuts out above`
-(5 m/s). In practice a full crew pulls its whole weight when becalmed, about a third of it at 2 m/s,
-and nothing by 4 — rowing gets you out of a calm or a foul wind, and is futile once the sail is really
-pulling. Paddle mode and reverse are not affected and keep their flat force, matching vanilla's own.
+the square of the speed they have left, and stops entirely at `Speed where oars stop helping` (5 m/s).
+
+To put that in context, since the game never shows you a speed: a Longship paddles at about 3.2 m/s
+and sails between 3.6 into the wind and 9.4 with a full tailwind; a Karve paddles at 3.1 and sails
+between 2.8 and 7.0. So at the default the crew hauls hard getting under way and has bowed out by the
+time any sail is drawing properly — rowing is how you leave a calm or claw off a lee shore, not a way
+to go faster. Raise it toward 7 if you want rowers to still count while sailing into a headwind; drop
+it toward 4 to make them purely a way to get moving. Paddle mode and reverse ignore this setting
+entirely and keep their flat force, matching vanilla's own.
 
 **The oars ship themselves as the sail takes over.** The stroke shortens and the blades lift out of
 the water on the same curve as the force, so the crew is never seen thrashing away at a speed where
@@ -85,7 +90,7 @@ Config is server-synced and live.
 `Steering force per rower (x)` (0.15, set 0 to turn the steering help off), `Max steering share (x)` (1 = the crew can at most double the ship's own rudder force),
 `Max turn rate (degrees per second)` (45, a backstop on yaw only), `Max rowers` (0 = every bench counts),
 `Row under sail` (Off: rowers only add forward force in paddle mode and reverse; steering help is
-never added under sail either way), `Rowing cuts out above (m/s)` (5),
+never added under sail either way), `Speed where oars stop helping (m/s)` (5),
 `Show rowers on the tiller` (On).
 
 **3 - Oars:** `Show oars` (On), oar and blade dimensions, and where the oar pivots relative to its
