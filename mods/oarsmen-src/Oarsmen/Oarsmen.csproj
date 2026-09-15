@@ -15,6 +15,7 @@
   <ItemGroup>
     <Compile Include="Plugin.cs" />
     <Compile Include="Rowing.cs" />
+    <Compile Include="LegacySails.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="ServerSync.src.cs" />
     <Compile Include="IgnoresAccessChecksTo.cs" />
@@ -32,6 +33,7 @@
     <Reference Include="assembly_utils"><HintPath>$(GamePath)\valheim_Data\Managed\publicized_assemblies\assembly_utils_publicized.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine"><HintPath>$(GamePath)\valheim_Data\Managed\UnityEngine.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(GamePath)\valheim_Data\Managed\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.ClothModule"><HintPath>$(GamePath)\valheim_Data\Managed\UnityEngine.ClothModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(GamePath)\valheim_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.AnimationModule"><HintPath>$(GamePath)\valheim_Data\Managed\UnityEngine.AnimationModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.UI"><HintPath>$(GamePath)\valheim_Data\Managed\UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>

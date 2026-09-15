@@ -31,7 +31,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.Oarsmen";
 	public const string Name = "Oarsmen";
-	public const string Version = "0.3.2";
+	public const string Version = "0.4.0";
 
 	internal static ManualLogSource Log;
 	private static readonly ConfigSync configSync = new(Name) { DisplayName = Name, CurrentVersion = Version, MinimumRequiredVersion = Version, ModRequired = false };
@@ -145,6 +145,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 
 		SimulatedRowers = config("4 - Debug", "Simulate rowers", 0, new ConfigDescription("Testing aid: pretend at least this many benches are manned, so one player can see and feel a full crew in single player. Empty benches are filled bow to stern until the total is reached; real rowers always count first, so 4 on a Longship you are already rowing adds three phantoms. They row, draw oars and push the ship exactly as players would - the point is to tune oar placement and the force multipliers without four people. Only applies while somebody is actually aboard, so derelict boats stay still. 0 = off. 'oarsmen rowers' marks the fake ones. Leave this at 0 on a real server.", new AcceptableValueRange<int>(0, 32)));
 		LogRowers = config("4 - Debug", "Log rower changes", Toggle.Off, "Log a line whenever the number of rowers on a ship changes.", false);
+		LegacySails.Enabled = config("5 - Legacy sails", "Pre-1.0 sails deploy", Toggle.On, "Valheim 1.0 replaced the sail system and only moves sails on prefabs built for it. A boat from a mod that has not migrated (OdinShip 0.7.9, for one) accepts Half and Full but its sail stays furled. On = run the pre-1.0 sail routine for exactly those ships (no 1.0 sail flag, old-style sail object): the sail scales between furled, half and full as it used to. Ships with 1.0 sails are never touched. Visual only. Turn Off once the boat's author has migrated the prefabs.");
 
 		Harmony harmony = new(GUID);
 		harmony.PatchAll();
@@ -194,6 +195,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 				Vector3 c = t.InverseTransformPoint(ship.m_floatCollider.transform.TransformPoint(ship.m_floatCollider.center));
 				Say(args, $"  float collider centre {Fmt(c)} size {Fmt(ship.m_floatCollider.size)}");
 			}
+			Say(args, "  sail: " + LegacySails.Describe(ship));
 			foreach (Chair chair in ship.GetComponentsInChildren<Chair>(true))
 			{
 				Transform a = chair.m_attachPoint != null ? chair.m_attachPoint : chair.transform;

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0 - 2026-09-15
+- **Pre-1.0 sails deploy on Valheim 1.0** (new section 5, `Pre-1.0 sails deploy`, On). 1.0 replaced
+  the sail system - MagicaCloth, a sail-bottom transform sliding between furled / mid / unfurled points -
+  and only moves sails on prefabs carrying the new fields. A boat from a mod that has not migrated
+  (OdinShip 0.7.9's hulls) accepts Half and Full but its sail never moves, because nothing scales the
+  old-style sail object any more. The shim runs the pre-1.0 routine for exactly those ships: the sail's
+  height goes to 0.1 furled, 0.5 at Half, 1.0 at Full, and its cloth simulates only while set. Ships
+  with 1.0 sails are never touched. Visual only, per client. Off switch for the day the author migrates.
+- `oarsmen ship` prints a `sail:` line: which sail system the hull has, the sail object, whether a
+  legacy cloth was found, the current sail scale, and whether the shim is acting on it.
+
 ## 0.3.2 - 2026-09-15
 - **The blade drops into the water instead of snapping in.** The entry was run inside the drive alone,
   over a fifth of it - 9% of a stroke, about a fifth of a second at 26 a minute - and the recovery

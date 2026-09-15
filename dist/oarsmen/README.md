@@ -92,6 +92,17 @@ Install on the server and on every client. A client without the mod sees no oars
 happens to own the ship (it is the one simulating it) the ship rows at vanilla speed; nothing breaks.
 Config is server-synced and live.
 
+## Pre-1.0 sails on Valheim 1.0
+
+Valheim 1.0 replaced the sail system: a sail is now a MagicaCloth sliding between furled, mid and
+unfurled points, and the game only moves it on prefabs that carry the new fields. A boat from a mod
+that has not migrated - OdinShip 0.7.9's hulls, at the time of writing - accepts Half and Full but its
+sail stays furled, because nothing scales the old-style sail object any more. **Pre-1.0 sails deploy**
+(On, section 5) runs the pre-1.0 sail routine for exactly those ships: the sail scales between furled,
+half and full as it did before 1.0, and its cloth simulates only while set. Ships with 1.0 sails are
+never touched, so it is safe to leave on. Visual only, per client. oarsmen ship prints a sail: line
+showing which system a hull has. Turn it off once the boat's author has migrated the prefabs.
+
 ## Config (`BepInEx/config/bruceirons.Oarsmen.cfg`)
 
 **2 - Rowing:** `Rowing` (On), `Only these ships` (empty = every boat with benches),
