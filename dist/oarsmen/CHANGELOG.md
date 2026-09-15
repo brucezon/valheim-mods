@@ -1,5 +1,96 @@
 # Changelog
 
+## 0.3.0 - 2026-09-14
+- **Only rowing benches row.** A seat is not the same thing as a bench, and the Longship has seven
+  Chairs: the four benches, the helm seat, and two places a passenger holds fast — the mast and the
+  figurehead. 0.2.0 took every one of them, so a four-oared boat rowed with seven oars, one of them
+  out at the dragon head above head height, and a crew of seven pushed a hull built for four. Vanilla
+  tells them apart by the animation it puts the player into (`attach_sitship` on the benches,
+  `attach_mast` and `attach_dragon` where you are hanging on), and the mod now reads the same thing.
+- **The helmsman never gets an oar.** The helm seat is excluded by position rather than by name: the
+  chair sharing the tiller's attach point is the helmsman's, whoever wrote it and whatever it is
+  called. On the Longship the two sit 8 cm apart. Its animation is `attach_chair`, an ordinary seat
+  animation a modded hull may well use for a real bench, so matching on that would have cost other
+  boats their crews.
+- New **`Hold-fast seat animations`** (`attach_mast,attach_dragon`) and **`Rowing seat animations`**
+  (empty = every seat that is not the helm or a hold-fast point). The first is the blocklist, the
+  second an optional allowlist — set it to `attach_sitship` to restrict rowing to vanilla ship benches
+  exactly. Both apply live: a hull already in the water rebuilds its benches when you edit them.
+- **Oar placement is measured now, not guessed.** `Pivot outward` 0.75 → **0.6**, `Pivot up` 0.55 →
+  **0.26**, `Pivot forward` 0 → **0.19**, taken off the Longship in game. The 0.1.0 note about the
+  offsets being first guesses is retired for that hull; the Karve has not been checked.
+- **Stowed oars lie along the hull.** An oar whose rower is not pulling used to stand straight out to
+  the side, which is not what a crew does with an oar it is not using. New **`Stowed oars`**
+  (`AlongHull` default, `Outboard` for the old look) ships them fore and aft, blades aft. The turn
+  runs on the same blend the stroke fades on, so the oar swings in as the crew eases off rather than
+  flicking round, and `Stowed angle` still sets how far it is lifted clear of the water.
+- **`Snap oars to the hull`** (Off): places the pivot on the hull's own side, read off the row of box
+  colliders vanilla builds the sides from, instead of at a fixed offset from the bench. One offset
+  cannot fit a hull that tapers — the Longship's side stands 2.4 m from the keel amidships and 1.6 m
+  at the forward benches, while its benches are inset 1.5 and 0.8 — so this is the lever for a modded
+  boat whose oars come out in the wrong place. `Oar hole inset from the hull` nudges the result.
+  Off by default because the measured offsets above already fit the vanilla hulls.
+- **The crew rows at a crew's pace.** New **`Stroke rate (strokes per minute)`** (26). The stroke was
+  previously hard-coded to the rate vanilla wiggles the steering paddle at, sin(t × 6), which is 57
+  strokes a minute — a racing sprint rather than a crew moving a loaded longship. Nothing depended on
+  the two agreeing: the paddle is vanilla's own animation on a different part of the boat, and the
+  crew's force is flat rather than stroke-timed, so the rate is now purely a matter of how it looks.
+  The bow-to-stern ripple is held in radians of the stroke rather than seconds, so it keeps its shape
+  at any rate.
+- **`Blade dip`** 22 → **35 degrees**, so the blades reach the water. The oar holes sit well above the
+  waterline and a shallower stroke had the crew rowing air just above the surface.
+- **The stroke is a stroke now, not a sine.** The oar used to swing on `sin`, with the blade's depth
+  keyed separately to where in that arc it had got to. Two things were wrong with that. The depth should
+  follow which way the oar is *travelling* rather than where it has reached — a quarter-cycle out, so
+  the blade was buried at the two ends of the swing where the oar is momentarily stopped and lifted
+  through the middle where it moves fastest, and the square-up and feather landed mid-sweep instead of
+  at the catch and the finish. And a sine is never still, so even with that corrected the oar waves
+  rather than rows.
+  The stroke is now built as two eased halves of one cycle — a drive and a recovery — so the oar comes
+  to rest at the catch and at the finish, and **the blade being buried and the oar driving are the same
+  interval by construction** rather than two curves that have to be held a quarter-cycle apart. That
+  relationship is what has been wrong since 0.1.0, twice over; it is no longer possible to get it wrong.
+  New **`Drive share of the stroke`** (0.45) sets how much of the cycle is the loaded half: a crew pulls
+  hard and comes forward at more leisure, so it sits below half.
+- **Fix: the inside bank no longer ships its oars mid-turn.** How hard a bank pulled was `|power|`, and
+  because a bank's power crosses zero on its way to negative, feeding in rudder took the inside bank's
+  stroke down to nothing — and nothing is what ships an oar, so that bank stowed itself along the hull
+  during the turn and then came back out backing water. Only the *direction* comes off the rudder now:
+  both banks row a full stroke throughout and the inside one simply rows it backwards, easing across
+  rather than flipping. A deadband keeps a rudder held near the turnover point from fluttering the bank
+  between ahead and astern.
+- **New `Recovery lift (degrees)`** (22): how far the blade rises above the drive angle to clear the
+  water on the way forward. `Blade dip` puts the blade in, this takes it out; previously the recovery
+  angle was hard-coded at 35% of the dip.
+- **Blades feather on the recovery.** New **`Feather angle (degrees)`** (90, 0 = off): the blade turns
+  flat as it leaves the water and squares up again at the catch, rolled about the oar's own axis.
+- **Fix: the blade no longer jolts twice a stroke.** The pitch was switched between the drive angle and
+  the feathered one the instant the swing crossed centre — 35 degrees to 12 in a single frame, at the
+  fastest point of the stroke, on every oar on the boat. It now turns over the last part of each
+  half-stroke, the way a blade squares up at the catch and feathers at the finish. Nothing to do with
+  the simulated crew: real rowers got exactly the same jolt, there were just never four of them to
+  watch at once.
+- **Oars ship themselves smoothly from wherever they were.** Stowing was eased only when the crew's
+  bite ran out under sail; every other way of ending a stroke — the helmsman dropping to Stop, the sail
+  going up, a rower standing — set the stowed pose outright, so the oar teleported into it. Each oar
+  now carries its own stow blend, eased over the new **`Stow time (seconds)`** (0.8), and the swing, the
+  blade angle and the turn along the hull all hang off that one number. The stroke clock keeps running
+  while anyone is still easing off, so a crew told to stop finishes the stroke it is in instead of
+  freezing mid-swing and then rotating.
+- An oar whose rower has stood up stays drawn until it has finished shipping itself, rather than
+  vanishing out of the air mid-stroke. It comes back the same way: a rower sitting down swings their
+  oar out from stowed instead of having it appear already pulling.
+- **Fix: the simulated crew no longer stutters.** Vanilla's onboard trigger flickers — walk the deck
+  near the rail and it reports nobody aboard for a frame or two — and the phantom rowers were gated
+  directly on it, so oars and force dropped out and came back with it. The gate now holds for a
+  second after the last player is reported off the boat, which rides out the flicker while still
+  stopping the phantoms when you actually step ashore.
+- **Fix: `Simulate rowers` no longer throws in Configuration Manager.** With no range on the setting
+  it was drawn as a free text box and every keystroke that was not a whole number threw a
+  `FormatException` out of the config UI. It has a range (0–32) and a slider now.
+- `Simulate rowers` also fills benches that are actually benches, so a Longship at 4 now puts its
+  phantoms on the four rowing benches rather than on the figurehead, both forward benches and the mast.
+
 ## 0.2.0 - 2026-09-14
 - **Rowers help the helmsman turn.** New `Steering force per rower (x)` (0.15) adds turning force per
   seated rower on top of the ship's own rudder push. Rowers amplify whatever the helmsman is already
