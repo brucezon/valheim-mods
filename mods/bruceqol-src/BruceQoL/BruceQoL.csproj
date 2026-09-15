@@ -17,6 +17,7 @@
     <Compile Include="BlockCompensation.cs" />
     <Compile Include="Gathering.cs" />
     <Compile Include="BowDraw.cs" />
+    <Compile Include="DigDepth.cs" />
     <Compile Include="PassiveTames.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="ServerSync.src.cs" />

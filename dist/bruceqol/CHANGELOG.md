@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.13.0 - 2026-09-15
+- New **17 - Terrain**: **Dig and raise limit (metres)** (12, vanilla 8). How far a pickaxe or hoe may
+  lower or raise the ground from its original height. Vanilla hard-codes 8 at four places (the two
+  terrain-compiler edit routines, the heightmap re-clamp when terrain is rebuilt, and the legacy
+  heightmap path); a transpiler swaps the constant for the setting in all four, so a deeper pit both
+  digs and displays. Server-synced; the re-clamp runs on every client, which is why the mod being
+  required on clients matters for this one.
+
 ## 1.12.0 - 2026-09-13
 - New in [13 - Combat]: **Bow draw tuning** (Off), **Bow draw time at skill 0 (x)** (1) and **Bow draw
   time at skill 100 (x)** (0.2). Both ends of vanilla's draw-time-versus-skill line as multipliers on

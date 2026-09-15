@@ -18,7 +18,7 @@ namespace BruceQoL;
 public class BruceQoLPlugin : BaseUnityPlugin
 {
 	private const string ModName = "BruceQoL";
-	private const string ModVersion = "1.12.0";
+	private const string ModVersion = "1.13.0";
 	private const string ModGUID = "bruceirons.BruceQoL";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion, ModRequired = true };
@@ -318,6 +318,8 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		Gathering.Enabled = config("16 - Gathering", "Skill based yield", Toggle.On, "Ore deposits, rocks, trees and logs drop extra items scaled by the Pickaxes or Wood cutting skill of whoever lands the finishing hit. Off = vanilla.");
 		Gathering.OreBonusAt100 = config("16 - Gathering", "Extra ore and stone at level 100 (x)", 1f, "Extra drops from ore deposits and rocks at Pickaxes 100, as a fraction of the vanilla drop (1 = +100% = double). Scales linearly with level: at 50 each item has a 50% chance of a second copy. Stacks with the Resources world slider. 0 = off.");
 		Gathering.WoodBonusAt100 = config("16 - Gathering", "Extra wood at level 100 (x)", 1f, "Extra drops from trees, logs and stumps at Wood cutting 100, as a fraction of the vanilla drop (1 = +100% = double). Scales linearly with level. Stacks with the Resources world slider. 0 = off.");
+
+		DigDepth.Limit = config("17 - Terrain", "Dig and raise limit (metres)", 12f, "How far a pickaxe or hoe may lower or raise the ground from its original height, in metres. Vanilla 8. Applies to digging down and building up alike. Existing pits and mounds are unaffected until edited again; lowering this below a pit's current depth makes the pit display shallower on every client until it is dug again.");
 		foreach (ConfigEntry<float> e in new[] { raidIntervalMult, raidChanceMult, raidDurationMult })
 		{
 			e.SettingChanged += (_, _) => ApplyRaids();

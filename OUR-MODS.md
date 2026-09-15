@@ -15,7 +15,7 @@ core is 5.4.23.5). Reference tree for building: `refs\1.0\gamepath\` (`BepInEx\c
 
 | Mod | Ours? | Source | Live | Sides | Config file |
 |---|---|---|---|---|---|
-| **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.12.0 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
+| **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.13.0 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
 | **Endurance** | yes (MIT) | `mods\endurance-src\Endurance` | 1.0.0 | both | `bruceirons.Endurance.cfg` |
 | **BruceNetworking** | yes (fork session) | `mods\brucenetworking-src` (README + IDEAS there) | 0.3.0 | **server only** | `bruceirons.BruceNetworking.cfg` |
 | **Oarsmen** | yes (MIT) | `mods\oarsmen-src\Oarsmen` | 0.2.0 | both (not required) | `bruceirons.Oarsmen.cfg` |
@@ -100,6 +100,10 @@ Sections (see `dist\bruceqol\README.md` for the player-facing wording):
     `TreeBase/TreeLog/Destructible.RPC_Damage`, `MineRock.RPC_Hit`, `MineRock5.DamageArea` open a
     window in which a `DropTable.GetDropList()` postfix appends copies. Follows Smoothbrain
     Mining/Lumberjacking (which add their own skills instead; not used).
+17. Terrain — `Dig and raise limit (metres)` (12, vanilla 8). `DigDepth.cs`: transpiler over
+    `TerrainComp.LevelTerrain/RaiseTerrain/ApplyToHeightmap` and `Heightmap.LevelTerrain` replacing
+    every `ldc.r4 8/-8` (and `ldc.r8 8`) with calls returning the setting. The re-clamp in
+    `ApplyToHeightmap` runs on every client, so the value must match everywhere (ModRequired + sync).
 
 Build:
 ```

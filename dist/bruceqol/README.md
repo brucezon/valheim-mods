@@ -115,6 +115,13 @@ These replace world-key edits like `enemydamage`, which the game treats as cheat
 The level travels with the hit, so it works whoever is simulating the rock or tree (the server, or
 another player). Vanilla puts the Axes level in a tree hit; this mod corrects it to Wood cutting.
 
+## 17 - Terrain
+- **Dig and raise limit (metres)** (12, vanilla 8): how far a pickaxe or hoe may lower or raise the
+  ground from its original height. Same limit both ways. Existing pits and mounds keep their shape
+  until edited again. Every client must use the same value, which the sync guarantees: the terrain is
+  re-clamped on each client when it is rebuilt, so a stray client on a lower limit would see a deep pit
+  as a shallow one.
+
 Skill ideas follow Smoothbrain's SmartSkills and PackHorse; the container, station, beehive and
 swim features follow OdinsQOL; skill-scaled gathering follows Smoothbrain's Mining and Lumberjacking.
 All are independent implementations.
