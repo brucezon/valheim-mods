@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 - 2026-09-15
+- **Beds are not benches.** `Hold-fast seat animations` now defaults to
+  `attach_mast,attach_dragon,attach_bed`. OdinShip's Big Cargo Ship carries a bed ('Cama') that is a
+  Chair with the `attach_bed` animation, so 0.3.0 counted it as a fifth rowing bench and gave it an oar;
+  the ship now rows with its four stool seats forward, which is what the hull was built for. Existing
+  config files keep their old value: add `attach_bed` to the list by hand (or delete the line to take
+  the new default) if you already have a `bruceirons.Oarsmen.cfg`.
+
 ## 0.3.0 - 2026-09-14
 - **Only rowing benches row.** A seat is not the same thing as a bench, and the Longship has seven
   Chairs: the four benches, the helm seat, and two places a passenger holds fast — the mast and the

@@ -95,7 +95,7 @@ Config is server-synced and live.
 ## Config (`BepInEx/config/bruceirons.Oarsmen.cfg`)
 
 **2 - Rowing:** `Rowing` (On), `Only these ships` (empty = every boat with benches),
-`Excluded ships` (empty), `Hold-fast seat animations` (`attach_mast,attach_dragon` — seats you hang on
+`Excluded ships` (empty), `Hold-fast seat animations` (`attach_mast,attach_dragon,attach_bed` — seats you hang on
 at rather than row from), `Rowing seat animations` (empty = every seat that is not one of those or the
 helm; set `attach_sitship` to allow vanilla ship benches only), `Paddle force per rower (x)` (0.25),
 `Steering force per rower (x)` (0.15, set 0 to turn the steering help off), `Max steering share (x)` (1 = the crew can at most double the ship's own rudder force),
