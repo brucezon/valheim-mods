@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1 - 2026-09-15
+- **`Paddle force per rower` defaults to 0.35** (was 0.25): a full Longship crew of four now paddles
+  with 2.4 times the vanilla force. Existing config files keep their old value; set it by hand or delete
+  the line to take the new default.
+
 ## 0.4.0 - 2026-09-15
 - **Pre-1.0 sails deploy on Valheim 1.0** (new section 5, `Pre-1.0 sails deploy`, On). 1.0 replaced
   the sail system - MagicaCloth, a sail-bottom transform sliding between furled / mid / unfurled points -

@@ -15,7 +15,7 @@ Vanilla ships paddle with one fixed force no matter who is aboard, and the Longs
 holes are decoration. With Oarsmen, every player sitting on one of the ship's benches is a rower:
 
 - **In paddle mode** (the slow setting, sail furled) each rower adds **Paddle force per rower** of the
-  ship's paddle force. Default 0.25, so a full Longship crew of four paddles with twice the force.
+  ship's paddle force. Default 0.35, so a full Longship crew of four paddles with 2.4 times the force.
   Speed rises less than force, because the water pushes back harder the faster you go.
 - **In reverse** the same crew backs the same way — useful getting off a beach with a loaded ship.
 - **Rowers help the helmsman turn.** Each one adds **Steering force per rower** (0.15) of the ship's
@@ -108,7 +108,7 @@ showing which system a hull has. Turn it off once the boat's author has migrated
 **2 - Rowing:** `Rowing` (On), `Only these ships` (empty = every boat with benches),
 `Excluded ships` (empty), `Hold-fast seat animations` (`attach_mast,attach_dragon,attach_bed` — seats you hang on
 at rather than row from), `Rowing seat animations` (empty = every seat that is not one of those or the
-helm; set `attach_sitship` to allow vanilla ship benches only), `Paddle force per rower (x)` (0.25),
+helm; set `attach_sitship` to allow vanilla ship benches only), `Paddle force per rower (x)` (0.35),
 `Steering force per rower (x)` (0.15, set 0 to turn the steering help off), `Max steering share (x)` (1 = the crew can at most double the ship's own rudder force),
 `Max turn rate (degrees per second)` (45, a backstop on yaw only), `Max rowers` (0 = every bench counts),
 `Row under sail` (Off: rowers only add forward force in paddle mode and reverse; steering help is
