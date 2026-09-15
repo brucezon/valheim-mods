@@ -11,16 +11,84 @@ internal static class Rowing
 	private static string shipsParsed;
 	private static readonly HashSet<string> excluded = new(StringComparer.OrdinalIgnoreCase);
 	private static string excludedParsed;
+	private static readonly HashSet<string> rowAnims = new(StringComparer.OrdinalIgnoreCase);
+	private static string rowAnimsParsed = null;
+	private static readonly HashSet<string> holdAnims = new(StringComparer.OrdinalIgnoreCase);
+	private static string holdAnimsParsed = null;
+
+	// Bumped whenever either seat list changes, so hulls already afloat rebuild the set of benches they
+	// found at Awake instead of keeping it. Every other setting is live; these should not be the exception.
+	internal static int SeatRules { get; private set; }
 
 	// What makes a ship rowable is having somewhere to sit, so a boat from another mod (OdinShip's canoes,
-	// say) rows the moment it exists without anyone naming it in the config. The tiller is a ShipControlls,
-	// not a Chair, so the helm is never mistaken for a bench; a boat whose only seat IS a chair at the helm
-	// is what 'Excluded ships' is for.
+	// say) rows the moment it exists without anyone naming it in the config.
 	//
-	// Only the bench scan happens at Awake, because a ship's seats cannot change. The two config lists are
-	// re-read every frame instead, so editing them takes effect on boats that already exist - the rest of
-	// the config is live and these should not be the exception.
-	internal static bool IsRowingShip(GameObject go) => HasBenches(go);
+	// A seat is not the same thing as a rowing bench, though. The Longship carries seven Chairs: the four
+	// benches, the helm seat, and two places a passenger holds fast - the mast and the figurehead. Vanilla
+	// tells them apart by the animation it puts the player into: 'attach_sitship' on the benches,
+	// 'attach_chair' at the helm, 'attach_mast' and 'attach_dragon' where you are hanging on rather than
+	// sitting down. 0.2.0 took every Chair, so a Longship rowed with seven oars on a four-oared hull, one
+	// of them out at the figurehead above head height, and a crew of seven pulling a boat built for four.
+	//
+	// The helm is caught by position rather than by its animation, because 'attach_chair' is an ordinary
+	// seat animation a modded hull may well use for a real bench. Whatever it is called, the chair sharing
+	// the tiller's attach point is the helmsman's - on the Longship the two are 8 cm apart - and someone
+	// has to steer.
+	//
+	// Only the bench scan happens at Awake, because a ship's seats cannot change. The config lists are
+	// re-read every frame instead, so editing them takes effect on boats that already exist.
+	internal static bool IsRowingShip(GameObject go) => CountBenches(go) > 0;
+
+	// Distance within which a chair is taken to be the tiller's own seat. The Longship's helm chair sits
+	// 8 cm from the tiller attach point and its nearest real bench is 4 m away, so there is no hull where
+	// this is a close call.
+	private const float HelmRadius = 0.75f;
+
+	internal static bool IsRowingBench(GameObject shipGo, Chair chair)
+	{
+		if (chair == null) return false;
+		RefreshSeatRules();
+		string anim = chair.m_attachAnimation ?? "";
+		if (holdAnims.Contains(anim)) return false;
+		if (rowAnims.Count > 0 && !rowAnims.Contains(anim)) return false;
+		return !IsHelm(shipGo, chair);
+	}
+
+	// Vanilla's tiller is a ShipControlls rather than a Chair, but it parks the helmsman on a Chair at the
+	// same attach point, so the helm is found by asking where the tiller puts you rather than by name.
+	// m_shipControlls may not be filled in yet when this runs from Ship.Awake, hence the direct search.
+	private static bool IsHelm(GameObject shipGo, Chair chair)
+	{
+		if (shipGo == null) return false;
+		Ship ship = shipGo.GetComponent<Ship>();
+		ShipControlls ctrl = ship != null ? ship.m_shipControlls : null;
+		if (ctrl == null) ctrl = shipGo.GetComponentInChildren<ShipControlls>(true);
+		if (ctrl == null) return false;
+		Transform tiller = ctrl.m_attachPoint != null ? ctrl.m_attachPoint : ctrl.transform;
+		Transform seat = chair.m_attachPoint != null ? chair.m_attachPoint : chair.transform;
+		return Vector3.Distance(tiller.position, seat.position) <= HelmRadius;
+	}
+
+	private static int CountBenches(GameObject go)
+	{
+		int n = 0;
+		foreach (Chair chair in go.GetComponentsInChildren<Chair>(true))
+		{
+			if (IsRowingBench(go, chair)) n++;
+		}
+		return n;
+	}
+
+	// Cheap enough to call every frame: two reference checks unless somebody edited the lists.
+	internal static void RefreshSeatRules()
+	{
+		string row = OarsmenPlugin.RowingSeatAnims.Value ?? "";
+		string hold = OarsmenPlugin.HoldFastSeatAnims.Value ?? "";
+		if (ReferenceEquals(row, rowAnimsParsed) && ReferenceEquals(hold, holdAnimsParsed)) return;
+		Parse(row, rowAnims, ref rowAnimsParsed);
+		Parse(hold, holdAnims, ref holdAnimsParsed);
+		SeatRules++;
+	}
 
 	internal static bool AllowedByLists(string prefabName)
 	{
@@ -67,15 +135,6 @@ internal static class Rowing
 		float alongHull = Math.Abs(Vector3.Dot(ship.m_body.linearVelocity, ship.transform.forward));
 		float left = Mathf.Clamp01(1f - alongHull / cutout);
 		return left * left;
-	}
-
-	private static bool HasBenches(GameObject go)
-	{
-		foreach (Chair chair in go.GetComponentsInChildren<Chair>(true))
-		{
-			if (chair != null) return true;
-		}
-		return false;
 	}
 
 	// ConfigEntry hands back the same string instance until the value changes, so a reference check is
@@ -226,23 +285,50 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		public bool occupied;
 		public bool simulated;      // filled by the "Simulate rowers" testing aid, not a real player
 		public float phase;
+		public float stow = 1f;     // 0 pulling, 1 shipped; eased, never set outright
+		public float dir = 1f;      // +1 pulling ahead, -1 backing water; eased through zero
+		public float wantDir = 1f;  // what dir is easing towards, held through the deadband
 	}
 
-	// Seconds of delay between one bench and the next, bow to stern. Small enough to read as a crew
-	// pulling together rather than as rowers each doing their own thing.
-	private const float StrokeStagger = 0.04f;
+	// How much of the drive, at each end of it, the blade spends turning between feathered and square -
+	// the catch at one end, the extraction at the other. A fifth each way leaves the middle three fifths
+	// of the drive fully buried, which is about what a blade does.
+	private const float CatchBlend = 0.2f;
+
+	// How far behind the bench ahead each bench pulls, bow to stern, as a fraction of a stroke. Small
+	// enough to read as a crew pulling together rather than as rowers each doing their own thing. Held
+	// as a fraction rather than in seconds so the ripple keeps its shape whatever the rate is set to.
+	private const float StrokeStagger = 0.038f;
+
+	// How long the simulated crew keeps its benches after the last player is reported off the boat.
+	// Long enough to ride out the onboard trigger dropping in and out, short enough that stepping ashore
+	// stops the phantoms before the boat can row away on its own.
+	private const float AboardGrace = 1f;
+
+	// One sample of the hull's side: how far out the planking stands (x) at a point along the ship (z),
+	// both ship-local.
+	private struct HullPoint
+	{
+		public float z;
+		public float x;
+	}
 
 	private Ship ship;
 	private string prefabName;
 	private readonly List<Bench> benches = new();
+	private readonly List<HullPoint> hullPort = new();
+	private readonly List<HullPoint> hullStarboard = new();
+	private int seatRules = -1;
 
 	// Whether the config lists currently let this hull row. Re-evaluated every frame so the lists behave
 	// like every other setting: edit them and boats already in the water follow.
 	internal bool Active { get; private set; }
 	private Material oarMaterial;
 	private float scanTimer;
+	private float lastAboard = -999f;
 	private int rowerCount;
-	private float strokeTime;
+	private float strokeCycle;
+	private bool stroking;
 	private float builtLength = -1f, builtInboard, builtThickness, builtBladeLength, builtBladeWidth;
 
 	internal int RowerCount => rowerCount;
@@ -252,9 +338,24 @@ internal sealed class OarsBehaviour : MonoBehaviour
 	{
 		ship = GetComponent<Ship>();
 		prefabName = Utils.GetPrefabName(gameObject);
+		BuildBenches();
+	}
+
+	// Rebuilt rather than done once at Awake so that editing the seat lists takes effect on hulls already
+	// in the water. A hull that had no rowing bench at all never got this component, so it needs a reload
+	// to pick one up - the only part of the config that is not live.
+	private void BuildBenches()
+	{
+		foreach (Bench b in benches) if (b.oar != null) Destroy(b.oar);
+		benches.Clear();
+		rowerCount = 0;
+		seatRules = Rowing.SeatRules;
+		builtLength = -1f;   // force BuildOar for the new set on the next frame
 		Transform t = transform;
+		int skipped = 0;
 		foreach (Chair chair in GetComponentsInChildren<Chair>(true))
 		{
+			if (!Rowing.IsRowingBench(gameObject, chair)) { skipped++; continue; }
 			Transform seat = chair.m_attachPoint != null ? chair.m_attachPoint : chair.transform;
 			float x = t.InverseTransformPoint(seat.position).x;
 			benches.Add(new Bench { chair = chair, seat = seat, side = x >= 0f ? 1f : -1f });
@@ -265,11 +366,60 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		// clock and keep only a slight bow-to-stern ripple. Derived from the sorted order rather than
 		// Random, which previously gave every client its own stroke pattern for the same ship.
 		for (int i = 0; i < benches.Count; i++) benches[i].phase = i * StrokeStagger;
-		OarsmenPlugin.Log.LogInfo($"Oarsmen: {Utils.GetPrefabName(gameObject)} has {benches.Count} benches");
+		MapHull();
+		OarsmenPlugin.Log.LogInfo($"Oarsmen: {prefabName} has {benches.Count} rowing benches ({skipped} seats skipped: helm and hold-fast points)");
+	}
+
+	// Where the hull's side is at any point along the ship, read off the row of box colliders vanilla
+	// builds the sides from - seven a side on the Longship, plus the ladders, which sit on the same line.
+	// Only used when 'Snap oars to the hull' is on, and only worth it on a hull where one offset from the
+	// bench cannot fit both ends: the Longship's side stands at |x| 2.4 amidships and 1.6 at the forward
+	// benches, while its benches are inset 1.5 and 0.8.
+	//
+	// The bench boxes are excluded or they would be read as the hull and pull every oar inboard, and the
+	// keel-centred mesh colliders have no side to read.
+	private void MapHull()
+	{
+		hullPort.Clear();
+		hullStarboard.Clear();
+		Transform t = transform;
+		foreach (Collider c in GetComponentsInChildren<Collider>(true))
+		{
+			if (c == null || c.isTrigger || c is MeshCollider) continue;
+			if (ship != null && c == ship.m_floatCollider) continue;
+			if (c.GetComponentInParent<Chair>() != null || c.GetComponentInParent<ShipControlls>() != null) continue;
+			Vector3 lc = t.InverseTransformPoint(c.bounds.center);
+			if (Mathf.Abs(lc.x) < 0.5f) continue;   // mast and anything else on the centreline
+			(lc.x < 0f ? hullPort : hullStarboard).Add(new HullPoint { z = lc.z, x = lc.x });
+		}
+		hullPort.Sort((a, b) => a.z.CompareTo(b.z));
+		hullStarboard.Sort((a, b) => a.z.CompareTo(b.z));
+	}
+
+	// The hull line at z on one side, interpolated between the two samples that bracket it.
+	private bool TryHullSideAt(float side, float z, out float x)
+	{
+		List<HullPoint> line = side < 0f ? hullPort : hullStarboard;
+		x = 0f;
+		if (line.Count == 0) return false;
+		if (z <= line[0].z) { x = line[0].x; return true; }
+		if (z >= line[line.Count - 1].z) { x = line[line.Count - 1].x; return true; }
+		for (int i = 1; i < line.Count; i++)
+		{
+			if (z > line[i].z) continue;
+			float span = line[i].z - line[i - 1].z;
+			x = span > 0.0001f ? Mathf.Lerp(line[i - 1].x, line[i].x, (z - line[i - 1].z) / span) : line[i].x;
+			return true;
+		}
+		x = line[line.Count - 1].x;
+		return true;
 	}
 
 	private void Update()
 	{
+		Rowing.RefreshSeatRules();
+		if (seatRules != Rowing.SeatRules) BuildBenches();
+
 		bool allowed = Rowing.AllowedByLists(prefabName);
 		if (allowed != Active)
 		{
@@ -277,8 +427,9 @@ internal sealed class OarsBehaviour : MonoBehaviour
 			if (!Active)
 			{
 				// Excluded while afloat: drop the oars and the crew so the hull goes back to vanilla.
-				foreach (Bench b in benches) { b.occupied = false; b.simulated = false; if (b.oar != null) b.oar.SetActive(false); }
+				foreach (Bench b in benches) { b.occupied = false; b.simulated = false; b.stow = 1f; if (b.oar != null) b.oar.SetActive(false); }
 				rowerCount = 0;
+				stroking = false;
 			}
 		}
 		if (!Active) return;
@@ -317,8 +468,14 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		// and forces. Real rowers are counted first, so this is a floor on the crew rather than an extra.
 		// Gated on somebody being aboard, both so derelict boats stay still and so it cannot quietly move
 		// ships across a whole world if it is ever left switched on.
+		//
+		// Held for a moment after the last player leaves, because vanilla's onboard trigger flickers: walk
+		// the deck near the rail and it reports nobody aboard for a frame or two at a time. Without the
+		// grace period the whole phantom crew - oars and force - drops out and comes back with it, which
+		// is what made the simulated oars stutter while the real ones beside them looked fine.
+		if (ship.m_players.Count > 0) lastAboard = Time.time;
 		int target = Math.Min(OarsmenPlugin.SimulatedRowers.Value, benches.Count);
-		if (count < target && ship.m_players.Count > 0)
+		if (count < target && Time.time - lastAboard < AboardGrace)
 		{
 			foreach (Bench b in benches)
 			{
@@ -345,7 +502,10 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		bool show = OarsmenPlugin.ShowOars.Value == OarsmenPlugin.Toggle.On && OarsmenPlugin.Enabled.Value == OarsmenPlugin.Toggle.On;
 		if (!show)
 		{
-			foreach (Bench b in benches) if (b.oar != null) b.oar.SetActive(false);
+			// Switched off outright rather than eased: reset the stow so that turning oars back on starts
+			// them shipped and swings them out, instead of resuming mid-stroke.
+			foreach (Bench b in benches) { b.stow = 1f; if (b.oar != null) b.oar.SetActive(false); }
+			stroking = false;
 			return;
 		}
 		if (NeedsRebuild()) foreach (Bench b in benches) BuildOar(b);
@@ -353,7 +513,13 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		Ship.Speed speed = ship.m_speed;
 		bool rowing = speed == Ship.Speed.Slow || speed == Ship.Speed.Back
 			|| ((speed == Ship.Speed.Half || speed == Ship.Speed.Full) && OarsmenPlugin.RowUnderSail.Value == OarsmenPlugin.Toggle.On);
-		if (rowing) strokeTime += dt;
+		// Strokes per second, and the clock kept as a position within one stroke rather than as elapsed
+		// seconds multiplied up. Two reasons: changing the rate then changes how fast the clock runs
+		// instead of jumping the crew to a different point in the stroke, which matters while somebody is
+		// dragging the slider; and the clock cannot drift into the part of the float range where a stroke
+		// stops being smooth, however long the session runs.
+		float strokeRate = Mathf.Max(1f, OarsmenPlugin.StrokeRate.Value) / 60f;
+		if (rowing || stroking) strokeCycle = Mathf.Repeat(strokeCycle + dt * strokeRate, 1f);
 
 		// Which way each bank pulls. Ahead normally, astern when the ship is backing, and on a hard rudder
 		// the inside bank eases off and drops through zero into a back-water stroke while the outside bank
@@ -370,13 +536,23 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		// out of the water rather than thrashing away achieving nothing. Same curve the force uses.
 		float bite = (speed == Ship.Speed.Half || speed == Ship.Speed.Full) ? Rowing.SailBite(ship) : 1f;
 
+		// The rate used to be hard-coded to the rudder paddle vanilla animates at sin(t * 6), which works
+		// out at 57 strokes a minute - a racing sprint, not a crew moving a loaded longship. Nothing
+		// depends on the two agreeing: the paddle is vanilla's own animation on a different part of the
+		// boat, and the force the crew adds is flat rather than stroke-timed.
+		float driveShare = Mathf.Clamp(OarsmenPlugin.DriveShare.Value, 0.15f, 0.85f);
+
 		float[] holes = ParseHoles(OarsmenPlugin.HolePositions.Value);
 		Transform t = transform;
+		bool anyPulling = false;
 		foreach (Bench b in benches)
 		{
 			if (b.oar == null) continue;
-			b.oar.SetActive(b.occupied);
-			if (!b.occupied) continue;
+			// An oar stays drawn until it has finished shipping itself, so standing up sends it back along
+			// the hull rather than deleting it out of the air mid-stroke.
+			bool draw = b.occupied || b.stow < 0.999f;
+			b.oar.SetActive(draw);
+			if (!draw) continue;
 
 			// Pivot: beside the bench at the hull, or snapped to the nearest oar hole along the ship.
 			Vector3 seat = t.InverseTransformPoint(b.seat.position);
@@ -387,39 +563,100 @@ internal sealed class OarsBehaviour : MonoBehaviour
 				foreach (float h in holes) if (Mathf.Abs(h - pivot.z) < Mathf.Abs(best - pivot.z)) best = h;
 				pivot.z = best;
 			}
+			// A hull that tapers cannot be fitted by a single offset from the bench, so this reads the
+			// side off the hull's own colliders at the oar's station instead. Off by default: the vanilla
+			// offsets are measured, and they fit the Longship and Karve.
+			if (OarsmenPlugin.SnapToHull.Value == OarsmenPlugin.Toggle.On && TryHullSideAt(b.side, pivot.z, out float hullX))
+			{
+				pivot.x = hullX - b.side * OarsmenPlugin.HullInset.Value;
+			}
 			b.oar.transform.localPosition = pivot;
 
-			// Oar's +Z points outboard from the pivot. Rowing: swing fore-aft in time with the rudder paddle
-			// (vanilla wiggles the rudder at sin(t * 6)), blade dipped. Not rowing: held level and still.
+			// Oar's +Z points outboard from the pivot. Rowing: swing fore-aft at the stroke rate, blade
+			// dipped. Not rowing: shipped along the hull, or held out to the side, and still.
 			// Signed: + pulls the ship ahead, - backs water. Magnitude is how hard, so a bank the rudder has
 			// cancelled out barely moves its oars. The whole split is multiplied by dirSign, not just the
 			// base: vanilla negates its steer force when backing (num17 = -1), so the same rudder swings the
 			// bow the other way and the banks have to swap with it, or the oars pivot against the boat.
-			float power = Mathf.Clamp(dirSign * (1f - turnBias * b.side), -1f, 1f);
-			float effort = Mathf.Abs(power) * bite;
+			// Which way this bank is pulling. Positive rudder swings the bow to starboard (vanilla's steer
+			// force is right * m_stearForce * -rudder, applied at the stern), so starboard is the inside of
+			// that turn and it is the inside bank that backs water while the outside keeps pulling - which
+			// is how a crew pivots a longship on the spot. Past 'Turn stroke bias' worth of rudder the
+			// inside bank goes negative and reverses; below that both banks pull ahead.
+			//
+			// Only the direction comes from the rudder. How hard the bank pulls does not, which is the
+			// change: the amplitude used to be |power|, and because power crosses zero on its way to
+			// negative, feeding in rudder took the inside bank's stroke to nothing - and nothing is what
+			// ships an oar, so the inside bank stowed itself along the hull mid-turn and then came back out
+			// backing. Both banks now row a full stroke throughout; one of them simply rows it backwards.
+			float bankPower = dirSign * (1f - turnBias * b.side);
+			// A deadband so a rudder held near the reversal point cannot flutter the bank between ahead and
+			// astern; outside it the bank commits, and b.dir eases it across.
+			if (bankPower > 0.05f) b.wantDir = 1f;
+			else if (bankPower < -0.05f) b.wantDir = -1f;
+			float effort = b.occupied ? bite : 0f;
 
-			float sweep = 0f, dip;
-			if (rowing && effort > 0.02f)
-			{
-				float s = Mathf.Sin((strokeTime + b.phase) * 6f);
-				sweep = s * OarsmenPlugin.StrokeSweep.Value * 0.5f * effort;
-				// The blade is in the water on the drive and lifted on the recovery. Pulling ahead the drive
-				// is the aft half of the swing (s < 0); backing water it is the forward half, so the same
-				// swing pushes the ship the other way.
-				bool drive = power >= 0f ? s < 0f : s > 0f;
-				// Blend towards the stowed angle as the effort falls away, so an oar that has stopped
-				// earning its keep - outrun by the hull under sail, or on the bank a hard rudder has
-				// cancelled - shortens its stroke and lifts clear instead of stopping dead at a threshold.
-				dip = Mathf.Lerp(-OarsmenPlugin.StowedAngle.Value, OarsmenPlugin.BladeDip.Value * (drive ? 1f : 0.35f), effort);
-			}
-			else
-			{
-				dip = -OarsmenPlugin.StowedAngle.Value;
-			}
+			// How far this oar is from pulling: 0 pulling flat out, 1 fully shipped. Eased towards its
+			// target over 'Stow time' rather than set outright, because every reason an oar stops rowing
+			// arrives as a step change - the helmsman drops to Stop, the sail goes up, a rower stands - and
+			// stepping this would teleport the oar into the stowed pose. Everything the oar does hangs off
+			// this one number, so the swing, the blade and the shipping cannot disagree with each other.
+			float targetStow = rowing && effort > 0.02f ? 1f - effort : 1f;
+			b.stow = Mathf.MoveTowards(b.stow, targetStow, dt / Mathf.Max(0.05f, OarsmenPlugin.StowTime.Value));
+			float pull = 1f - b.stow;
+			if (pull > 0.001f) anyPulling = true;
+
+			// One turn of u is one stroke: the drive occupies the first 'Drive share' of it, the recovery
+			// the rest. The two are eased separately rather than being read off one sine, and that is what
+			// makes this read as rowing:
+			//
+			//  - The oar is momentarily still at the catch and at the finish, because a smoothstep has no
+			//    slope at its ends. A sine is never still except at its extremes and never dwells there, so
+			//    a sine-driven oar waves rather than rows.
+			//  - The drive can be quicker than the recovery, as a real stroke is - the crew pulls hard and
+			//    comes forward at leisure. A sine forces the two to be mirror images.
+			//  - The blade being buried and the oar driving are now the same interval by construction. Every
+			//    version up to 0.3.0 kept them as two curves that had to be held a quarter-cycle apart, and
+			//    getting that relationship wrong is exactly what made the oars stir instead of row.
+			float u = Mathf.Repeat(strokeCycle + b.phase, 1f);
+			bool driving = u < driveShare;
+			float p = driving ? u / driveShare : (u - driveShare) / (1f - driveShare);
+			float eased = Mathf.SmoothStep(0f, 1f, p);
+			// +1 is forward at the catch, -1 aft at the finish; the recovery carries it back the other way.
+			float swing = driving ? Mathf.Lerp(1f, -1f, eased) : Mathf.Lerp(-1f, 1f, eased);
+			// Backing water is the same stroke with the loaded half swung the other way. Eased across rather
+			// than flipped, because negating the arc outright mirrors the oar in a single frame: running it
+			// through zero shortens the stroke, turns it over and lengthens it again, which is what a rower
+			// taking up a backing stroke actually looks like.
+			b.dir = Mathf.MoveTowards(b.dir, b.wantDir, dt / Mathf.Max(0.05f, OarsmenPlugin.StowTime.Value));
+			float sweep = swing * b.dir * OarsmenPlugin.StrokeSweep.Value * 0.5f * pull;
+
+			// Blade buried through the drive and clear of the water on the recovery. It squares up over the
+			// first part of the drive and feathers out over the last - at the catch and the finish, where
+			// the oar is slowest, so the turn has time to read - rather than being switched at a crossing.
+			float square = driving ? Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Min(p, 1f - p) / CatchBlend)) : 0f;
+			float clearDip = OarsmenPlugin.BladeDip.Value - Mathf.Max(0f, OarsmenPlugin.RecoveryLift.Value);
+			float dip = Mathf.Lerp(-OarsmenPlugin.StowedAngle.Value, Mathf.Lerp(clearDip, OarsmenPlugin.BladeDip.Value, square), pull);
+			// Feathering: the blade turns flat as it leaves the water and squares up again at the catch.
+			// Rolled about the oar's own axis - the root's Z, which Unity applies before the pitch and yaw,
+			// so it stays a roll of the shaft rather than a twist of the whole swing.
+			float feather = Mathf.Lerp(OarsmenPlugin.FeatherAngle.Value, 0f, square) * pull * b.side;
+
 			// yaw: outboard (+90 right / -90 left) plus the fore-aft sweep; pitch: blade down into the water.
 			float yaw = b.side * 90f + (-b.side * sweep);
-			b.oar.transform.localRotation = Quaternion.Euler(dip, yaw, 0f);
+			// Shipped oars lie fore and aft along the hull, blades aft, the way a crew boats them - rather
+			// than standing straight out to the side doing nothing. Turned on the same eased blend, so the
+			// oar swings in from wherever the stroke had it. The target is side * 180 rather than a flat 180
+			// so each bank comes aft the short way instead of sweeping across the boat.
+			if (OarsmenPlugin.StowedOars.Value == OarsmenPlugin.StowStyle.AlongHull && b.stow > 0f)
+			{
+				yaw = Mathf.Lerp(yaw, b.side * 180f, b.stow);
+			}
+			b.oar.transform.localRotation = Quaternion.Euler(dip, yaw, feather);
 		}
+		// Keep the clock running while anyone is still easing off, so a crew that has been told to stop
+		// finishes the stroke it is in rather than freezing mid-swing and then rotating.
+		stroking = anyPulling;
 	}
 
 	private bool NeedsRebuild()

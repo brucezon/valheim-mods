@@ -1,15 +1,15 @@
 # Oarsmen
 
-Seated players row the ship. Built for Valheim 1.0.7.
+Seated players row the ship. Built for Valheim 1.0.12.
 
 > **Install on the dedicated server and on every client.** (Ignore the "Client-only" line on this
 > page — Hexium shows that on every package, including server-only ones.) The mod is not required:
 > a client without it simply sees no oars.
 >
-> **Still untuned.** Oars row and push the ship correctly, but where each oar sits — the pivot
-> offsets and the hull's oar-hole positions — are first guesses that have not been checked in game
-> yet. Expect to nudge `Pivot outward/up/forward` for your ship. `oarsmen ship` prints what you are
-> standing on to help.
+> **Oar placement is measured on the Longship** as of 0.3.0 — the pivot offsets are no longer the
+> first guesses 0.1.0 shipped with. The Karve has not been checked in game, and a boat from another
+> mod may still want a nudge: `Pivot outward/up/forward`, or `Snap oars to the hull` to have the mod
+> find the planking itself. `oarsmen ship` prints what you are standing on to help.
 
 Vanilla ships paddle with one fixed force no matter who is aboard, and the Longship's benches and oar
 holes are decoration. With Oarsmen, every player sitting on one of the ship's benches is a rower:
@@ -28,10 +28,16 @@ holes are decoration. With Oarsmen, every player sitting on one of the ship's be
 - **An oar appears through the hull beside every occupied bench.** The crew pulls in unison, with a
   slight bow-to-stern ripple, and the stroke follows what the ship is doing: oars drive astern to push
   you ahead, reverse their drive when you are backing, and on a hard rudder the inside bank of the turn
-  eases off and backs water while the outside bank keeps pulling — how a crew pivots a longship. Sail
-  out or ship stopped: the oars are held level and still. Bench empty: no oar.
+  backs water — the same stroke rowed the other way, at full length — while the outside bank keeps
+  pulling, which is how a crew pivots a longship on the spot. Sail
+  out or ship stopped: the oars are shipped fore and aft along the hull, blades aft, lifted clear of
+  the water. Bench empty: no oar.
 - The helmsman at the tiller is not a rower. Someone has to steer; the rest sit down and pull. The
   tiller's hover text shows `Rowers 3/4` so the helmsman can see who is actually pulling.
+- **A seat is not always a bench.** The Longship carries seven places to sit: four rowing benches, the
+  helm, and two spots where a passenger holds fast — at the mast and out at the figurehead. Only the
+  benches row. The helm is recognised by sitting at the tiller's own attach point, the hold-fast spots
+  by the animation vanilla puts you in, so the rule carries to boats this mod has never seen.
 
 **Sailing is untouched.** Vanilla only gives the rudder a push in paddle and reverse — under sail a
 ship turns on its speed through the water, and that is left exactly as it was. The crew helps you
@@ -52,14 +58,17 @@ entirely and keep their flat force, matching vanilla's own.
 **The oars ship themselves as the sail takes over.** The stroke shortens and the blades lift out of
 the water on the same curve as the force, so the crew is never seen thrashing away at a speed where
 they are achieving nothing: full strokes becalmed, easing off through 2–3 m/s, held clear by about 4.
-It is a blend rather than a switch, so nothing snaps. The same thing happens to the bank a hard rudder
-has cancelled — those oars come up instead of pretending to pull.
+It is a blend rather than a switch, so nothing snaps. A hard rudder is different: the inside bank turns
+its stroke around rather than stopping, because a crew pivoting a boat backs water, it does not sit
+there with its oars up.
 
-**Every boat with seats rows — nothing needs listing in the config.** The mod looks for `Chair`
-components on the hull, so the Longship (4 benches) and Karve (2) work out of the box and so do boats
-from other mods, OdinShip's rowing canoes included, the moment they exist. A hull with no seats never
-rows, because there is nowhere to sit. The tiller is not a seat in this sense — it is a different
-component — so the helmsman is never counted as a rower.
+**Every boat with benches rows — nothing needs listing in the config.** The mod looks for `Chair`
+components on the hull and drops the ones that are not rowing stations — the helm, and anywhere a
+passenger holds fast rather than sits — so the Longship (4 benches of its 7 seats) and Karve work out
+of the box, and so do boats from other mods, OdinShip's rowing canoes included, the moment they exist.
+A hull with nowhere to sit never rows. If a modded boat's seats are not being counted, `oarsmen ship`
+prints the attach animation of every one of them; add it to `Rowing seat animations` or take it out of
+`Hold-fast seat animations`.
 
 **A big hull rewards a big crew.** Every bench counts by default, so a warship with twelve seats is
 pulled by twelve rowers, not by the first four. The gain is proportional rather than absolute — the
@@ -85,8 +94,10 @@ Config is server-synced and live.
 
 ## Config (`BepInEx/config/bruceirons.Oarsmen.cfg`)
 
-**2 - Rowing:** `Rowing` (On), `Only these ships` (empty = every boat with seats),
-`Excluded ships` (empty), `Paddle force per rower (x)` (0.25),
+**2 - Rowing:** `Rowing` (On), `Only these ships` (empty = every boat with benches),
+`Excluded ships` (empty), `Hold-fast seat animations` (`attach_mast,attach_dragon` — seats you hang on
+at rather than row from), `Rowing seat animations` (empty = every seat that is not one of those or the
+helm; set `attach_sitship` to allow vanilla ship benches only), `Paddle force per rower (x)` (0.25),
 `Steering force per rower (x)` (0.15, set 0 to turn the steering help off), `Max steering share (x)` (1 = the crew can at most double the ship's own rudder force),
 `Max turn rate (degrees per second)` (45, a backstop on yaw only), `Max rowers` (0 = every bench counts),
 `Row under sail` (Off: rowers only add forward force in paddle mode and reverse; steering help is
@@ -94,11 +105,22 @@ never added under sail either way), `Speed where oars stop helping (m/s)` (5),
 `Show rowers on the tiller` (On).
 
 **3 - Oars:** `Show oars` (On), oar and blade dimensions, and where the oar pivots relative to its
-bench: `Pivot outward`, `Pivot up`, `Pivot forward` (metres). `Oar hole positions`: comma-separated
-ship-local Z positions of the hull's oar holes; when set, each oar snaps to the closest hole instead
-of sitting beside its bench. `Stroke sweep`, `Blade dip`, `Stowed angle` (degrees), and
-`Turn stroke bias (x)` (1.6) for how sharply a turn splits the two banks — 0 = both always row
-together. All of section 3 is cosmetic; none of it changes how the ship moves.
+bench: `Pivot outward` (0.6), `Pivot up` (0.26), `Pivot forward` (0.19), all metres and all measured
+on the Longship. `Snap oars to the hull` (Off) ignores `Pivot outward` and finds the planking itself,
+for a hull those numbers do not suit, with `Oar hole inset from the hull` (0) to nudge the result.
+`Oar hole positions`: comma-separated ship-local Z positions of the hull's oar holes; when set, each
+oar snaps to the closest hole instead of sitting beside its bench. `Stroke sweep` (40),
+`Stroke rate (strokes per minute)` (26 — a working crew, not a racing sprint),
+`Drive share of the stroke` (0.45 — the loaded half, blade in the water; the rest carries the oar
+forward again), `Blade dip` (35, set that deep because the oar holes sit well above the waterline),
+`Recovery lift` (22 degrees above the dip, enough to clear the water coming forward),
+`Feather angle` (90 — the blade turns flat on the recovery and squares up at the catch; 0 = off),
+`Stowed oars` (`AlongHull`, or
+`Outboard` for oars left standing out to the side), `Stowed angle` (12) for how far a stowed oar is
+lifted clear, `Stow time (seconds)` (0.8) for how long an oar takes to ship itself and swing back out,
+and `Turn stroke bias (x)` (1.6) for how much rudder it takes before the inside bank backs water
+instead of pulling ahead — it turns over at 1 divided by this, and 0 = both
+always row together. All of section 3 is cosmetic; none of it changes how the ship moves.
 
 **4 - Debug:** `Simulate rowers` (0) — **testing aid for single player.** Pretend at least this many
 benches are manned, filled bow to stern, so one person can see and feel a full crew: the phantoms row,
