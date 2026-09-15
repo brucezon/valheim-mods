@@ -59,6 +59,14 @@
   postfix, which does not inherit that gate, so in heavy seas the crew kept rowing through mid-air —
   and along the hull's forward axis, which points at the sky when the bow is pitched up, so they were
   rowing it higher. The same five-sample water test vanilla uses now gates the crew's force too.
+- **`Row under sail` is no longer a flat bonus.** An oar only bites while the blade is moving through
+  the water faster than the hull is, so the crew's contribution now falls away as the square of the
+  speed they have left — `(1 - speed/V)²` — reaching nothing at the new `Rowing cuts out above (m/s)`
+  (5). A full crew pulls its whole weight becalmed, about a third of it at 2 m/s, and nothing by 4.
+  Rowing gets you out of a calm or a foul wind and is futile once the sail is really pulling, which
+  makes the setting a way to get under way rather than a flat speed increase. Squared rather than
+  linear because that is what a blade does, and because linear left a big crew still usefully rowing
+  at cruising speed. Paddle mode and reverse are unaffected and keep vanilla's own flat paddle force.
 - Oar placement is still untuned; see the note at the top of the README.
 
 ## 0.1.1 - 2026-09-14

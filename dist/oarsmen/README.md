@@ -37,6 +37,13 @@ holes are decoration. With Oarsmen, every player sitting on one of the ship's be
 ship turns on its speed through the water, and that is left exactly as it was. The crew helps you
 paddle and manoeuvre; it does not help you tack.
 
+**If you do switch on `Row under sail`, the oars fade out as the ship picks up speed.** A blade only
+bites while it is moving through the water faster than the hull is, so the crew's help falls away as
+the square of the speed they have left, and is worth nothing at all above `Rowing cuts out above`
+(5 m/s). In practice a full crew pulls its whole weight when becalmed, about a third of it at 2 m/s,
+and nothing by 4 — rowing gets you out of a calm or a foul wind, and is futile once the sail is really
+pulling. Paddle mode and reverse are not affected and keep their flat force, matching vanilla's own.
+
 **Every boat with seats rows — nothing needs listing in the config.** The mod looks for `Chair`
 components on the hull, so the Longship (4 benches) and Karve (2) work out of the box and so do boats
 from other mods, OdinShip's rowing canoes included, the moment they exist. A hull with no seats never
@@ -72,7 +79,8 @@ Config is server-synced and live.
 `Steering force per rower (x)` (0.15, set 0 to turn the steering help off), `Max steering share (x)` (1 = the crew can at most double the ship's own rudder force),
 `Max turn rate (degrees per second)` (45, a backstop on yaw only), `Max rowers` (0 = every bench counts),
 `Row under sail` (Off: rowers only add forward force in paddle mode and reverse; steering help is
-never added under sail either way), `Show rowers on the tiller` (On).
+never added under sail either way), `Rowing cuts out above (m/s)` (5),
+`Show rowers on the tiller` (On).
 
 **3 - Oars:** `Show oars` (On), oar and blade dimensions, and where the oar pivots relative to its
 bench: `Pivot outward`, `Pivot up`, `Pivot forward` (metres). `Oar hole positions`: comma-separated

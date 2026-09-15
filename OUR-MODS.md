@@ -213,6 +213,23 @@ explicitly. Scaling is proportional, not absolute — the share multiplies that 
 `m_backwardForce` — so twelve benches at 0.25 is ×4 paddle force, about ×2 speed after quadratic drag,
 paddle mode only. Vanilla hulls are unchanged because the Longship has four seats anyway.
 
+**Rowing under sail is modelled, not flat.** `Row under sail` (still Off by default) multiplies the
+crew's thrust by `(1 - v/V)²`, v being speed along the hull and V `Rowing cuts out above` (5 m/s).
+A blade only bites while it is moving through the water faster than the hull, so thrust goes as the
+square of the speed the blade has left and is zero once the hull outruns it. Squared, not linear:
+linear leaves a twelve-rower crew still adding a full paddle force at 4 m/s, which is exactly the
+"rowing at speed should be futile" case it exists to prevent.
+
+The falloff is **deliberately not applied in paddle or reverse**. Vanilla's own paddle force is flat
+and speed-independent there, with quadratic hull drag doing the limiting, so matching it keeps those
+modes pure augmentation; under sail vanilla applies no paddle force at all, so the model is ours to
+choose rather than vanilla's to contradict. Applying it everywhere would also have cut paddle rowing
+to ~0.36 of its tuned value at 2 m/s.
+
+Momentum carries across speed changes — `RPC_Forward`/`RPC_Backward` only step the `m_speed` enum, and
+the sole write to `m_body.linearVelocity` derives from the current velocity — so "row up to speed, then
+switch to sail" works, and the falloff makes the crew bow out of it on its own.
+
 **The water gate — the trap a postfix sets for you.** `Ship.CustomFixedUpdate` wraps *every* force it
 applies in `if (!(num2 > m_disableLevel))`, where `num2` is the centre of mass against the average of
 five water samples across the float collider. Out of the water, vanilla applies nothing at all and lets

@@ -127,6 +127,28 @@ internal static class Rowing
 			Vector3 add = Vector3.zero;
 
 			float thrust = Math.Max(0f, OarsmenPlugin.BonusPerRower.Value) * rowers;
+
+			// Under sail the oars are fighting a hull the wind is already driving. A blade only bites while
+			// it is moving through the water faster than the hull is, so thrust goes as the square of the
+			// speed the blade has left - (1 - v/V)^2, nothing at all at V. Squared rather than linear
+			// because that is what a blade does, and because linear leaves a big crew still usefully
+			// rowing at cruising speed, which is the thing this is meant to stop.
+			//
+			// Paddle and reverse are deliberately exempt: vanilla's own paddle force is flat and
+			// speed-independent there, with quadratic hull drag doing the limiting, so matching it keeps
+			// those modes pure augmentation. Under sail vanilla applies no paddle force at all, so this is
+			// our model to choose rather than vanilla's to contradict.
+			if (sailing && thrust > 0f)
+			{
+				float cutout = OarsmenPlugin.RowCutoutSpeed.Value;
+				if (cutout > 0f)
+				{
+					float alongHull = Math.Abs(Vector3.Dot(__instance.m_body.linearVelocity, __instance.transform.forward));
+					float left = Mathf.Clamp01(1f - alongHull / cutout);
+					thrust *= left * left;
+				}
+			}
+
 			if (thrust > 0f)
 			{
 				add += __instance.transform.forward * (dir * __instance.m_backwardForce * (1f - Mathf.Abs(__instance.m_rudderValue)) * thrust);
