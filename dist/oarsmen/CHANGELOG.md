@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.2 - 2026-09-15
+- **The blade drops into the water instead of snapping in.** The entry was run inside the drive alone,
+  over a fifth of it - 9% of a stroke, about a fifth of a second at 26 a minute - and the recovery
+  contributed nothing to it, so the oar came forward clear of the water and then slapped in at the catch.
+  The entry is now centred on the catch and the extraction on the finish, each spread over the new
+  **`Catch blend (share of stroke)`** (0.16): the blade starts dropping through the last of the recovery
+  and is buried a little way into the drive, and comes out the same way around the finish. The feather
+  follows the same blend, so the blade squares up as it goes in and turns flat as it comes out.
+  Capped at the shorter of the drive and the recovery so the two blends can never overlap.
+
 ## 0.3.1 - 2026-09-15
 - **Beds are not benches.** `Hold-fast seat animations` now defaults to
   `attach_mast,attach_dragon,attach_bed`. OdinShip's Big Cargo Ship carries a bed ('Cama') that is a

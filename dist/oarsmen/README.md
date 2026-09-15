@@ -113,7 +113,7 @@ oar snaps to the closest hole instead of sitting beside its bench. `Stroke sweep
 `Stroke rate (strokes per minute)` (26 — a working crew, not a racing sprint),
 `Drive share of the stroke` (0.45 — the loaded half, blade in the water; the rest carries the oar
 forward again), `Blade dip` (35, set that deep because the oar holes sit well above the waterline),
-`Recovery lift` (22 degrees above the dip, enough to clear the water coming forward),
+`Recovery lift` (22 degrees above the dip, enough to clear the water coming forward), `Catch blend` (0.16 of a stroke: how long the blade takes to drop in at the catch and come out at the finish, centred on each),
 `Feather angle` (90 — the blade turns flat on the recovery and squares up at the catch; 0 = off),
 `Stowed oars` (`AlongHull`, or
 `Outboard` for oars left standing out to the side), `Stowed angle` (12) for how far a stowed oar is

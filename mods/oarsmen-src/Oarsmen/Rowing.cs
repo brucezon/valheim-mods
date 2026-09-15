@@ -290,11 +290,6 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		public float wantDir = 1f;  // what dir is easing towards, held through the deadband
 	}
 
-	// How much of the drive, at each end of it, the blade spends turning between feathered and square -
-	// the catch at one end, the extraction at the other. A fifth each way leaves the middle three fifths
-	// of the drive fully buried, which is about what a blade does.
-	private const float CatchBlend = 0.2f;
-
 	// How far behind the bench ahead each bench pulls, bow to stern, as a fraction of a stroke. Small
 	// enough to read as a crew pulling together rather than as rowers each doing their own thing. Held
 	// as a fraction rather than in seconds so the ripple keeps its shape whatever the rate is set to.
@@ -634,7 +629,17 @@ internal sealed class OarsBehaviour : MonoBehaviour
 			// Blade buried through the drive and clear of the water on the recovery. It squares up over the
 			// first part of the drive and feathers out over the last - at the catch and the finish, where
 			// the oar is slowest, so the turn has time to read - rather than being switched at a crossing.
-			float square = driving ? Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Min(p, 1f - p) / CatchBlend)) : 0f;
+			// The entry is centred on the catch (u = 0) and the extraction on the finish (u = driveShare), each
+			// spread over 'Catch blend' of the whole stroke, so the blade drops in over the last of the recovery
+			// and the first of the drive, and comes out over the last of the drive and the first of the recovery.
+			// 0.3.1 ran both inside the drive alone, over a fifth of it - 9% of a stroke, a fifth of a second at
+			// 26 a minute - which is a blade slapped into the water rather than dropped in.
+			float half = Mathf.Clamp(OarsmenPlugin.CatchBlend.Value, 0.02f, Mathf.Min(driveShare, 1f - driveShare)) * 0.5f;
+			float toCatch = u <= 0.5f ? u : u - 1f;   // signed distance from the catch, in strokes
+			float toFinish = u - driveShare;           // signed distance from the finish
+			float square = Mathf.Abs(toCatch) <= Mathf.Abs(toFinish)
+				? Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-half, half, toCatch))
+				: 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(-half, half, toFinish));
 			float clearDip = OarsmenPlugin.BladeDip.Value - Mathf.Max(0f, OarsmenPlugin.RecoveryLift.Value);
 			float dip = Mathf.Lerp(-OarsmenPlugin.StowedAngle.Value, Mathf.Lerp(clearDip, OarsmenPlugin.BladeDip.Value, square), pull);
 			// Feathering: the blade turns flat as it leaves the water and squares up again at the catch.

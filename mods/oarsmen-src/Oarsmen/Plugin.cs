@@ -31,7 +31,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.Oarsmen";
 	public const string Name = "Oarsmen";
-	public const string Version = "0.3.1";
+	public const string Version = "0.3.2";
 
 	internal static ManualLogSource Log;
 	private static readonly ConfigSync configSync = new(Name) { DisplayName = Name, CurrentVersion = Version, MinimumRequiredVersion = Version, ModRequired = false };
@@ -82,6 +82,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 	internal static ConfigEntry<float> DriveShare;
 	internal static ConfigEntry<float> RecoveryLift;
 	internal static ConfigEntry<float> FeatherAngle;
+	internal static ConfigEntry<float> CatchBlend;
 	internal static ConfigEntry<StowStyle> StowedOars;
 	internal static ConfigEntry<float> StowedAngle;
 	internal static ConfigEntry<float> StowTime;
@@ -136,6 +137,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 		DriveShare = config("3 - Oars", "Drive share of the stroke", 0.45f, new ConfigDescription("How much of each stroke is the drive - the loaded half, blade in the water, sweeping aft - with the rest being the recovery that carries the oar forward again. A real crew pulls hard and comes forward at more leisure, so it sits below half. The oar is momentarily still at the catch and at the finish either way, which is what stops the stroke looking like an oar being waved about.", new AcceptableValueRange<float>(0.15f, 0.85f)));
 		RecoveryLift = config("3 - Oars", "Recovery lift (degrees)", 22f, new ConfigDescription("How far the blade rises above the drive angle for the swing forward. It only has to clear the water: 'Blade dip' puts the blade in, this takes it back out. Too little and the crew drags its blades through the water on the recovery, too much and the oars wave in the air.", new AcceptableValueRange<float>(0f, 60f)));
 		FeatherAngle = config("3 - Oars", "Feather angle (degrees)", 90f, new ConfigDescription("How far the blade turns flat on the recovery. A crew feathers the blade out of the water on the way forward and squares it up again at the catch, which is what makes a stroke read as rowing rather than as poles being waved. 90 is fully flat, 0 turns feathering off and leaves the blade square all the way round.", new AcceptableValueRange<float>(0f, 90f)));
+		CatchBlend = config("3 - Oars", "Catch blend (share of stroke)", 0.16f, new ConfigDescription("How much of each stroke the blade spends going into the water at the catch, and again coming out at the finish. Centred on the catch, so half of it is the end of the recovery and half the start of the drive. 0.16 at 26 strokes a minute is about a third of a second each way; 0.3.1 had the equivalent of 0.09, which slapped the blade in. Capped at the shorter of the drive and the recovery.", new AcceptableValueRange<float>(0.02f, 0.5f)));
 		BladeDip = config("3 - Oars", "Blade dip (degrees)", 35f, "How far the oar points down into the water while rowing. 35 rather than a shallower angle because the oar holes sit well above the waterline - the blades have to reach down past the freeboard before they are in the water at all.");
 		StowedOars = config("3 - Oars", "Stowed oars", StowStyle.AlongHull, "What an oar does when its rower is not pulling - sail out, ship stopped, or the bank a hard rudder has cancelled. AlongHull (default) = shipped fore and aft along the side of the boat, blades aft, the way a crew boats their oars. Outboard = left standing straight out to the side, lifted clear of the water by the angle below. Either way the oar turns and lifts on the same blend the stroke fades on, so it swings in as the crew eases off rather than flicking round.");
 		StowedAngle = config("3 - Oars", "Stowed angle (degrees)", 12f, "How far a stowed oar is lifted clear of the water. Applies to both stow styles.");
