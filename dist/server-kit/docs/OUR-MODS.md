@@ -15,7 +15,7 @@ core is 5.4.23.5). Reference tree for building: `refs\1.0\gamepath\` (`BepInEx\c
 
 | Mod | Ours? | Source | Live | Sides | Config file |
 |---|---|---|---|---|---|
-| **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.13.0 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
+| **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.14.0 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
 | **Endurance** | yes (MIT) | `mods\endurance-src\Endurance` | 1.0.0 | both | `bruceirons.Endurance.cfg` |
 | **BruceNetworking** | yes (fork session) | `mods\brucenetworking-src` (README + IDEAS there) | 0.3.0 | **server only** | `bruceirons.BruceNetworking.cfg` |
 | **Oarsmen** | yes (MIT) | `mods\oarsmen-src\Oarsmen` | 0.2.0 | both (not required) | `bruceirons.Oarsmen.cfg` |
@@ -104,6 +104,12 @@ Sections (see `dist\bruceqol\README.md` for the player-facing wording):
     `TerrainComp.LevelTerrain/RaiseTerrain/ApplyToHeightmap` and `Heightmap.LevelTerrain` replacing
     every `ldc.r4 8/-8` (and `ldc.r8 8`) with calls returning the setting. The re-clamp in
     `ApplyToHeightmap` runs on every client, so the value must match everywhere (ModRequired + sync).
+18. Hoe — `Radius multiplier` (1.5), `Raise step multiplier` (1), `Raise ground costs stone` (On).
+    `Hoe.cs`: `TerrainOp.Awake` prefix scales the placed op's (deep-copied) `Settings` radii and
+    `m_raiseDelta` for prefabs starting mud_road/raise/path/paved_road/cultivate/replant (digg = pickaxe,
+    excluded; ghost skipped via `m_forceDisableTerrainOps`). Free raise: `Player.HaveRequirements(Piece)`
+    prefix + `Player.ConsumeResources` prefix keyed on the selected piece's `m_resources` reference.
+    Level-to-aim-point is vanilla alt-place (Left Alt), not duplicated.
 
 Build:
 ```

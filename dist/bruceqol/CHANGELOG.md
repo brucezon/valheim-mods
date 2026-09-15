@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.14.0 - 2026-09-15
+- New **18 - Hoe**: **Radius multiplier** (1.5: level ground, raise, path, paved road, cultivate and
+  replant cover a 3 m square instead of 2 m; the pickaxe is untouched), **Raise step multiplier** (1),
+  **Raise ground costs stone** (On). Applied to each placed terrain operation as it fires, so it is live
+  and touches nothing but that one operation. Levelling to the aim point is vanilla's alt-place key.
+
 ## 1.13.0 - 2026-09-15
 - New **17 - Terrain**: **Dig and raise limit (metres)** (12, vanilla 8). How far a pickaxe or hoe may
   lower or raise the ground from its original height. Vanilla hard-codes 8 at four places (the two

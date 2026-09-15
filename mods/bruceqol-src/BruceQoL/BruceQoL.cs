@@ -18,7 +18,7 @@ namespace BruceQoL;
 public class BruceQoLPlugin : BaseUnityPlugin
 {
 	private const string ModName = "BruceQoL";
-	private const string ModVersion = "1.13.0";
+	private const string ModVersion = "1.14.0";
 	private const string ModGUID = "bruceirons.BruceQoL";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion, ModRequired = true };
@@ -320,6 +320,10 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		Gathering.WoodBonusAt100 = config("16 - Gathering", "Extra wood at level 100 (x)", 1f, "Extra drops from trees, logs and stumps at Wood cutting 100, as a fraction of the vanilla drop (1 = +100% = double). Scales linearly with level. Stacks with the Resources world slider. 0 = off.");
 
 		DigDepth.Limit = config("17 - Terrain", "Dig and raise limit (metres)", 12f, "How far a pickaxe or hoe may lower or raise the ground from its original height, in metres. Vanilla 8. Applies to digging down and building up alike. Existing pits and mounds are unaffected until edited again; lowering this below a pit's current depth makes the pit display shallower on every client until it is dug again.");
+
+		Hoe.RadiusMult = config("18 - Hoe", "Radius multiplier (x)", 1.5f, "Multiplier on the area every hoe and cultivator action covers: level ground, raise ground, path, paved road, cultivate, replant. Vanilla 1 = a 2 m square; 1.5 = 3 m, 2 = 4 m. The pickaxe is not affected. To level to the point you aim at instead of your feet, hold the alt-place key (Left Alt) - that is vanilla.");
+		Hoe.RaiseStepMult = config("18 - Hoe", "Raise step multiplier (x)", 1f, "Multiplier on how much ground one raise-ground click adds. 1 = vanilla.");
+		Hoe.RaiseCostsStone = config("18 - Hoe", "Raise ground costs stone", Toggle.On, "Off = raising ground needs no stone. On = vanilla (1 stone per click).");
 		foreach (ConfigEntry<float> e in new[] { raidIntervalMult, raidChanceMult, raidDurationMult })
 		{
 			e.SettingChanged += (_, _) => ApplyRaids();

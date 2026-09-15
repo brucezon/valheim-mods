@@ -122,6 +122,15 @@ another player). Vanilla puts the Axes level in a tree hit; this mod corrects it
   re-clamped on each client when it is rebuilt, so a stray client on a lower limit would see a deep pit
   as a shallow one.
 
+## 18 - Hoe
+- **Radius multiplier** (1.5, vanilla 1 = a 2 m square): the area every hoe and cultivator action
+  covers, so level ground, raise, path, paved road, cultivate and replant all sweep 3 m. The pickaxe is
+  untouched.
+- **Raise step multiplier** (1): how much ground one raise-ground click adds.
+- **Raise ground costs stone** (On): Off makes raising free.
+Levelling to the point you aim at instead of your own feet is vanilla: hold the alt-place key (Left Alt)
+while levelling.
+
 Skill ideas follow Smoothbrain's SmartSkills and PackHorse; the container, station, beehive and
 swim features follow OdinsQOL; skill-scaled gathering follows Smoothbrain's Mining and Lumberjacking.
 All are independent implementations.
