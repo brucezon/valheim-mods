@@ -220,6 +220,12 @@ square of the speed the blade has left and is zero once the hull outruns it. Squ
 linear leaves a twelve-rower crew still adding a full paddle force at 4 m/s, which is exactly the
 "rowing at speed should be futile" case it exists to prevent.
 
+`SailBite()` is shared by the force patch and the animation deliberately — the oars lift on exactly the
+curve that governs the force, so the crew is never drawn pulling hard at a speed where they contribute
+nothing. Two copies of that curve would drift the first time one was tuned. The stow is a
+`Lerp(stowed, driveDip, effort)` rather than a threshold, which also smoothed out the bank a hard
+rudder cancels: those oars now come up instead of snapping to the stowed angle.
+
 The falloff is **deliberately not applied in paddle or reverse**. Vanilla's own paddle force is flat
 and speed-independent there, with quadratic hull drag doing the limiting, so matching it keeps those
 modes pure augmentation; under sail vanilla applies no paddle force at all, so the model is ours to

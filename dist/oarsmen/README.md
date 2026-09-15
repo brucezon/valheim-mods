@@ -44,6 +44,12 @@ the square of the speed they have left, and is worth nothing at all above `Rowin
 and nothing by 4 — rowing gets you out of a calm or a foul wind, and is futile once the sail is really
 pulling. Paddle mode and reverse are not affected and keep their flat force, matching vanilla's own.
 
+**The oars ship themselves as the sail takes over.** The stroke shortens and the blades lift out of
+the water on the same curve as the force, so the crew is never seen thrashing away at a speed where
+they are achieving nothing: full strokes becalmed, easing off through 2–3 m/s, held clear by about 4.
+It is a blend rather than a switch, so nothing snaps. The same thing happens to the bank a hard rudder
+has cancelled — those oars come up instead of pretending to pull.
+
 **Every boat with seats rows — nothing needs listing in the config.** The mod looks for `Chair`
 components on the hull, so the Longship (4 benches) and Karve (2) work out of the box and so do boats
 from other mods, OdinShip's rowing canoes included, the moment they exist. A hull with no seats never

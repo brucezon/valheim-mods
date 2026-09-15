@@ -56,6 +56,19 @@ internal static class Rowing
 		return !(com.y - average - ship.m_waterLevelOffset > ship.m_disableLevel);
 	}
 
+	// How much bite the oars still have under sail: 1 at rest, falling as the square of the speed the
+	// blade has left and reaching 0 once the hull outruns it at 'Rowing cuts out above'. Shared by the
+	// force patch and the animation on purpose - if the crew is not moving the ship it should not look
+	// like it is, and two copies of this curve would drift apart the first time one was tuned.
+	internal static float SailBite(Ship ship)
+	{
+		float cutout = OarsmenPlugin.RowCutoutSpeed.Value;
+		if (cutout <= 0f || ship.m_body == null) return 1f;
+		float alongHull = Math.Abs(Vector3.Dot(ship.m_body.linearVelocity, ship.transform.forward));
+		float left = Mathf.Clamp01(1f - alongHull / cutout);
+		return left * left;
+	}
+
 	private static bool HasBenches(GameObject go)
 	{
 		foreach (Chair chair in go.GetComponentsInChildren<Chair>(true))
@@ -138,16 +151,7 @@ internal static class Rowing
 			// speed-independent there, with quadratic hull drag doing the limiting, so matching it keeps
 			// those modes pure augmentation. Under sail vanilla applies no paddle force at all, so this is
 			// our model to choose rather than vanilla's to contradict.
-			if (sailing && thrust > 0f)
-			{
-				float cutout = OarsmenPlugin.RowCutoutSpeed.Value;
-				if (cutout > 0f)
-				{
-					float alongHull = Math.Abs(Vector3.Dot(__instance.m_body.linearVelocity, __instance.transform.forward));
-					float left = Mathf.Clamp01(1f - alongHull / cutout);
-					thrust *= left * left;
-				}
-			}
+			if (sailing && thrust > 0f) thrust *= SailBite(__instance);
 
 			if (thrust > 0f)
 			{
@@ -362,6 +366,10 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		float dirSign = speed == Ship.Speed.Back ? -1f : 1f;
 		float turnBias = Mathf.Max(0f, OarsmenPlugin.TurnStrokeBias.Value) * ship.m_rudderValue;
 
+		// Under sail the crew's bite runs out as the hull picks up speed, so the oars ease off and come up
+		// out of the water rather than thrashing away achieving nothing. Same curve the force uses.
+		float bite = (speed == Ship.Speed.Half || speed == Ship.Speed.Full) ? Rowing.SailBite(ship) : 1f;
+
 		float[] holes = ParseHoles(OarsmenPlugin.HolePositions.Value);
 		Transform t = transform;
 		foreach (Bench b in benches)
@@ -388,7 +396,7 @@ internal sealed class OarsBehaviour : MonoBehaviour
 			// base: vanilla negates its steer force when backing (num17 = -1), so the same rudder swings the
 			// bow the other way and the banks have to swap with it, or the oars pivot against the boat.
 			float power = Mathf.Clamp(dirSign * (1f - turnBias * b.side), -1f, 1f);
-			float effort = Mathf.Abs(power);
+			float effort = Mathf.Abs(power) * bite;
 
 			float sweep = 0f, dip;
 			if (rowing && effort > 0.02f)
@@ -399,7 +407,10 @@ internal sealed class OarsBehaviour : MonoBehaviour
 				// is the aft half of the swing (s < 0); backing water it is the forward half, so the same
 				// swing pushes the ship the other way.
 				bool drive = power >= 0f ? s < 0f : s > 0f;
-				dip = OarsmenPlugin.BladeDip.Value * (drive ? 1f : 0.35f);
+				// Blend towards the stowed angle as the effort falls away, so an oar that has stopped
+				// earning its keep - outrun by the hull under sail, or on the bank a hard rudder has
+				// cancelled - shortens its stroke and lifts clear instead of stopping dead at a threshold.
+				dip = Mathf.Lerp(-OarsmenPlugin.StowedAngle.Value, OarsmenPlugin.BladeDip.Value * (drive ? 1f : 0.35f), effort);
 			}
 			else
 			{

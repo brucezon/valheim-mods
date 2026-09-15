@@ -67,6 +67,14 @@
   makes the setting a way to get under way rather than a flat speed increase. Squared rather than
   linear because that is what a blade does, and because linear left a big crew still usefully rowing
   at cruising speed. Paddle mode and reverse are unaffected and keep vanilla's own flat paddle force.
+- **The oars ship themselves as the sail takes over.** With `Row under sail` on, the crew used to keep
+  stroking at full sweep however fast the ship was going, long after they had stopped contributing
+  anything. The stroke now shortens and the blades lift progressively as the crew's bite runs out —
+  full strokes becalmed, easing off through 2–3 m/s, held clear of the water by about 4 — driven by the
+  same curve as the force, so what you see is what the ship is getting. The lift is a blend rather than
+  a threshold, so nothing snaps.
+- The same blend improves hard turns: the bank a rudder has cancelled now lifts its oars smoothly
+  instead of jumping to the stowed angle.
 - Oar placement is still untuned; see the note at the top of the README.
 
 ## 0.1.1 - 2026-09-14
