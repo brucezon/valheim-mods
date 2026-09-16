@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.15.1 - 2026-09-16
+- Section 19 defaults lowered: **Per boss over biome** 0.5 → **0.2**, **Max multiplier** 4 → **2**.
+  Meadows with two bosses down now rolls 14% one-star / 2% two-star (was 20% / 4%), and the ceiling
+  anywhere is 20% / 4% (was 40% / 16%). A config file written by 1.15.0 keeps the old values; set the
+  two lines by hand or delete them to take the new defaults.
+
 ## 1.15.0 - 2026-09-16
 - New **19 - Stars**: **Star chance by progress** (On). Vanilla's 10%-per-star roll is multiplied by
   `1 + Per boss over biome (0.5) × (bosses defeated − biome tier)`, capped at **Max multiplier** (4), and

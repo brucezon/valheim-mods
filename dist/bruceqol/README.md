@@ -137,8 +137,8 @@ while levelling.
   `1 + Per boss over biome × (bosses defeated − biome tier)`, never below 1. Tiers: Meadows 0, Black
   Forest 1, Swamp 2, Mountain 3, Plains 4, Mistlands 5, Ashlands 6, Deep North 7. The biome you are
   fighting through stays vanilla; the ones behind you stop being safe.
-- **Per boss over biome** (0.5): Meadows with two bosses down = ×2, so 20% one-star and 4% two-star;
-  four down = ×3. **Max multiplier** (4): at most 40% / 16%. Vanilla's two-star cap is untouched.
+- **Per boss over biome** (0.2): Meadows with two bosses down = ×1.4, so 14% one-star and 2% two-star;
+  four down = ×1.8. **Max multiplier** (2): at most 20% / 4%. Vanilla's two-star cap is untouched.
 - **Boss keys**: the world keys counted, in case a boss is added.
 
 Skill ideas follow Smoothbrain's SmartSkills and PackHorse; the container, station, beehive and

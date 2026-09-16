@@ -15,7 +15,7 @@ core is 5.4.23.5). Reference tree for building: `refs\1.0\gamepath\` (`BepInEx\c
 
 | Mod | Ours? | Source | Live | Sides | Config file |
 |---|---|---|---|---|---|
-| **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.15.0 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
+| **BruceQoL** | yes (MIT) | `mods\bruceqol-src\BruceQoL` | 1.15.1 | both, ModRequired | `bruceirons.BruceQoL.cfg` |
 | **Endurance** | yes (MIT) | `mods\endurance-src\Endurance` | 1.0.0 | both | `bruceirons.Endurance.cfg` |
 | **BruceNetworking** | yes (fork session) | `mods\brucenetworking-src` (README + IDEAS there) | 0.3.0 | **server only** | `bruceirons.BruceNetworking.cfg` |
 | **Oarsmen** | yes (MIT) | `mods\oarsmen-src\Oarsmen` | 0.2.0 | both (not required) | `bruceirons.Oarsmen.cfg` |
@@ -110,7 +110,7 @@ Sections (see `dist\bruceqol\README.md` for the player-facing wording):
     excluded; ghost skipped via `m_forceDisableTerrainOps`). Free raise: `Player.HaveRequirements(Piece)`
     prefix + `Player.ConsumeResources` prefix keyed on the selected piece's `m_resources` reference.
     Level-to-aim-point is vanilla alt-place (Left Alt), not duplicated.
-19. Stars — `Star chance by progress` (On), `Per boss over biome` (0.5), `Max multiplier` (4), `Boss keys`.
+19. Stars — `Star chance by progress` (On), `Per boss over biome` (0.2), `Max multiplier` (2), `Boss keys`.
     `Stars.cs`: postfixes on `SpawnSystem.GetLevelUpChance(Vector3, float)` and `SpawnArea.GetLevelUpChance()`
     multiply vanilla's chance by `1 + step × max(0, bossesDefeated − biomeTier)`; biome via
     `WorldGenerator.GetBiome(position)`, bosses via global keys re-read every 5 s. Vanilla's star cap

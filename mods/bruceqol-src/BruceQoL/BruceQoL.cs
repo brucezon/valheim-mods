@@ -18,7 +18,7 @@ namespace BruceQoL;
 public class BruceQoLPlugin : BaseUnityPlugin
 {
 	private const string ModName = "BruceQoL";
-	private const string ModVersion = "1.15.0";
+	private const string ModVersion = "1.15.1";
 	private const string ModGUID = "bruceirons.BruceQoL";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion, ModRequired = true };
@@ -326,8 +326,8 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		Hoe.RaiseCostsStone = config("18 - Hoe", "Raise ground costs stone", Toggle.On, "Off = raising ground needs no stone. On = vanilla (1 stone per click).");
 
 		Stars.Enabled = config("19 - Stars", "Star chance by progress", Toggle.On, "Creatures in biomes the group has out-levelled spawn with stars more often. Multiplier on vanilla's level-up chance (10% per star) = 1 + Per boss over biome x (bosses defeated - biome tier), never below 1. Biome tiers: Meadows 0, Black Forest 1, Swamp 2, Mountain 3, Plains 4, Mistlands 5, Ashlands 6, Deep North 7. The biome you are currently fighting through stays vanilla; the ones behind you get spicier. Off = vanilla everywhere.");
-		Stars.PerStep = config("19 - Stars", "Per boss over biome (x)", 0.5f, "Added to the multiplier for each defeated boss beyond the biome's tier. 0.5: Meadows with two bosses down = x2 (20% one star, 4% two stars); with four down = x3 (30% / 9%).");
-		Stars.MaxMult = config("19 - Stars", "Max multiplier (x)", 4f, "Cap on the multiplier. 4 = at most 40% one star and 16% two stars, however far ahead the group is.");
+		Stars.PerStep = config("19 - Stars", "Per boss over biome (x)", 0.2f, "Added to the multiplier for each defeated boss beyond the biome's tier. 0.2: Meadows with two bosses down = x1.4 (14% one star, 2% two stars); with four down = x1.8 (18% / 3.2%).");
+		Stars.MaxMult = config("19 - Stars", "Max multiplier (x)", 2f, "Cap on the multiplier. 2 = at most 20% one star and 4% two stars, however far ahead the group is.");
 		Stars.BossKeys = config("19 - Stars", "Boss keys", "defeated_eikthyr, defeated_gdking, defeated_bonemass, defeated_dragon, defeated_goblinking, defeated_queen, defeated_fader", "World keys counted as defeated bosses, comma-separated. Add the Deep North boss key when known.");
 		foreach (ConfigEntry<float> e in new[] { raidIntervalMult, raidChanceMult, raidDurationMult })
 		{
