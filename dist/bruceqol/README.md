@@ -131,6 +131,16 @@ another player). Vanilla puts the Axes level in a tree hit; this mod corrects it
 Levelling to the point you aim at instead of your own feet is vanilla: hold the alt-place key (Left Alt)
 while levelling.
 
+## 19 - Stars
+- **Star chance by progress** (On): creatures in biomes the group has out-levelled spawn with stars
+  more often. Vanilla rolls 10% per star; this multiplies that by
+  `1 + Per boss over biome × (bosses defeated − biome tier)`, never below 1. Tiers: Meadows 0, Black
+  Forest 1, Swamp 2, Mountain 3, Plains 4, Mistlands 5, Ashlands 6, Deep North 7. The biome you are
+  fighting through stays vanilla; the ones behind you stop being safe.
+- **Per boss over biome** (0.5): Meadows with two bosses down = ×2, so 20% one-star and 4% two-star;
+  four down = ×3. **Max multiplier** (4): at most 40% / 16%. Vanilla's two-star cap is untouched.
+- **Boss keys**: the world keys counted, in case a boss is added.
+
 Skill ideas follow Smoothbrain's SmartSkills and PackHorse; the container, station, beehive and
 swim features follow OdinsQOL; skill-scaled gathering follows Smoothbrain's Mining and Lumberjacking.
 All are independent implementations.

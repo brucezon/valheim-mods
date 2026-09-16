@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.15.0 - 2026-09-16
+- New **19 - Stars**: **Star chance by progress** (On). Vanilla's 10%-per-star roll is multiplied by
+  `1 + Per boss over biome (0.5) × (bosses defeated − biome tier)`, capped at **Max multiplier** (4), and
+  never below 1, so the biome you are fighting through stays vanilla while the ones behind you get
+  starrier: Meadows with two bosses down rolls 20% one-star and 4% two-star. Vanilla's star cap is
+  untouched. Hooks the two vanilla chance getters (world spawns, spawners, raids, spawner piles). Boss
+  progress comes from the world keys in **Boss keys**. Same idea as CLLC's Fluid world level, on
+  vanilla's own roll.
+
 ## 1.14.0 - 2026-09-15
 - New **18 - Hoe**: **Radius multiplier** (1.5: level ground, raise, path, paved road, cultivate and
   replant cover a 3 m square instead of 2 m; the pickaxe is untouched), **Raise step multiplier** (1),
