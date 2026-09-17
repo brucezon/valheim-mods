@@ -17,6 +17,7 @@
     <Compile Include="BlockCompensation.cs" />
     <Compile Include="Gathering.cs" />
     <Compile Include="BowDraw.cs" />
+    <Compile Include="Blocking.cs" />
     <Compile Include="DigDepth.cs" />
     <Compile Include="Hoe.cs" />
     <Compile Include="Stars.cs" />

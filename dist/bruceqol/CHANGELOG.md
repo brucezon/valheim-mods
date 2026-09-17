@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.16.0 - 2026-09-17
+- **13 - Combat**, four new skill levers, all vanilla by default (`Blocking.cs`):
+  **Block power by skill** (Off) with **Block power at skill 100** (2, vanilla 1.5) and **Block power bonus
+  from level** (0); **Extra Blocking XP per parry** (0) and **per held block** (0), on top of vanilla's 2 / 1;
+  **Block stamina refund at skill 100** (0) with **from level** (0) and **on parries** (Off); **Equip time at
+  skill 100** (1) with **Equip speed bonus from level** (0). Block power is a postfix on the item's block
+  power getter (so tooltips follow); XP and refund are a prefix/postfix pair on the block handler that
+  measures the stamina actually spent; equip speed scales the queued equip action's duration by the
+  item's own skill. Ideas from MidnightMods' ImpactfulSkills, independent code.
+- Built against Valheim 1.0.14 (network version 40).
+
 ## 1.15.1 - 2026-09-16
 - Section 19 defaults lowered: **Per boss over biome** 0.5 → **0.2**, **Max multiplier** 4 → **2**.
   Meadows with two bosses down now rolls 14% one-star / 2% two-star (was 20% / 4%), and the ceiling

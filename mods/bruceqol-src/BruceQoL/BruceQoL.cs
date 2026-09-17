@@ -18,7 +18,7 @@ namespace BruceQoL;
 public class BruceQoLPlugin : BaseUnityPlugin
 {
 	private const string ModName = "BruceQoL";
-	private const string ModVersion = "1.15.1";
+	private const string ModVersion = "1.16.0";
 	private const string ModGUID = "bruceirons.BruceQoL";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion, ModRequired = true };
@@ -295,6 +295,35 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		BowDraw.Enabled = config("13 - Combat", "Bow draw tuning", Toggle.Off, "Apply the two bow draw multipliers below. Off = vanilla: most bows take 2.5 s to full draw at Bows 0, 1.5 s at Bows 50 and 0.5 s at Bows 100.");
 		BowDraw.AtSkill0 = config("13 - Combat", "Bow draw time at skill 0 (x)", 1f, "Multiplier on the bow's draw time at Bows 0. Vanilla 1 = 2.5 s for most bows. Examples: 0.8 = 2 s, 0.6 = 1.5 s (easier early game), 1.2 = 3 s.");
 		BowDraw.AtSkill100 = config("13 - Combat", "Bow draw time at skill 100 (x)", 0.2f, "Multiplier on the bow's draw time at Bows 100. Vanilla 0.2 = 0.5 s for most bows. Examples: 0.3 = 0.75 s, 0.4 = 1 s (tones down a maxed archer), 0.6 = 1.5 s. Levels between follow a straight line from the skill-0 value: with 1 and 0.4, Bows 50 draws in 1.75 s (vanilla 1.5 s).");
+		// Blocking skill levers. Each one is a multiplier or an amount, never a percent; every one at its default = vanilla.
+		Blocking.BlockPowerEnabled = config("13 - Combat", "Block power by skill", Toggle.Off,
+			"Master switch for the two block power entries below. Off = vanilla: a shield blocks its listed block armour +50% at Blocking 100 (+25% at 50, +0% at 0). On = use the multiplier and start level below instead.");
+		Blocking.BlockPowerAt100 = config("13 - Combat", "Block power at skill 100 (x)", 2f,
+			new ConfigDescription("The multiplier a shield's block armour reaches at Blocking 100. 1 = the skill adds nothing. 1.5 = vanilla. 2 = a maxed blocker blocks double the listed armour; a level-50 blocker gets half the bonus (1.5x). 3 = triple at 100. A 40-armour bronze buckler at Blocking 60 with 2 here blocks 40 x (1 + 0.6 x 1) = 64. The item tooltip shows the result.",
+				new AcceptableValueRange<float>(1f, 4f)));
+		Blocking.BlockPowerFromLevel = config("13 - Combat", "Block power bonus from level", 0,
+			new ConfigDescription("Blocking level at which the multiplier above starts applying; below it the vanilla curve is used. 0 = from the first level. 25 = vanilla until Blocking 25, then the multiplier kicks in (a milestone you can feel). Values between 0 and 100.",
+				new AcceptableValueRange<int>(0, 100)));
+		Blocking.ParryXpBonus = config("13 - Combat", "Extra Blocking XP per parry", 0f,
+			new ConfigDescription("Extra Blocking skill experience added to every timed (perfect) block, in the same units vanilla uses. Vanilla gives 2 per parry and 1 per held block, whether or not the block holds. 0 = vanilla. 2 = a parry is worth 4, so parries level Blocking twice as fast. 6 = four times as fast.",
+				new AcceptableValueRange<float>(0f, 10f)));
+		Blocking.HeldBlockXpBonus = config("13 - Combat", "Extra Blocking XP per held block", 0f,
+			new ConfigDescription("Same for held (non-timed) blocks, which vanilla rewards with 1. 0 = vanilla. 1 = held blocks level twice as fast. Keep this below the parry value so parrying stays the faster way up.",
+				new AcceptableValueRange<float>(0f, 10f)));
+		Blocking.StaminaRefundAt100 = config("13 - Combat", "Block stamina refund at skill 100", 0f,
+			new ConfigDescription("Fraction of the stamina a held block actually cost that is handed back straight after the block, at Blocking 100; lower levels get proportionally less. 0 = nothing back (vanilla). 0.5 = a maxed blocker gets half back, a level-50 blocker a quarter, a level-10 blocker 5%. 1 = held blocks are free at Blocking 100. Timed blocks are only included if the parries switch below is On.",
+				new AcceptableValueRange<float>(0f, 1f)));
+		Blocking.StaminaRefundFromLevel = config("13 - Combat", "Block stamina refund from level", 0,
+			new ConfigDescription("Blocking level at which refunds start; below it nothing is refunded. 0 = from the first level. 40 = nothing until Blocking 40, then the refund at that level's fraction.",
+				new AcceptableValueRange<int>(0, 100)));
+		Blocking.StaminaRefundParries = config("13 - Combat", "Block stamina refund on parries", Toggle.Off,
+			"Off = the refund applies to held blocks only. On = timed (perfect) blocks are refunded the same way. Parries already cost a flat amount in vanilla and some 1.0 shields give it back themselves, so Off is the safer choice.");
+		Blocking.EquipTimeAt100 = config("13 - Combat", "Equip time at skill 100 (x)", 1f,
+			new ConfigDescription("Multiplier on how long a weapon or shield takes to equip and unequip when its own skill is at 100 (Swords for a sword, Blocking for a shield, Bows for a bow); lower levels scale between 1 and this. 1 = vanilla, no bonus. 0.5 = a maxed skill swaps in half the time, level 50 in three quarters. 0.25 = four times faster at 100. Armour, torches and tools have no skill and are untouched.",
+				new AcceptableValueRange<float>(0.1f, 1f)));
+		Blocking.EquipFromLevel = config("13 - Combat", "Equip speed bonus from level", 0,
+			new ConfigDescription("Skill level at which the equip bonus starts; below it swaps take vanilla time. 0 = from the first level. 45 = a milestone: vanilla until 45, then faster.",
+				new AcceptableValueRange<int>(0, 100)));
 
 		cartLoadAt100 = config("7 - Hauling", "Cart load weight at level 100 (x)", 1f, "How much a cart's cargo weighs to the puller at Hauling 100, as a multiplier (scaled linearly with level). 1 = vanilla, no effect. 0.5 = a full cart pulls like a half-full one. Applies on attach and every 5 s while attached.");
 		cartBreakAt100 = config("7 - Hauling", "Cart break force at level 100 (x)", 1f, "Multiplier on the force needed to snap the cart off the player at Hauling 100 (scaled with level). 1 = vanilla. 2 = a skilled hauler keeps the cart on steeper slopes.");

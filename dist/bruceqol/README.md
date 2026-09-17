@@ -85,6 +85,26 @@ All four numbers are configurable here; the toggle Off restores vanilla.
   (0.2) set both ends of the skill curve as multipliers on each bow's draw time. Vanilla is 1 and 0.2, so
   a 2.5 s bow draws in 0.5 s at Bows 100. Try 0.8 and 0.4 for quicker early bows and less overpowering
   late ones. Levels between follow a straight line.
+- **Blocking skill levers.** Vanilla gives the Blocking skill exactly one payoff, +50% block armour at
+  100, and levels it 2 per parry and 1 per held block whether or not the block holds. These four make the
+  skill worth the grind. Every value is a multiplier or an amount, never a percent, and every default is
+  vanilla. "Scaled with level" always means a straight line from nothing at level 0 to the full value at 100.
+  - **Block power by skill** (Off) is the master switch for **Block power at skill 100** (2) and **Block power
+    bonus from level** (0). The multiplier is what a shield's block armour reaches at Blocking 100: 1.5 is
+    vanilla, 2 doubles the shield at 100 (1.5x at 50), 3 triples it. The level delays the bonus: 0 = from the
+    start, 25 = vanilla until Blocking 25. The shield tooltip shows the real number.
+  - **Extra Blocking XP per parry** (0) and **per held block** (0) are added to vanilla's 2 and 1. Parry 2 =
+    parries level Blocking twice as fast; held 1 = held blocks twice as fast. Keep held below parry.
+  - **Block stamina refund at skill 100** (0) is the fraction of a held block's real stamina cost handed back
+    right after the block: 0.5 = half back at 100, a quarter at 50. **Block stamina refund from level** (0)
+    delays it. **Block stamina refund on parries** (Off) extends it to timed blocks, which vanilla already
+    charges a flat amount for.
+  - **Equip time at skill 100** (1) multiplies how long a weapon or shield takes to swap when its own skill
+    (Swords, Blocking, Bows...) is at 100: 0.5 = half the time, 0.25 = a quarter. **Equip speed bonus from
+    level** (0) delays it. Armour, torches and tools have no skill and are untouched.
+
+  A reasonable first setup on a Hard server: block power On, 2 from level 25; parry XP 2, held 0; refund
+  0.5 from level 40, parries Off; equip 0.5 from level 45. Each is live: change it in F1 and block something.
 These replace world-key edits like `enemydamage`, which the game treats as cheating.
 
 ## 14 - Raids
