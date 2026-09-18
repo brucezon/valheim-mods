@@ -159,7 +159,23 @@ while levelling.
   fighting through stays vanilla; the ones behind you stop being safe.
 - **Per boss over biome** (0.2): Meadows with two bosses down = ×1.4, so 14% one-star and 2% two-star;
   four down = ×1.8. **Max multiplier** (2): at most 20% / 4%. Vanilla's two-star cap is untouched.
-- **Boss keys**: the world keys counted, in case a boss is added.
+- **Boss keys**: the world keys counted, in case a boss is added. Each listed key that is set counts once,
+  so listing one twice makes that boss count double.
+- **Star chance scope** (BiomeProgress): what a "step" is. BiomeProgress = bosses defeated minus the
+  biome's tier, as above. **Global** = bosses defeated, everywhere, the biome you are fighting through
+  included; "per boss over biome" then simply means per boss.
+- **Separate two-star chance** (Off). Vanilla rolls the same chance once per star, so two-stars are always
+  the one-star chance squared: 10% gives 1%, 20% gives 4%, and no single number makes two-stars common
+  without making one-stars ubiquitous. On = the second star is rolled on its own and the one-star chance
+  is left exactly as it is: two-star chance = **Two-star chance base** (1%) + **Two-star chance per step**
+  (1%) × steps, up to **Two-star chance max** (10%). These are shares of all spawns, not of starred ones,
+  and can never exceed the one-star chance at that spot. Only world spawns, raids, spawner piles and fixed
+  spawners are affected; breeding, the spawn command and saved creatures are not.
+
+  A global two-star chance that follows the bosses: scope Global, separate On, base 1, per step 1.
+  That is 1% two-stars on day one, 4% after three bosses, 8% after all seven, with one-stars at 10%,
+  16% and 20% (the cap). Measured over 3000 real spawns at five bosses down: 19.5% starred, 6.1%
+  two-star, against 20.8% and 4.4% with the separate chance Off.
 
 Skill ideas follow Smoothbrain's SmartSkills and PackHorse; the container, station, beehive and
 swim features follow OdinsQOL; skill-scaled gathering follows Smoothbrain's Mining and Lumberjacking.

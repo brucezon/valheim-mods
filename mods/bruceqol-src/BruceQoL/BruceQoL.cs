@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
 using ServerSync;
@@ -18,10 +18,16 @@ namespace BruceQoL;
 public class BruceQoLPlugin : BaseUnityPlugin
 {
 	private const string ModName = "BruceQoL";
-	private const string ModVersion = "1.16.0";
+	private const string ModVersion = "1.17.0";
 	private const string ModGUID = "bruceirons.BruceQoL";
+	// Oldest client/server version still let in. RULE (host, 18 Sep 2026): this is the PREVIOUS release unless a
+	// release is truly breaking (changes data both sides must agree on, or makes an old client misbehave rather
+	// than merely lack the new feature). Pinning it to ModVersion, as every release up to 1.16.0 did, kicked
+	// every player who had not pulled yet, several times a day. ServerSync only warns about config keys the
+	// other side does not know. 1.17.0: new section-19 options whose defaults reproduce 1.16.0, so 1.16.0 stays in.
+	private const string MinimumVersion = "1.16.0";
 
-	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion, ModRequired = true };
+	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = MinimumVersion, ModRequired = true };
 	internal static BruceQoLPlugin mod;
 
 	internal enum Toggle
@@ -357,7 +363,12 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		Stars.Enabled = config("19 - Stars", "Star chance by progress", Toggle.On, "Creatures in biomes the group has out-levelled spawn with stars more often. Multiplier on vanilla's level-up chance (10% per star) = 1 + Per boss over biome x (bosses defeated - biome tier), never below 1. Biome tiers: Meadows 0, Black Forest 1, Swamp 2, Mountain 3, Plains 4, Mistlands 5, Ashlands 6, Deep North 7. The biome you are currently fighting through stays vanilla; the ones behind you get spicier. Off = vanilla everywhere.");
 		Stars.PerStep = config("19 - Stars", "Per boss over biome (x)", 0.2f, "Added to the multiplier for each defeated boss beyond the biome's tier. 0.2: Meadows with two bosses down = x1.4 (14% one star, 2% two stars); with four down = x1.8 (18% / 3.2%).");
 		Stars.MaxMult = config("19 - Stars", "Max multiplier (x)", 2f, "Cap on the multiplier. 2 = at most 20% one star and 4% two stars, however far ahead the group is.");
-		Stars.BossKeys = config("19 - Stars", "Boss keys", "defeated_eikthyr, defeated_gdking, defeated_bonemass, defeated_dragon, defeated_goblinking, defeated_queen, defeated_fader", "World keys counted as defeated bosses, comma-separated. Add the Deep North boss key when known.");
+		Stars.BossKeys = config("19 - Stars", "Boss keys", "defeated_eikthyr, defeated_gdking, defeated_bonemass, defeated_dragon, defeated_goblinking, defeated_queen, defeated_fader", "World keys counted as defeated bosses, comma-separated. Add the Deep North boss key when known. Each entry that is set in the world counts once, so listing a key twice makes that boss count double.");
+		Stars.StepScope = config("19 - Stars", "Star chance scope", Stars.Scope.BiomeProgress, "What a 'step' is for every setting in this section. BiomeProgress = bosses defeated minus the biome's tier, never below 0: only biomes the group has out-levelled get more stars, and the one you are fighting through stays vanilla. Global = bosses defeated, everywhere: every biome, the current one included, gets more stars with each boss killed. With Global, 'Per boss over biome' simply means per boss.");
+		Stars.SeparateTwoStar = config("19 - Stars", "Separate two-star chance", Toggle.Off, "Off = vanilla's rule: the same chance is rolled once per star, so two stars are always the one-star chance squared (10% gives 1%, 20% gives 4%). On = the second star gets its own chance, set by the three entries below, and the one-star chance above is left exactly as it is. Only creatures spawned by the world, by spawner piles and by fixed spawners are affected; breeding, the spawn command and saved creatures are not. Needs 'Star chance by progress' On.");
+		Stars.TwoStarBase = config("19 - Stars", "Two-star chance base (%)", 1f, new ConfigDescription("Chance in percent that a spawn is two-star with zero steps. 1 = vanilla's 1%. This is the share of ALL spawns, not of starred ones.", new AcceptableValueRange<float>(0f, 50f)));
+		Stars.TwoStarPerStep = config("19 - Stars", "Two-star chance per step (%)", 1f, new ConfigDescription("Added to the two-star chance for every step (see 'Star chance scope'). With Global scope and 1 here: 1% with no bosses down, 4% after three, 8% after all seven. 0 = a flat two-star chance.", new AcceptableValueRange<float>(0f, 20f)));
+		Stars.TwoStarMax = config("19 - Stars", "Two-star chance max (%)", 10f, new ConfigDescription("Ceiling on the two-star chance. It can also never exceed the one-star chance at that spot, because a two-star creature is a starred creature: with a 14% one-star chance, asking for 20% two-stars gives 14%, all of them two-star.", new AcceptableValueRange<float>(0f, 50f)));
 		foreach (ConfigEntry<float> e in new[] { raidIntervalMult, raidChanceMult, raidDurationMult })
 		{
 			e.SettingChanged += (_, _) => ApplyRaids();

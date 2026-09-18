@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.17.0 - 2026-09-18
+- **19 - Stars: a global scope and a two-star chance of its own.** All defaults reproduce 1.16.0 exactly.
+  - **Star chance scope** (BiomeProgress | Global). Global counts bosses defeated everywhere instead of
+    bosses beyond the biome's tier, so the biome you are fighting through gets starrier too.
+  - **Separate two-star chance** (Off), **Two-star chance base (%)** (1), **Two-star chance per step (%)**
+    (1), **Two-star chance max (%)** (10). Vanilla rolls one chance once per star, which makes two-stars
+    the square of one-stars. On = the second star is decided separately at exactly the configured share
+    of all spawns (never above the one-star chance), and the one-star chance is untouched. Vanilla still
+    decides "starred or not"; the second star is re-decided as vanilla assigns the level, and only while
+    one of its three spawn methods is running (world spawns and raids, spawner piles, fixed spawners),
+    so breeding, the spawn command and saved creatures are unaffected. A spawn whose minimum level
+    already forces stars, or whose maximum cannot reach two, is left to vanilla.
+  - Tested through vanilla's own spawner code, 3000 spawns per case, five bosses down, Global, step 0.2,
+    cap 2: separate Off 20.8% starred / 4.4% two-star; On with a 6% target 19.5% / 6.1%; 0% target
+    19.9% / 0.0%; a target above the one-star chance 20.6% / 20.6%; all Off 9.7% / 1.2%.
+- **Boss keys** note: a key listed twice counts twice (it always did).
+- Built against Valheim 1.0.15 (network version 40).
+
 ## 1.16.0 - 2026-09-17
 - **13 - Combat**, four new skill levers, all vanilla by default (`Blocking.cs`):
   **Block power by skill** (Off) with **Block power at skill 100** (2, vanilla 1.5) and **Block power bonus
