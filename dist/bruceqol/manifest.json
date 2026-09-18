@@ -1,6 +1,6 @@
 {
   "name": "BruceQoL",
-  "version_number": "1.17.0",
+  "version_number": "1.18.0",
   "website_url": "",
   "description": "Server-synced QoL tuning: creature/boss damage to buildings, per-material piece health, weather toggle, Hauling skill, area repair, stamina and stack multipliers, infinite torches, smarter skill XP, combat and raid tuning, skill-scaled ore and wood yield.",
   "dependencies": [

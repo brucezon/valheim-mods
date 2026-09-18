@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.18.0 - 2026-09-18
+- New **20 - Exploration**: **Map reveal radius (x)** (1.5) and **Map reveal radius aboard a ship (x)** (2).
+  Multipliers on how far around the player the map is uncovered; the ship value is used instead of the
+  on-foot value while aboard, because the sea is where a wider reveal matters. Vanilla reveals a circle
+  every two seconds through one method whose only caller with a radius is that tick, so scaling the radius
+  there changes the walking reveal and nothing else (not the cartography table, not map loading). **Unlike
+  1.16.0 and 1.17.0 these defaults are NOT vanilla**: set both to 1 for the game's own radius. Client-side
+  effect, server-synced values. Idea: Smoothbrain's Exploration, without the skill.
+- Built against Valheim 1.0.15.
+
 ## 1.17.0 - 2026-09-18
 - **19 - Stars: a global scope and a two-star chance of its own.** All defaults reproduce 1.16.0 exactly.
   - **Star chance scope** (BiomeProgress | Global). Global counts bosses defeated everywhere instead of

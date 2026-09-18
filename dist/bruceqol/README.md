@@ -177,6 +177,15 @@ while levelling.
   16% and 20% (the cap). Measured over 3000 real spawns at five bosses down: 19.5% starred, 6.1%
   two-star, against 20.8% and 4.4% with the separate chance Off.
 
+## 20 - Exploration
+- **Map reveal radius** (1.5): multiplier on how far around you the map is uncovered on foot. 1 = vanilla;
+  1.5 is a little over twice the area per step; 2 is four times the area.
+- **Map reveal radius aboard a ship** (2): the same, used instead of the one above while you are on a
+  ship's deck, so a coastline is charted from twice as far out. Rafts, karves, longships and modded hulls
+  all count.
+- Each player's own map; nothing is sent to anyone. The log prints the game's own radius in metres the
+  first time the map updates. The idea is Smoothbrain's Exploration, without the skill.
+
 Skill ideas follow Smoothbrain's SmartSkills and PackHorse; the container, station, beehive and
 swim features follow OdinsQOL; skill-scaled gathering follows Smoothbrain's Mining and Lumberjacking.
 All are independent implementations.

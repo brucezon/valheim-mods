@@ -21,6 +21,7 @@
     <Compile Include="DigDepth.cs" />
     <Compile Include="Hoe.cs" />
     <Compile Include="Stars.cs" />
+    <Compile Include="Exploration.cs" />
     <Compile Include="PassiveTames.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="ServerSync.src.cs" />

@@ -18,7 +18,7 @@ namespace BruceQoL;
 public class BruceQoLPlugin : BaseUnityPlugin
 {
 	private const string ModName = "BruceQoL";
-	private const string ModVersion = "1.17.0";
+	private const string ModVersion = "1.18.0";
 	private const string ModGUID = "bruceirons.BruceQoL";
 	// Oldest client/server version still let in. RULE (host, 18 Sep 2026): this is the PREVIOUS release unless a
 	// release is truly breaking (changes data both sides must agree on, or makes an old client misbehave rather
@@ -369,6 +369,8 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		Stars.TwoStarBase = config("19 - Stars", "Two-star chance base (%)", 1f, new ConfigDescription("Chance in percent that a spawn is two-star with zero steps. 1 = vanilla's 1%. This is the share of ALL spawns, not of starred ones.", new AcceptableValueRange<float>(0f, 50f)));
 		Stars.TwoStarPerStep = config("19 - Stars", "Two-star chance per step (%)", 1f, new ConfigDescription("Added to the two-star chance for every step (see 'Star chance scope'). With Global scope and 1 here: 1% with no bosses down, 4% after three, 8% after all seven. 0 = a flat two-star chance.", new AcceptableValueRange<float>(0f, 20f)));
 		Stars.TwoStarMax = config("19 - Stars", "Two-star chance max (%)", 10f, new ConfigDescription("Ceiling on the two-star chance. It can also never exceed the one-star chance at that spot, because a two-star creature is a starred creature: with a 14% one-star chance, asking for 20% two-stars gives 14%, all of them two-star.", new AcceptableValueRange<float>(0f, 50f)));
+		Exploration.RadiusMult = config("20 - Exploration", "Map reveal radius (x)", 1.5f, new ConfigDescription("Multiplier on how far around you the map is uncovered while on foot. 1 = vanilla. 1.5 = half as far again, which is a little over twice the area per step. 2 = twice as far, four times the area. The log prints the game's own radius in metres the first time the map updates. Each player's own map; nothing is sent to anyone.", new AcceptableValueRange<float>(0.1f, 10f)));
+		Exploration.ShipRadiusMult = config("20 - Exploration", "Map reveal radius aboard a ship (x)", 2f, new ConfigDescription("The same multiplier while you are aboard a ship, used INSTEAD of the one above, not on top of it. 1 = vanilla. 2 = a coastline is charted from twice as far out. Aboard means inside the ship's deck area, the same test the game uses for its own ship checks, so rafts, karves, longships and modded hulls all count.", new AcceptableValueRange<float>(0.1f, 10f)));
 		foreach (ConfigEntry<float> e in new[] { raidIntervalMult, raidChanceMult, raidDurationMult })
 		{
 			e.SettingChanged += (_, _) => ApplyRaids();
