@@ -30,6 +30,14 @@ internal static class Gathering
 	// Extra copies per dropped item while a gathering drop window is open; 0 = closed.
 	private static float bonus;
 
+	// Bonus of the miner whose hit MineRock5.RPC_Damage is handling; 0 outside it. Pieces that lose support
+	// collapse inside that same call (CheckSupport), on a hit with no attacker and no skill of its own.
+	private static float minerBonus;
+
+	// Vanilla's support-collapse hit: built by MineRock5.CheckSupport with no attacker and no skill.
+	private static bool IsCollapseHit(HitData hit) =>
+		hit != null && !hit.HaveAttacker() && hit.m_skill == Skills.SkillType.None && hit.m_toolTier >= 100;
+
 	private static float BonusFor(HitData hit)
 	{
 		if (hit == null || Enabled == null || Enabled.Value != BruceQoLPlugin.Toggle.On || hit.m_skillLevel <= 0f) return 0f;
@@ -83,9 +91,25 @@ internal static class Gathering
 		{
 			__state = bonus;
 			bonus = BonusFor(hit);
+			if (bonus <= 0f && minerBonus > 0f && IsCollapseHit(hit)) bonus = minerBonus;
 		}
 
 		private static void Postfix(float __state) => bonus = __state;
+	}
+
+	// Owner side: credit the miner for the pieces their hit brings down. minerBonus is only ever non-zero
+	// in here, so trees, logs, MineRock and Destructible never see it. Finalizer rather than postfix, so
+	// an exception in vanilla cannot leave the credit armed.
+	[HarmonyPatch(typeof(MineRock5), "RPC_Damage")]
+	private static class GatherCollapseCreditPatch
+	{
+		private static void Prefix(HitData hit, out float __state)
+		{
+			__state = minerBonus;
+			minerBonus = BonusFor(hit);
+		}
+
+		private static void Finalizer(float __state) => minerBonus = __state;
 	}
 
 	[HarmonyPatch(typeof(DropTable), nameof(DropTable.GetDropList), new Type[0])]

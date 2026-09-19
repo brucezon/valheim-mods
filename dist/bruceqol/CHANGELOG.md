@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.18.1 - 2026-09-19
+- **16 - Gathering: collapsed ore keeps the miner's bonus.** Pieces of a big deposit (copper, tin, silver
+  and the like) that fall because a hit took away their support dropped the vanilla amount only, so
+  undermining a node forfeited most of the skill bonus. Vanilla brings them down with a hit of its own that
+  has no attacker and no skill; it does so inside the handling of the miner's hit, so they now drop as if
+  that miner had broken them by hand, at that miner's Pickaxes level. No new setting: it follows **Skill
+  based yield** and **Extra ore and stone at level 100**. No Pickaxes XP for collapsed pieces, as in vanilla.
+- **Optional update, clients only.** The minimum version is unchanged (1.16.0) and the server does not need
+  it. Drops are rolled by the player whose PC is simulating that area, so the bonus applies when that
+  player runs 1.18.1 or newer; in an area simulated by an older client a collapse still drops vanilla.
+
 ## 1.18.0 - 2026-09-18
 - New **20 - Exploration**: **Map reveal radius (x)** (1.5) and **Map reveal radius aboard a ship (x)** (2).
   Multipliers on how far around the player the map is uncovered; the ship value is used instead of the

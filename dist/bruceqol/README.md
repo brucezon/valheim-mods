@@ -134,6 +134,8 @@ These replace world-key edits like `enemydamage`, which the game treats as cheat
   second copy. Stacks with the Resources world slider. 0 = off.
 The level travels with the hit, so it works whoever is simulating the rock or tree (the server, or
 another player). Vanilla puts the Axes level in a tree hit; this mod corrects it to Wood cutting.
+Pieces of an ore deposit that collapse because your hit took away their support count as yours too
+(1.18.1; applies when the player simulating that area runs 1.18.1 or newer).
 
 ## 17 - Terrain
 - **Dig and raise limit (metres)** (12, vanilla 8): how far a pickaxe or hoe may lower or raise the
