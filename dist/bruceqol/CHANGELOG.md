@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.19.2 - 2026-09-20
+- **13 - Combat: `Boss damage to players`** (0 = bosses follow `Enemy damage to players`, exactly as before). A
+  separate multiplier for bosses, so adds can be softened without softening the boss. The server-side BossDirector
+  mod (0.3.0+) sets both for the length of a boss fight and puts them back afterwards; they are ordinary
+  server-synced settings, so every player follows at once.
+- **Optional update.** The minimum version is unchanged (1.16.0). A player on an older version takes the enemy
+  number from bosses too, which errs on the easy side.
+
+## 1.19.1 - 2026-09-20
+- **22 - Boss adds: tells the server you are protected.** While `Scaled damage from boss adds` is On, your character
+  carries a small marker. BossDirector 0.2.1+ reads it and only sends its bigger waves in a fight where every engaged
+  player has it, so one friend who has not updated no longer gets more adds at full damage. Optional update; the
+  minimum version is unchanged (1.16.0).
+
+## 1.19.0 - 2026-09-20
+- **21 - Recovery: a shorter fireside wait after a death.** `Resting time after a death (x)` (1 = vanilla) scales
+  the wait before Rested arrives, for `Counts as just died for (seconds)` (120) after you die. Food, the tombstone
+  and the length of the buff are untouched. It uses the game's own time-since-death clock.
+- **22 - Boss adds: scaled damage from BossDirector's adds.** BossDirector (server-only) writes a damage
+  multiplier on the creatures it spawns; `Scaled damage from boss adds` (On) applies it to their hits on players,
+  on the player's own game. Bosses and wild creatures are never affected; without BossDirector it does nothing.
+- **Optional update.** The minimum version is unchanged (1.16.0). Both features work per player: someone on an
+  older version simply waits the vanilla time and takes full damage from adds. The Recovery settings come from the
+  server, so they take effect once the server runs 1.19.0 too.
+
 ## 1.18.1 - 2026-09-19
 - **16 - Gathering: collapsed ore keeps the miner's bonus.** Pieces of a big deposit (copper, tin, silver
   and the like) that fall because a hit took away their support dropped the vanilla amount only, so

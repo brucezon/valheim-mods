@@ -192,6 +192,34 @@ Skill ideas follow Smoothbrain's SmartSkills and PackHorse; the container, stati
 swim features follow OdinsQOL; skill-scaled gathering follows Smoothbrain's Mining and Lumberjacking.
 All are independent implementations.
 
+**Boss damage to players** (13 - Combat, 0 = follow `Enemy damage to players`): a separate multiplier for bosses.
+BossDirector 0.3.0+ on the server sets this and `Enemy damage to players` for the length of a boss fight (adds softer,
+boss at full strength) and restores them afterwards.
+
+## 21 - Recovery
+
+Dying in a hard fight costs a corpse run, your food and a wait by the fire. The wait is the dull part: you stand
+under a roof next to a fire until Resting turns into Rested, and any interruption (an enemy notices you, you step
+away, you are wet) starts the count again.
+
+- `Resting time after a death (x)` (1 = vanilla): multiplier on that wait while you have recently died. 0.25 = a
+  quarter of the wait, 0 = Rested the moment you are resting. Food, the tombstone and the length of the Rested buff
+  are untouched. The log prints the game's own wait in seconds the first time you rest.
+- `Counts as just died for (seconds)` (120): how long after a death the shorter wait applies. It uses the game's own
+  time-since-death clock, which keeps running while you respawn and walk back.
+
+## 22 - Boss adds
+
+For servers that also run **BossDirector** (server-only, adds waves of creatures to boss fights). BossDirector
+cannot change what a creature's hit does to a player, because that is worked out on the player's own game. So it
+writes a damage multiplier on every creature it spawns, and this section applies it.
+
+- `Scaled damage from boss adds` (On): a hit on a player from such a creature is multiplied by the number the
+  server chose (BossDirector's `Add damage (x)`, for example 0.65). Off = they hit at full strength. Bosses and
+  everything the world spawns are never affected. Without BossDirector nothing carries the number and this does
+  nothing. From 1.19.1 your character also carries a marker while this is On; BossDirector sends its bigger waves only
+  in fights where every engaged player has it.
+
 ## License
 
 MIT. Bundles ServerSync and SkillManager (MIT-0, blaxxun-boop). Written for the bruceirons LAN server.
