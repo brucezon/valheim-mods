@@ -31,10 +31,16 @@ public class OarsmenPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.Oarsmen";
 	public const string Name = "Oarsmen";
-	public const string Version = "0.4.1";
+	public const string Version = "0.5.2";
+	// Oldest version a peer may run and still be let in. 0.3.0 is where the bench rules changed (which seats row),
+	// so a 0.2.0 ship owner would push a Longship with seven rowers; everything since is config defaults and
+	// visuals, and ServerSync only warns about config keys the other side does not know. Pinning this to the
+	// current version instead (as 0.4.1 and earlier did) kicked every client who had not pulled the latest build,
+	// even for a release that changed one default.
+	public const string MinimumVersion = "0.3.0";
 
 	internal static ManualLogSource Log;
-	private static readonly ConfigSync configSync = new(Name) { DisplayName = Name, CurrentVersion = Version, MinimumRequiredVersion = Version, ModRequired = false };
+	private static readonly ConfigSync configSync = new(Name) { DisplayName = Name, CurrentVersion = Version, MinimumRequiredVersion = MinimumVersion, ModRequired = false };
 
 	internal enum Toggle
 	{
@@ -145,7 +151,10 @@ public class OarsmenPlugin : BaseUnityPlugin
 
 		SimulatedRowers = config("4 - Debug", "Simulate rowers", 0, new ConfigDescription("Testing aid: pretend at least this many benches are manned, so one player can see and feel a full crew in single player. Empty benches are filled bow to stern until the total is reached; real rowers always count first, so 4 on a Longship you are already rowing adds three phantoms. They row, draw oars and push the ship exactly as players would - the point is to tune oar placement and the force multipliers without four people. Only applies while somebody is actually aboard, so derelict boats stay still. 0 = off. 'oarsmen rowers' marks the fake ones. Leave this at 0 on a real server.", new AcceptableValueRange<int>(0, 32)));
 		LogRowers = config("4 - Debug", "Log rower changes", Toggle.Off, "Log a line whenever the number of rowers on a ship changes.", false);
-		LegacySails.Enabled = config("5 - Legacy sails", "Pre-1.0 sails deploy", Toggle.On, "Valheim 1.0 replaced the sail system and only moves sails on prefabs built for it. A boat from a mod that has not migrated (OdinShip 0.7.9, for one) accepts Half and Full but its sail stays furled. On = run the pre-1.0 sail routine for exactly those ships (no 1.0 sail flag, old-style sail object): the sail scales between furled, half and full as it used to. Ships with 1.0 sails are never touched. Visual only. Turn Off once the boat's author has migrated the prefabs.");
+		LegacySails.Enabled = config("5 - Legacy sails", "Pre-1.0 sails deploy", Toggle.On, "Valheim 1.0 replaced the sail system and only moves sails on prefabs built for it. A boat from a mod that has not migrated (OdinShip 0.7.9, for one) accepts Half and Full but its sail stays furled. On = run the pre-1.0 sail routine for exactly those ships (no 1.0 sail flag, old-style sail object): the sail scales between furled, half and full as it used to. Ships with 1.0 sails are never touched. Visual only. Turn Off once the boat's author has migrated the prefabs. With '1.0 sails on pre-1.0 hulls' On this is only the fallback for a hull the graft could not handle.");
+		ModernSails.Enabled = config("5 - Legacy sails", "1.0 sails on pre-1.0 hulls", Toggle.On, "On = a hull with an old-style sail (OdinShip's boats) gets a real Valheim 1.0 sail: vanilla's own sail rig is cloned under the hull's mast, sized from the old sail's measured width, top and foot, and the ship is handed to vanilla's 1.0 sail routine, so it furls, half-sets and fills exactly like a Karve or Longship and makes the vanilla sail sound. The old cloth is hidden; its rope lines stay. If the graft fails on a hull, that hull falls back to 'Pre-1.0 sails deploy'. Off = every such hull uses the fallback. Follows the setting live, for ships already afloat too. Visual only, per client; 'oarsmen ship' reports what happened.");
+		ModernSails.KeepHullCanvas = config("5 - Legacy sails", "Keep the hull sail canvas", Toggle.On, "On = the 1.0 sail wears the material of the sail it replaces, so each boat keeps its own canvas and emblem. Off = the vanilla 1.0 sail canvas on every grafted hull. Switch this Off if a boat's canvas looks stretched, mirrored or wrong on the new sail. Live, and it keeps following the hull: when another mod changes the old sail's material afterwards (OdinShip's sail designs, cycled with H on the ship) the new sail changes with it.");
+		ModernSails.SizeFactor = config("5 - Legacy sails", "1.0 sail size (x)", 1f, new ConfigDescription("Multiplier on the grafted sail's size. 1 = exactly as wide as the sail it replaces, with the top level with the old one and the foot reaching the old foot. 0.9 = ten percent smaller, 1.1 = ten percent larger. Applies when a sail is grafted.", new AcceptableValueRange<float>(0.25f, 4f)));
 
 		Harmony harmony = new(GUID);
 		harmony.PatchAll();
@@ -196,6 +205,7 @@ public class OarsmenPlugin : BaseUnityPlugin
 				Say(args, $"  float collider centre {Fmt(c)} size {Fmt(ship.m_floatCollider.size)}");
 			}
 			Say(args, "  sail: " + LegacySails.Describe(ship));
+			Say(args, "  " + ModernSails.Describe(ship));
 			foreach (Chair chair in ship.GetComponentsInChildren<Chair>(true))
 			{
 				Transform a = chair.m_attachPoint != null ? chair.m_attachPoint : chair.transform;

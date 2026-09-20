@@ -103,6 +103,18 @@ half and full as it did before 1.0, and its cloth simulates only while set. Ship
 never touched, so it is safe to leave on. Visual only, per client. oarsmen ship prints a sail: line
 showing which system a hull has. Turn it off once the boat's author has migrated the prefabs.
 
+Since 0.5.0 that routine is only the fallback. **1.0 sails on pre-1.0 hulls** (On) gives such a hull a
+real 1.0 sail instead: vanilla's own sail rig (the same one the Raft, Karve, Longship and Drakkar share)
+is cloned under the hull's mast, made exactly as wide as the sail it replaces with the tops level and the
+foot reaching the old foot, and the ship is handed to vanilla's 1.0 routine. It then furls, half-sets and
+fills like a Karve, with MagicaCloth and the vanilla sail sound. The old cloth is hidden; its rope lines
+stay and follow. **Keep the hull sail canvas** (On) dresses the new sail in the old sail's material, turned
+the right way round (the two meshes run their texture in opposite directions); switch it Off for the
+vanilla canvas if a boat's emblem looks wrong. It keeps following the hull afterwards: OdinShip's sail designs (H on the Big Cargo Ship and War Ship) change the new sail too. **1.0 sail size** (1) scales the result. OdinShip 0.8.1's
+six sailing hulls all take the graft; its two canoes have their mast switched off and are left alone. A
+hull the graft cannot handle falls back to the routine above. Both settings follow live, for ships already
+afloat, and oarsmen ship prints a second line saying what was done and with which numbers.
+
 ## Config (`BepInEx/config/bruceirons.Oarsmen.cfg`)
 
 **2 - Rowing:** `Rowing` (On), `Only these ships` (empty = every boat with benches),

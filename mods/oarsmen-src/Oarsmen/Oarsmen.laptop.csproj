@@ -1,0 +1,54 @@
+<!-- Laptop build variant: references the DEDICATED SERVER install in the sibling kit (Desktop\valheim-lan\server)
+     and publicizes the game assemblies at build time with BepInEx.AssemblyPublicizer, so no pre-publicized dlls
+     are needed. Needs the .NET SDK (8.x is fine; targets net48 via reference assemblies) and internet for the NuGet
+     packages the first time. Same layout as BruceNetworking.laptop.csproj. IgnoresAccessChecksTo.cs is left out on
+     purpose: the publicizer generates that attribute itself and the two collide (CS0101).
+       "C:\Program Files\dotnet\dotnet.exe" build Oarsmen.laptop.csproj -c Release
+     Output: bin\Release\Oarsmen.dll -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>Oarsmen</AssemblyName>
+    <RootNamespace>Oarsmen</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <OutputPath>bin\Release\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <NoWarn>CS0618;CS0108;CS0114;CS0649;CS0169;CS8632</NoWarn>
+    <ServerPath Condition="'$(ServerPath)' == ''">$(MSBuildThisFileDirectory)..\..\..\..\valheim-lan\server</ServerPath>
+    <Managed>$(ServerPath)\valheim_server_Data\Managed</Managed>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Plugin.cs" />
+    <Compile Include="Rowing.cs" />
+    <Compile Include="LegacySails.cs" />
+    <Compile Include="ModernSails.cs" />
+    <Compile Include="ConfigurationManagerAttributes.cs" />
+    <Compile Include="ServerSync.src.cs" />
+    <Compile Include="SkipVerification.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="0Harmony"><HintPath>$(ServerPath)\BepInEx\core\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx"><HintPath>$(ServerPath)\BepInEx\core\BepInEx.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="assembly_valheim" Publicize="true"><HintPath>$(Managed)\assembly_valheim.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="assembly_guiutils" Publicize="true"><HintPath>$(Managed)\assembly_guiutils.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="assembly_utils" Publicize="true"><HintPath>$(Managed)\assembly_utils.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine"><HintPath>$(Managed)\UnityEngine.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.CoreModule"><HintPath>$(Managed)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.ClothModule"><HintPath>$(Managed)\UnityEngine.ClothModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MagicaClothV2"><HintPath>$(Managed)\MagicaClothV2.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(Managed)\UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.AnimationModule"><HintPath>$(Managed)\UnityEngine.AnimationModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.UI"><HintPath>$(Managed)\UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Unity.TextMeshPro"><HintPath>$(Managed)\Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="netstandard"><HintPath>$(Managed)\netstandard.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

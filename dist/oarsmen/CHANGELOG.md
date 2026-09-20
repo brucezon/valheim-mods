@@ -1,5 +1,62 @@
 # Changelog
 
+## 0.5.1 - 2026-09-18
+- **Sail designs work again on grafted hulls.** OdinShip's Big Cargo Ship and War Ship let you cycle twelve
+  sail designs with H; the choice is stored on the ship and OdinShip sets the chosen material on its own
+  sail renderer - which is the old mesh the 1.0 graft hides. 0.5.0 dressed the new sail from that material
+  once, at graft time, so a design picked afterwards never showed. The new sail now follows the old
+  renderer's material every tick (one reference comparison; it re-dresses only when the material object
+  changes), so H changes the 1.0 sail immediately, for every player, and a design chosen before the hull
+  loaded shows from the start. Nothing here is OdinShip-specific: any mod that re-materials the old sail is
+  followed.
+- `Keep the hull sail canvas` is now live in both directions: Off swaps grafted sails to the vanilla canvas
+  at once, On brings the hull's own back. No need to toggle the graft.
+- `oarsmen ship` reports the canvas the sail is wearing now, by name, rather than what it wore when grafted.
+- Still visual only and client-side: nothing to install or update on the server, and any mix of 0.3.0+
+  clients can play together.
+
+## 0.5.0 - 2026-09-18
+- **Real 1.0 sails on pre-1.0 hulls** (section 5, `1.0 sails on pre-1.0 hulls`, On). 0.4.0 made an
+  unmigrated boat's old sail scale up and down again; this replaces that sail with the genuine article.
+  Vanilla's 1.0 sail rig - one self-contained object the Raft, Karve, Longship and Drakkar all share,
+  only scaled - is cloned under the hull's own mast, sized from the old sail's measured width, top and
+  foot, and the ship's 1.0 sail fields are pointed at it, so vanilla's own routine furls, half-sets and
+  fills it with MagicaCloth and plays the vanilla sail sound. The old mesh and cloth are hidden; the old
+  rope lines stay and follow. OdinShip 0.8.1: all six sailing hulls take it (Big Cargo, Cargo, Merchant,
+  Trailer, War Ship, Little Boat); the two canoes ship with their mast switched off and are skipped.
+  `Pre-1.0 sails deploy` remains as the fallback for any hull the graft cannot handle. Live toggle,
+  visual only, per client, never on a dedicated server.
+- `Keep the hull sail canvas` (On): the new sail wears the old sail's material. The pre-1.0 mesh and the
+  1.0 mesh run their texture in opposite directions across the sail, so the material is applied as a
+  per-ship copy with that direction reversed; without it every emblem would be mirrored.
+- `1.0 sail size (x)` (1): multiplier on the grafted sail.
+- Grafted hulls are guarded against a vanilla hazard: 1.0's sail-change branch reads the local player
+  without checking it, and because it throws before clearing its flag it would throw every tick while a
+  sail moved during a respawn or a join.
+- `oarsmen ship` prints a second sail line: graft active / not needed / failed, the rig's scale, how far
+  the foot was moved, and which canvas it wears.
+- Built against Valheim 1.0.14. Needs `MagicaClothV2.dll` as a build reference (both project files).
+
+## 0.4.2 - 2026-09-16
+- **A version bump no longer kicks clients on the previous build.** ServerSync's minimum version was
+  pinned to the current version, so a server on 0.4.1 refused a client still on 0.4.0 even though
+  0.4.1 only changed a default. The minimum is now 0.3.0, where the bench rules last changed; older
+  and newer builds join freely and ServerSync merely logs any config key the other side lacks.
+- **Smoother oars.** The stow blend and the ahead/astern turn-over are eased (smoothstep) rather than
+  run at a flat rate, so an oar leaves the stroke, ships itself and turns over without a kink at either
+  end of the move. Same `Stow time`, same poses; only the shape of the motion changed.
+- **Dedicated servers skip the visuals.** The bench scan still runs there, but no oar primitives are
+  built and nothing is animated, since there is nobody to draw for and the server never owns a crewed
+  ship.
+- The tiller's `Rowers` line is gone on a hull the config has excluded, matching the rest of the mod
+  treating that hull as vanilla.
+- `Oar hole positions` is parsed once per value instead of once per ship per frame, and the physics
+  postfix looks the ship's crew up in a table instead of walking components every tick.
+- Packaging: the zip is now built with forward-slash entry names (`tools\pack-mod.ps1`). Earlier
+  releases, and the other bruceirons-team packages, carried `plugins\Oarsmen.dll` with a backslash,
+  which Windows tools accept but macOS and strict unzips turn into a file of that literal name at the
+  root.
+
 ## 0.4.1 - 2026-09-15
 - **`Paddle force per rower` defaults to 0.35** (was 0.25): a full Longship crew of four now paddles
   with 2.4 times the vanilla force. Existing config files keep their old value; set it by hand or delete

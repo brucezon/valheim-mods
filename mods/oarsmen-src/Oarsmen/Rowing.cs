@@ -15,6 +15,15 @@ internal static class Rowing
 	private static string rowAnimsParsed = null;
 	private static readonly HashSet<string> holdAnims = new(StringComparer.OrdinalIgnoreCase);
 	private static string holdAnimsParsed = null;
+	private static float[] holes = Array.Empty<float>();
+	private static string holesParsed = null;
+
+	// A dedicated server (or any -nographics process) has nobody to draw for. The rowing force is owner-only
+	// and a dedicated server never owns a ship while anyone is aboard, so it only ever needs the bench scan;
+	// building primitive oars there would be wasted work every frame per ship.
+	internal static bool Headless =>
+		SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null
+		|| (ZNet.instance != null && ZNet.instance.IsDedicated());
 
 	// Bumped whenever either seat list changes, so hulls already afloat rebuild the set of benches they
 	// found at Awake instead of keeping it. Every other setting is live; these should not be the exception.
@@ -125,7 +134,7 @@ internal static class Rowing
 	}
 
 	// How much bite the oars still have under sail: 1 at rest, falling as the square of the speed the
-	// blade has left and reaching 0 once the hull outruns it at 'Rowing cuts out above'. Shared by the
+	// blade has left and reaching 0 once the hull outruns it at 'Speed where oars stop helping'. Shared by the
 	// force patch and the animation on purpose - if the crew is not moving the ship it should not look
 	// like it is, and two copies of this curve would drift apart the first time one was tuned.
 	internal static float SailBite(Ship ship)
@@ -135,6 +144,22 @@ internal static class Rowing
 		float alongHull = Math.Abs(Vector3.Dot(ship.m_body.linearVelocity, ship.transform.forward));
 		float left = Mathf.Clamp01(1f - alongHull / cutout);
 		return left * left;
+	}
+
+	// Oar hole positions, parsed once per config value rather than once per ship per frame (same identity
+	// check as Parse below).
+	internal static float[] Holes()
+	{
+		string list = OarsmenPlugin.HolePositions.Value ?? "";
+		if (ReferenceEquals(list, holesParsed)) return holes;
+		List<float> vals = new();
+		foreach (string part in list.Split(',', ';'))
+		{
+			if (float.TryParse(part.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float v)) vals.Add(v);
+		}
+		holes = vals.ToArray();
+		holesParsed = list;
+		return holes;
 	}
 
 	// ConfigEntry hands back the same string instance until the value changes, so a reference check is
@@ -179,7 +204,7 @@ internal static class Rowing
 			if (OarsmenPlugin.Enabled.Value != OarsmenPlugin.Toggle.On) return;
 			if (__instance.m_nview == null || !__instance.m_nview.IsValid() || !__instance.m_nview.IsOwner()) return;
 			if (__instance.m_body == null || __instance.m_players.Count == 0) return;
-			OarsBehaviour oars = __instance.GetComponent<OarsBehaviour>();
+			OarsBehaviour oars = OarsBehaviour.For(__instance);
 			if (oars == null || !oars.Active) return;
 			// Oars in air move nothing. Vanilla stops pushing here too, so this keeps the crew inside the
 			// same gate rather than rowing the hull through the top of a wave.
@@ -266,8 +291,9 @@ internal static class Rowing
 			if (__instance.m_ship == null || string.IsNullOrEmpty(__result)) return;
 			// Out of reach, vanilla returns only the greyed "too far" string; leave that one alone.
 			if (!__instance.InUseDistance(Player.m_localPlayer)) return;
-			OarsBehaviour oars = __instance.m_ship.GetComponent<OarsBehaviour>();
-			if (oars == null || oars.BenchCount <= 0) return;
+			OarsBehaviour oars = OarsBehaviour.For(__instance.m_ship);
+			// A hull the config has excluded is vanilla again, so it gets no crew line either.
+			if (oars == null || !oars.Active || oars.BenchCount <= 0) return;
 			__result += $"\nRowers {oars.RowerCount}/{oars.BenchCount}";
 		}
 	}
@@ -308,6 +334,10 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		public float x;
 	}
 
+	// One lookup per ship for the physics postfix instead of a GetComponent walk every fixed update.
+	private static readonly Dictionary<Ship, OarsBehaviour> byShip = new();
+	internal static OarsBehaviour For(Ship ship) => ship != null && byShip.TryGetValue(ship, out OarsBehaviour o) ? o : null;
+
 	private Ship ship;
 	private string prefabName;
 	private readonly List<Bench> benches = new();
@@ -333,7 +363,13 @@ internal sealed class OarsBehaviour : MonoBehaviour
 	{
 		ship = GetComponent<Ship>();
 		prefabName = Utils.GetPrefabName(gameObject);
+		if (ship != null) byShip[ship] = this;
 		BuildBenches();
+	}
+
+	private void OnDestroy()
+	{
+		if (ship != null && byShip.TryGetValue(ship, out OarsBehaviour o) && o == this) byShip.Remove(ship);
 	}
 
 	// Rebuilt rather than done once at Awake so that editing the seat lists takes effect on hulls already
@@ -494,6 +530,7 @@ internal sealed class OarsBehaviour : MonoBehaviour
 
 	private void UpdateOars(float dt)
 	{
+		if (Rowing.Headless) return;
 		bool show = OarsmenPlugin.ShowOars.Value == OarsmenPlugin.Toggle.On && OarsmenPlugin.Enabled.Value == OarsmenPlugin.Toggle.On;
 		if (!show)
 		{
@@ -537,7 +574,7 @@ internal sealed class OarsBehaviour : MonoBehaviour
 		// boat, and the force the crew adds is flat rather than stroke-timed.
 		float driveShare = Mathf.Clamp(OarsmenPlugin.DriveShare.Value, 0.15f, 0.85f);
 
-		float[] holes = ParseHoles(OarsmenPlugin.HolePositions.Value);
+		float[] holes = Rowing.Holes();
 		Transform t = transform;
 		bool anyPulling = false;
 		foreach (Bench b in benches)
@@ -598,7 +635,10 @@ internal sealed class OarsBehaviour : MonoBehaviour
 			// this one number, so the swing, the blade and the shipping cannot disagree with each other.
 			float targetStow = rowing && effort > 0.02f ? 1f - effort : 1f;
 			b.stow = Mathf.MoveTowards(b.stow, targetStow, dt / Mathf.Max(0.05f, OarsmenPlugin.StowTime.Value));
-			float pull = 1f - b.stow;
+			// The blend itself moves at a constant rate; what the oar does with it is eased, so it leaves the
+			// stroke and settles into the stowed pose without a kink at either end.
+			float stowEased = Mathf.SmoothStep(0f, 1f, b.stow);
+			float pull = 1f - stowEased;
 			if (pull > 0.001f) anyPulling = true;
 
 			// One turn of u is one stroke: the drive occupies the first 'Drive share' of it, the recovery
@@ -624,7 +664,10 @@ internal sealed class OarsBehaviour : MonoBehaviour
 			// through zero shortens the stroke, turns it over and lengthens it again, which is what a rower
 			// taking up a backing stroke actually looks like.
 			b.dir = Mathf.MoveTowards(b.dir, b.wantDir, dt / Mathf.Max(0.05f, OarsmenPlugin.StowTime.Value));
-			float sweep = swing * b.dir * OarsmenPlugin.StrokeSweep.Value * 0.5f * pull;
+			// Eased over the whole -1..1 run, so the turn-over starts and finishes gently and moves fastest
+			// through zero, where the stroke is shortest and a change of pace shows least.
+			float dirEased = Mathf.Lerp(-1f, 1f, Mathf.SmoothStep(0f, 1f, (b.dir + 1f) * 0.5f));
+			float sweep = swing * dirEased * OarsmenPlugin.StrokeSweep.Value * 0.5f * pull;
 
 			// Blade buried through the drive and clear of the water on the recovery. It squares up over the
 			// first part of the drive and feathers out over the last - at the catch and the finish, where
@@ -655,7 +698,7 @@ internal sealed class OarsBehaviour : MonoBehaviour
 			// so each bank comes aft the short way instead of sweeping across the boat.
 			if (OarsmenPlugin.StowedOars.Value == OarsmenPlugin.StowStyle.AlongHull && b.stow > 0f)
 			{
-				yaw = Mathf.Lerp(yaw, b.side * 180f, b.stow);
+				yaw = Mathf.Lerp(yaw, b.side * 180f, stowEased);
 			}
 			b.oar.transform.localRotation = Quaternion.Euler(dip, yaw, feather);
 		}
@@ -734,17 +777,6 @@ internal sealed class OarsBehaviour : MonoBehaviour
 			oarMaterial = new Material(s) { color = new Color(0.45f, 0.30f, 0.16f) };
 		}
 		return oarMaterial;
-	}
-
-	private static float[] ParseHoles(string list)
-	{
-		if (string.IsNullOrWhiteSpace(list)) return Array.Empty<float>();
-		List<float> vals = new();
-		foreach (string part in list.Split(',', ';'))
-		{
-			if (float.TryParse(part.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float v)) vals.Add(v);
-		}
-		return vals.ToArray();
 	}
 
 	internal string Describe()
