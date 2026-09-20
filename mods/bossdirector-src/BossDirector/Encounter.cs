@@ -1,0 +1,128 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text.RegularExpressions;
+
+namespace BossDirector;
+
+// One boss's script, parsed from a single config line:
+//
+//   75% "Moder calls her brood": Hatchling 1+1 | every 45s above 25%: Hatchling 1+0
+//
+// Rules are separated by |. A rule is  <trigger> ["message"] : <spawns>.
+//   trigger  NN%                          fires once when the boss drops to NN% health
+//            every NNs [below NN%] [above NN%]   repeats while the boss is hurt and inside that health band
+//   spawns   comma separated  Prefab[*|**] base+perPlayer   (count = floor(base + perPlayer x players), * = one star)
+internal sealed class Encounter
+{
+	// Set by the plugin every tick: 1, or the "more adds" factor while a damage-scaling BruceQoL is on this server.
+	internal static float CountMultiplier = 1f;
+
+	internal sealed class Spawn
+	{
+		public string Prefab;
+		public int Level = 1;
+		public float Base;
+		public float PerPlayer;
+
+		public int Count(int players)
+		{
+			int plain = Math.Max(0, (int)Math.Floor(Base + PerPlayer * players + 0.001f));
+			// Multiplied and rounded down: at 1.3, 4 -> 5, 5 -> 6, 8 -> 10, and 1 to 3 are unchanged. Applied after the plain count so a single
+			// heavy add never doubles.
+			return Math.Max(0, (int)Math.Floor(plain * CountMultiplier + 0.001f));
+		}
+	}
+
+	internal sealed class Rule
+	{
+		public bool Repeating;
+		public float Threshold;          // 0..1, threshold rules
+		public float Interval;           // seconds, repeating rules
+		public float Below = 1f;         // repeating rules run while Above <= health < Below
+		public float Above;
+		public string Message = "";
+		public readonly List<Spawn> Spawns = new List<Spawn>();
+	}
+
+	public readonly List<Rule> Rules = new List<Rule>();
+	public readonly List<string> Errors = new List<string>();
+
+	static readonly Regex MessageRx = new Regex("\"([^\"]*)\"", RegexOptions.Compiled);
+	static readonly Regex ThresholdRx = new Regex(@"^(\d+(?:\.\d+)?)\s*%$", RegexOptions.Compiled);
+	static readonly Regex EveryRx = new Regex(@"^every\s+(\d+(?:\.\d+)?)\s*s?((?:\s+(?:below|above)\s+\d+(?:\.\d+)?\s*%)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+	static readonly Regex BandRx = new Regex(@"(below|above)\s+(\d+(?:\.\d+)?)\s*%", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+	static readonly Regex SpawnRx = new Regex(@"^([^\s*]+)(\*{0,2})\s+(\d+(?:\.\d+)?)(?:\s*\+\s*(\d+(?:\.\d+)?))?$", RegexOptions.Compiled);
+
+	static float F(string s) => float.Parse(s, CultureInfo.InvariantCulture);
+
+	public static Encounter Parse(string text)
+	{
+		var enc = new Encounter();
+		if (string.IsNullOrWhiteSpace(text)) return enc;
+		foreach (string rawRule in text.Split('|'))
+		{
+			string s = rawRule.Trim();
+			if (s.Length == 0) continue;
+			var rule = new Rule();
+			Match msg = MessageRx.Match(s);
+			if (msg.Success)
+			{
+				rule.Message = msg.Groups[1].Value;
+				s = s.Remove(msg.Index, msg.Length);
+			}
+			int colon = s.IndexOf(':');
+			if (colon < 0) { enc.Errors.Add($"no ':' in rule '{rawRule.Trim()}'"); continue; }
+			string trigger = s.Substring(0, colon).Trim();
+			string spawns = s.Substring(colon + 1).Trim();
+
+			Match m;
+			if ((m = ThresholdRx.Match(trigger)).Success)
+			{
+				rule.Threshold = F(m.Groups[1].Value) / 100f;
+			}
+			else if ((m = EveryRx.Match(trigger)).Success)
+			{
+				rule.Repeating = true;
+				rule.Interval = Math.Max(1f, F(m.Groups[1].Value));
+				foreach (Match b in BandRx.Matches(m.Groups[2].Value))
+				{
+					float v = F(b.Groups[2].Value) / 100f;
+					if (b.Groups[1].Value.Equals("below", StringComparison.OrdinalIgnoreCase)) rule.Below = v; else rule.Above = v;
+				}
+			}
+			else { enc.Errors.Add($"trigger '{trigger}' is neither 'NN%' nor 'every NNs [below NN%] [above NN%]'"); continue; }
+
+			foreach (string rawSpawn in spawns.Split(','))
+			{
+				string sp = rawSpawn.Trim();
+				if (sp.Length == 0) continue;
+				Match sm = SpawnRx.Match(sp);
+				if (!sm.Success) { enc.Errors.Add($"spawn '{sp}' is not 'Prefab[*] base+perPlayer'"); continue; }
+				rule.Spawns.Add(new Spawn
+				{
+					Prefab = sm.Groups[1].Value,
+					Level = 1 + sm.Groups[2].Value.Length,
+					Base = F(sm.Groups[3].Value),
+					PerPlayer = sm.Groups[4].Success ? F(sm.Groups[4].Value) : 0f,
+				});
+			}
+			if (rule.Spawns.Count == 0) { enc.Errors.Add($"rule '{trigger}' spawns nothing"); continue; }
+			enc.Rules.Add(rule);
+		}
+		return enc;
+	}
+
+	public string Describe(int players)
+	{
+		var parts = new List<string>();
+		foreach (Rule r in Rules)
+		{
+			var sp = new List<string>();
+			foreach (Spawn s in r.Spawns) sp.Add($"{s.Count(players)}x {s.Prefab}{new string('*', s.Level - 1)}");
+			string when = r.Repeating ? $"every {r.Interval:0}s [{r.Above * 100:0}-{r.Below * 100:0}%)" : $"{r.Threshold * 100:0}%";
+			parts.Add($"{when}: {string.Join(" + ", sp)}");
+		}
+		return string.Join(" | ", parts);
+	}
+}
