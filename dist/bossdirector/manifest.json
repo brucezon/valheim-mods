@@ -1,6 +1,6 @@
 {
     "name":  "BossDirector",
-    "version_number":  "0.3.0",
+    "version_number":  "0.3.1",
     "website_url":  "",
     "description":  "Server-only: add waves in boss fights at health thresholds, scaled by players present. The Elder, Bonemass, Moder and Yagluth scripted; every boss is one live-reloaded config line. No client install.",
     "dependencies":  [

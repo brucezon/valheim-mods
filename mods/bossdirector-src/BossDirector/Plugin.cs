@@ -15,7 +15,7 @@ public class BossDirectorPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.BossDirector";
 	public const string Name = "BossDirector";
-	public const string Version = "0.3.0";
+	public const string Version = "0.3.1";
 
 	internal static ManualLogSource Log;
 	internal static BossDirectorPlugin Instance;

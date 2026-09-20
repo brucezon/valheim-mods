@@ -49,6 +49,7 @@ internal static class Director
 	// Read by BruceQoL 1.19+ on the victim's machine: hits from this creature on a player are scaled by it.
 	static readonly int AddDamageKey = "bossdirector_dmg".GetStableHashCode();
 	static float searchTimer = 999f;
+	static bool warnedStacking;
 
 	// Test hook: when set, used instead of the connected peers.
 	internal static List<KeyValuePair<long, Vector3>> DebugPlayers;
@@ -317,8 +318,20 @@ internal static class Director
 		if (spawn.Level > 1) zdo.Set(ZDOVars.s_level, spawn.Level);
 		if (BossDirectorPlugin.AddsHunt.Value) zdo.Set(ZDOVars.s_huntPlayer, true);
 		zdo.Set(AddTag, true);
+		// One reduction, never two. Boss fight mode already lowers what every non-boss deals to players (BruceQoL's
+		// 'Enemy damage to players'), and BruceQoL would multiply the per-add number on top of that. So the per-add
+		// number is only ever written when boss fight mode cannot be doing the job.
 		float dmg = BossDirectorPlugin.AddDamage.Value;
-		if (dmg > 0f && !Mathf.Approximately(dmg, 1f)) zdo.Set(AddDamageKey, dmg);
+		bool fightModeScales = FightMode.Available && BossDirectorPlugin.FightModeEnabled.Value;
+		if (dmg > 0f && !Mathf.Approximately(dmg, 1f))
+		{
+			if (!fightModeScales) zdo.Set(AddDamageKey, dmg);
+			else if (!warnedStacking)
+			{
+				warnedStacking = true;
+				BossDirectorPlugin.Log.LogWarning($"'Add damage (x)' = {dmg:0.##} is IGNORED while boss fight mode is on: the two would multiply ({dmg:0.##} x {BossDirectorPlugin.FightEnemyDamage.Value:0.##}). Set it to 1, or switch boss fight mode off to use it.");
+			}
+		}
 		float hp = BossDirectorPlugin.AddHealth.Value;
 		if (hp > 0f && hp < 0.999f)
 		{

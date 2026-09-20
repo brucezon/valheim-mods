@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1
+
+- **One damage reduction, never two.** While boss fight mode is available and on, the per-add `Add damage (x)`
+  number is no longer written on adds at all: BruceQoL would have multiplied it on top of the fight-mode enemy
+  damage (0.65 x 0.6). A value other than 1 is ignored with a warning in the log. It still works on a server that
+  has boss fight mode switched off.
+
 ## 0.3.0
 
 - **Boss fight mode.** With BruceQoL on the server, BossDirector changes BruceQoL's own damage settings while players
