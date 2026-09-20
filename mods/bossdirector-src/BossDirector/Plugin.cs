@@ -15,7 +15,7 @@ public class BossDirectorPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.BossDirector";
 	public const string Name = "BossDirector";
-	public const string Version = "0.3.1";
+	public const string Version = "0.4.0";
 
 	internal static ManualLogSource Log;
 	internal static BossDirectorPlugin Instance;
@@ -37,6 +37,8 @@ public class BossDirectorPlugin : BaseUnityPlugin
 	internal static ConfigEntry<float> FightEnemyDamage;
 	internal static ConfigEntry<float> FightBossDamage;
 	internal static ConfigEntry<float> FightModeLinger;
+	internal static ConfigEntry<bool> WorldEncountersEnabled;
+	internal static ConfigEntry<string> WorldEncounterRules;
 
 	static readonly Dictionary<string, ConfigEntry<string>> Scripts = new Dictionary<string, ConfigEntry<string>>();
 
@@ -104,6 +106,17 @@ public class BossDirectorPlugin : BaseUnityPlugin
 		AddDamage = Config.Bind("2 - Scaling", "Add damage (x)", 1f, new ConfigDescription("Extra, per-add damage multiplier, on top of anything boss fight mode does. 1 = none (the default since 0.3.0: boss fight mode does this job for everyone at once). Below 1 it is written on each add and applied only by players running BruceQoL 1.19.0+.", new AcceptableValueRange<float>(0.05f, 3f)));
 		AddHealth = Config.Bind("2 - Scaling", "Add health (x)", 1f, new ConfigDescription("Adds arrive with this share of their health, so they die sooner. 1 = full health. Needs nothing on the players' side; the only visible sign is a health bar that starts part empty.", new AcceptableValueRange<float>(0.1f, 1f)));
 		MoreAdds = Config.Bind("2 - Scaling", "More adds while their damage is scaled (x)", 1.3f, new ConfigDescription("Used exactly while boss fight mode (section 5) is on, because that is when every player takes reduced damage from adds: every wave count and the living-adds cap are multiplied by this and rounded down, so at 1.3 a wave of 4 becomes 5, 5 becomes 6, 8 becomes 10, and 1 to 3 stay as they are. 1 = never more adds. No BruceQoL on the server, or boss fight mode off: the scripts run exactly as written.", new AcceptableValueRange<float>(1f, 4f)));
+		WorldEncountersEnabled = Config.Bind("6 - World encounters", "Enabled", true, "Encounters away from bosses: kill enough of something at a known place and the place answers.");
+		WorldEncounterRules = Config.Bind("6 - World encounters", "Encounters", "GoblinCamp2 80m: 10 Goblin,GoblinArcher,GoblinShaman in 600s -> GoblinBrute 1+0, cooldown 1800s",
+			"Rules separated by | . A rule is   Location 80m: 10 PrefabA,PrefabB in 600s -> Prefab 1+0, cooldown 1800s\n" +
+			"  Location    the world location's prefab name (GoblinCamp2 = a Fuling village). The log says how many exist in this world,\n" +
+			"              and suggests similar names when there are none.\n" +
+			"  80m         a kill counts when it happens within this distance of the location, with a player within 80 m of the kill.\n" +
+			"  10 ... in 600s   this many of the listed creatures must vanish inside this many seconds. The server sees a creature's\n" +
+			"              object disappear; it cannot tell a kill from a despawn, which is accurate enough for a camp being cleared.\n" +
+			"  -> ...      what arrives, same format as boss waves: Prefab base+perPlayer, * = one star. It appears 14-24 m from the\n" +
+			"              last kill, hunting, with its normal loot. No message is shown.\n" +
+			"  cooldown    seconds before the same location can answer again (real time while the server runs).");
 		ForcePlayers = Config.Bind("4 - Debug", "Pretend this many players", 0, "0 = count real players. Anything else sizes every wave as if that many were fighting, so one person can see a four-player fight. Someone still has to be in range.");
 		configStamp = Stamp();
 	}
@@ -171,6 +184,7 @@ public class BossDirectorPlugin : BaseUnityPlugin
 		float step = tick;
 		tick = 0f;
 		if (!Enabled.Value) { FightMode.Leave("BossDirector was switched off"); if (Director.ActiveFights > 0) Director.Reset(); return; }
+		try { WorldEncounters.Tick(); } catch (Exception e) { Log.LogError(e); }
 		try { Director.Tick(step); }
 		catch (Exception e) { Log.LogError(e); }
 	}

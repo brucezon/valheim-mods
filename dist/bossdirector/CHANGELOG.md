@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0
+
+- **World encounters: the mod now works away from bosses too.** Kill enough of something at a known place and the
+  place answers. First rule: ten Fulings (any mix of Fulings, archers and shamans) killed inside ten minutes within
+  80 m of a Fuling village brings one Fuling Berserker, hunting, with its normal loot; that village then stays quiet
+  for thirty minutes. No message is shown. Each village counts on its own. Rules are one config line, re-read live:
+  `GoblinCamp2 80m: 10 Goblin,GoblinArcher,GoblinShaman in 600s -> GoblinBrute 1+0, cooldown 1800s`.
+- How the server knows: it sees every creature object disappear (it cannot tell a kill from a despawn, which is
+  accurate enough for a camp being cleared), and it knows where every generated location is. Creatures this mod
+  spawned are never counted. Still server-only, no client code.
+
 ## 0.3.1
 
 - **One damage reduction, never two.** While boss fight mode is available and on, the per-add `Add damage (x)`

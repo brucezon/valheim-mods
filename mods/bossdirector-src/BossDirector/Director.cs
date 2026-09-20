@@ -407,4 +407,58 @@ internal static class Director
 	{
 		Fights.Clear();
 	}
+
+	// ---- shared with WorldEncounters ----
+
+	// Players within range of a point (flat distance), and the uid of the nearest one.
+	internal static int CountPlayers(Vector3 pos, float range, out long nearest)
+	{
+		GatherPlayers();
+		int count = 0;
+		foreach (PlayerPos p in Players) if (Flat(p.Pos, pos) <= range) count++;
+		nearest = NearestPlayer(pos);
+		return count;
+	}
+
+	// A creature made the same way as a boss add, but belonging to no fight: it is never removed by BossDirector and
+	// never carries the per-add damage number.
+	internal static ZDOID SpawnCreature(string prefabName, int level, Vector3 center, float ringMin, float ringMax, long owner, int tag, string why)
+	{
+		GameObject prefab = ZNetScene.instance.GetPrefab(prefabName);
+		ZNetView view = prefab != null ? prefab.GetComponent<ZNetView>() : null;
+		if (view == null || prefab.GetComponent<Character>() == null)
+		{
+			BossDirectorPlugin.Log.LogWarning($"{why}: '{prefabName}' is not a creature prefab, skipped");
+			return ZDOID.None;
+		}
+		Vector3 pos = center;
+		bool placed = false;
+		for (int attempt = 0; attempt < 10 && !placed; attempt++)
+		{
+			float angle = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
+			float dist = UnityEngine.Random.Range(ringMin, Mathf.Max(ringMin, ringMax));
+			pos = new Vector3(center.x + Mathf.Cos(angle) * dist, 0f, center.z + Mathf.Sin(angle) * dist);
+			pos.y = GroundHeight(pos);
+			placed = pos.y > ZoneSystem.instance.m_waterLevel + 0.3f;
+		}
+		if (!placed) pos.y = Mathf.Max(pos.y, ZoneSystem.instance.m_waterLevel + 0.5f);
+		pos.y += 0.5f;
+
+		int hash = prefab.name.GetStableHashCode();
+		ZDO zdo = ZDOMan.instance.CreateNewZDO(pos, hash);
+		zdo.Persistent = view.m_persistent;
+		zdo.Type = view.m_type;
+		zdo.Distant = view.m_distant;
+		zdo.SetPrefab(hash);
+		Vector3 facing = center - pos; facing.y = 0f;
+		zdo.SetRotation(facing.sqrMagnitude > 0.01f ? Quaternion.LookRotation(facing) : Quaternion.identity);
+		if (level > 1) zdo.Set(ZDOVars.s_level, level);
+		if (BossDirectorPlugin.AddsHunt.Value) zdo.Set(ZDOVars.s_huntPlayer, true);
+		zdo.Set(tag, true);
+		if (owner != 0L) zdo.SetOwner(owner);
+		BossDirectorPlugin.Log.LogInfo($"{why}: spawned {prefab.name}{new string('*', level - 1)} {zdo.m_uid} at {pos:0.0} ({Flat(pos, center):0} m away) owner {owner}");
+		return zdo.m_uid;
+	}
+
+	internal static bool IsDirectorSpawn(ZDO zdo) => zdo.GetBool(AddTag);
 }

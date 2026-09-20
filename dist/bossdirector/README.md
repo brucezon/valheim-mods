@@ -1,6 +1,7 @@
 # BossDirector
 
-Adds waves of creatures to boss fights at health thresholds, sized by how many players are there. Built for
+Adds waves of creatures to boss fights at health thresholds, sized by how many players are there, and lets places in
+the world answer when they are raided. Built for
 Valheim 1.0.15.
 
 > **Server-only. Install on the dedicated server and nowhere else.** Players need nothing, and nothing has to be
@@ -114,6 +115,27 @@ and waves stay as written.
 
 **4 - Debug:** `Pretend this many players` (0): size every wave as if that many were fighting, so one person can see
 a four-player fight.
+
+## World encounters
+
+Away from bosses: kill enough of something at a known place and the place answers, with no message.
+
+| Place | Trigger | What arrives |
+|---|---|---|
+| Fuling village (`GoblinCamp2`) | 10 Fulings, archers or shamans killed within 10 minutes, within 80 m of the village | one Fuling Berserker, hunting; then that village is quiet for 30 minutes |
+
+Section **6 - World encounters**: `Enabled` (On) and `Encounters`, rules separated by `|`:
+
+```
+GoblinCamp2 80m: 10 Goblin,GoblinArcher,GoblinShaman in 600s -> GoblinBrute 1+0, cooldown 1800s
+```
+
+`Location radius: kills victims in seconds -> spawns, cooldown seconds`. Spawns use the boss-wave format
+(`Prefab base+perPlayer`, `*` = one star), counted from the players within 80 m of the last kill. The reinforcement
+appears 14-24 m from that kill and drops its normal loot. Each location keeps its own count and cooldown. The server sees a
+creature's object disappear and cannot tell a kill from a despawn; a player must be within 80 m for it to count, and
+creatures this mod spawned never count. The log names how many of each location exist in the world and suggests
+similar names when a rule matches none.
 
 ## Known limits
 

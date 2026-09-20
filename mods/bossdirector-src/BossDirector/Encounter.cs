@@ -56,6 +56,22 @@ internal sealed class Encounter
 
 	static float F(string s) => float.Parse(s, CultureInfo.InvariantCulture);
 
+	// "Prefab[*|**] base[+perPlayer]" -> Spawn. Shared with WorldEncounters.
+	internal static bool TryParseSpawn(string text, out Spawn spawn)
+	{
+		spawn = null;
+		Match sm = SpawnRx.Match(text.Trim());
+		if (!sm.Success) return false;
+		spawn = new Spawn
+		{
+			Prefab = sm.Groups[1].Value,
+			Level = 1 + sm.Groups[2].Value.Length,
+			Base = F(sm.Groups[3].Value),
+			PerPlayer = sm.Groups[4].Success ? F(sm.Groups[4].Value) : 0f,
+		};
+		return true;
+	}
+
 	public static Encounter Parse(string text)
 	{
 		var enc = new Encounter();

@@ -21,6 +21,7 @@
     <Compile Include="Director.cs" />
     <Compile Include="Encounter.cs" />
     <Compile Include="FightMode.cs" />
+    <Compile Include="WorldEncounters.cs" />
     <Compile Include="SkipVerification.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
