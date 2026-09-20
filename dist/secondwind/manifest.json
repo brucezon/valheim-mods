@@ -1,0 +1,9 @@
+{
+    "name":  "SecondWind",
+    "version_number":  "0.1.0",
+    "website_url":  "",
+    "description":  "Client-only: after you die, the fireside wait for the Rested buff is much shorter for two minutes. No server install, no version check, never blocks joining.",
+    "dependencies":  [
+                         "denikson-BepInExPack_Valheim-5.4.2350"
+                     ]
+}
