@@ -1,5 +1,8 @@
 # BossDirector
 
+> **Retired.** Superseded by **RaidBoss** (bruceirons-team), which does everything here and more, installed on the server
+> and the clients. Do not run both.
+
 Adds waves of creatures to boss fights at health thresholds, sized by how many players are there, and lets places in
 the world answer when they are raided. Built for
 Valheim 1.0.15.
