@@ -65,10 +65,11 @@ does not replay the waves it is already past. With nobody in range the fight pau
 ## Heroic fights and idols
 
 A harder fight that the players choose, and the only one that pays idols. **Hold Shift and press Use on the boss's altar
-before summoning.** It takes one of that boss's own trophies from your inventory (a server setting; it can be free), the
-altar's hover text then reads "Heroic fight: the challenge is set" for everyone, and when the boss appears the server
-shows "The challenge is accepted". A first kill can never be heroic, because nobody has the trophy yet. The challenge
-stays on the altar until a boss takes it up, across server restarts.
+before summoning.** It is free, so a group can take the heroic fight the first time it meets a boss. The altar's hover
+text then reads "Heroic fight: the challenge is set" for everyone, and when the boss appears the server shows "The
+challenge is accepted". The challenge stays on the altar until a boss takes it up, across server restarts. A server
+can make it cost one of the boss's own trophies instead (`The challenge costs a trophy`), which means beating the boss
+normally once first.
 
 The older way still works: drop the boss's own trophy on the ground within 15 m of the boss before anyone hurts it; the
 server takes the whole stack that was dropped. A trophy on an item stand does not count.

@@ -59,8 +59,8 @@ internal static class ClientSide
 	// offer-an-item altars too, where vanilla's own Interact does nothing. The challenge is stored ON THE ALTAR (a bool
 	// on its ZDO, written by this client after claiming the object), so it survives a server restart, every player sees
 	// it in the hover text, and the server reads it when the boss appears (Director.TakeAltarChallenge) and clears it.
-	// By default it costs one of the boss's own trophies from the player's inventory, which is what makes a first kill
-	// impossible to do heroically and keeps heroic from being the free default.
+	// Free by default, so a group can take the heroic fight the first time it meets a boss; a server can make it cost one
+	// of the boss's own trophies from the player's inventory (then a boss has to be beaten normally once first).
 	internal static readonly int AltarKey = "raidboss_heroic".GetStableHashCode();
 
 	static ItemDrop.ItemData.SharedData TrophyOf(OfferingBowl altar)

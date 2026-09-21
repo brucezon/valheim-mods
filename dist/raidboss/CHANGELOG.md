@@ -8,7 +8,8 @@
 - New because the client has the mod too: damage scaling is RaidBoss's own (adds carry their multiplier, the server
   announces how hard a boss hits in a fight) and touches nothing else; kills are reported exactly instead of being
   guessed from objects vanishing; the shorter fireside wait after a death moved here from BruceQoL.
-- Heroic fights are asked for at the altar: hold Shift and press Use. By default that takes one of the boss's own
-  trophies; the challenge is stored on the altar and shown in its hover text. Dropping the trophy by the boss still works.
+- Heroic fights are asked for at the altar: hold Shift and press Use. Free by default (a server setting can make it cost
+  one of the boss's own trophies); the challenge is stored on the altar and shown in its hover text. Dropping the trophy
+  by the boss still works.
 - Required on both sides. The minimum version will follow the rule "the previous release, unless a release changes the
   network messages or the object keys", so an update does not lock players out needlessly.
