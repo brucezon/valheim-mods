@@ -14,7 +14,7 @@ namespace RaidBoss;
 //                          raidboss_label (a line under a boss's name). Read here by whoever needs them; written by
 //                          the server on the adds it creates, and by a boss's owner when the server asks (Net.Op).
 //   the break meter        hits on a boss are only seen by its owner, so the owner keeps the meter on the boss's ZDO:
-//                          the game's own stagger value of every player hit (bosses normally throw it away), a chunk
+//                          weakness damage in full, a little of each hit's stagger value (bosses normally throw it away), a chunk
 //                          for a parry, a chunk when the server says a wave is cleared, draining over time. Full = a
 //                          break: the boss stops acting, is slowed to a crawl and takes more damage for a few seconds;
 //                          then the meter needs more. A flying boss breaks when it lands.
@@ -33,6 +33,11 @@ internal static class Mechanics
 	static readonly int BrkDurKey = "raidboss_brk_dur".GetStableHashCode();
 	static readonly int BrkGrowKey = "raidboss_brk_grow".GetStableHashCode();
 	static readonly int BrkTakenKey = "raidboss_brk_x".GetStableHashCode();
+	static readonly int BrkHitKey = "raidboss_brk_hit".GetStableHashCode();
+	static readonly int BrkWeakKey = "raidboss_brk_weak".GetStableHashCode();
+	static readonly int BrkBluntKey = "raidboss_brk_blunt".GetStableHashCode();
+	static readonly int GuardKey = "raidboss_guard".GetStableHashCode();
+	static readonly int GuardBrokenKey = "raidboss_guard_x".GetStableHashCode();
 	static readonly int BreakUntilKey = "raidboss_break_t".GetStableHashCode();
 	static readonly int TauntUserKey = "raidboss_taunt_u".GetStableHashCode();
 	static readonly int TauntIdKey = "raidboss_taunt_i".GetStableHashCode();
@@ -80,7 +85,7 @@ internal static class Mechanics
 			case "heal":     // a fraction of max health
 				zdo.Set(ZDOVars.s_health, Mathf.Min(max, zdo.GetFloat(ZDOVars.s_health, max) + max * Mathf.Clamp01(op.Value)));
 				break;
-			case "meter":    // "size=0.4;drain=0.002;parry=0.03;dur=8;grow=1.5;x=2", sizes as fractions of max health. Once.
+			case "meter":    // "size=0.4;drain=0.002;parry=0.06;dur=8;grow=1.5;x=2;hit=0.1;weak=1", sizes as fractions of max health. Once.
 				if (zdo.GetFloat(BrkMaxKey, 0f) != 0f) break;
 				var v = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 				foreach (string pair in op.Text.Split(';'))
@@ -95,6 +100,8 @@ internal static class Mechanics
 				zdo.Set(BrkDurKey, F(G("dur", "8"), 8f));
 				zdo.Set(BrkGrowKey, F(G("grow", "1.5"), 1.5f));
 				zdo.Set(BrkTakenKey, F(G("x", "2"), 2f));
+				zdo.Set(BrkHitKey, F(G("hit", "1"), 1f));      // absent (a 0.1.0 server) = weapon stagger counts in full, as it did
+				zdo.Set(BrkWeakKey, F(G("weak", "0"), 0f));
 				break;
 			case "brk_add":  // a fraction of the meter
 				AddMeter(zdo, op.Value * zdo.GetFloat(BrkMaxKey, 0f), null);
@@ -194,6 +201,22 @@ internal static class Mechanics
 
 	// ---- damage a creature takes (owner side): the ward / break multiplier, and the meter
 
+	static bool IsWeak(HitData.DamageModifier m) => m == HitData.DamageModifier.Weak || m == HitData.DamageModifier.VeryWeak || m == HitData.DamageModifier.SlightlyWeak;
+
+	static float WeakDamage(HitData.DamageModifiers mods, HitData.DamageTypes d)
+	{
+		float sum = 0f;
+		if (d.m_blunt > 0f && IsWeak(mods.m_blunt)) sum += d.m_blunt;
+		if (d.m_slash > 0f && IsWeak(mods.m_slash)) sum += d.m_slash;
+		if (d.m_pierce > 0f && IsWeak(mods.m_pierce)) sum += d.m_pierce;
+		if (d.m_fire > 0f && IsWeak(mods.m_fire)) sum += d.m_fire;
+		if (d.m_frost > 0f && IsWeak(mods.m_frost)) sum += d.m_frost;
+		if (d.m_lightning > 0f && IsWeak(mods.m_lightning)) sum += d.m_lightning;
+		if (d.m_poison > 0f && IsWeak(mods.m_poison)) sum += d.m_poison;
+		if (d.m_spirit > 0f && IsWeak(mods.m_spirit)) sum += d.m_spirit;
+		return sum;
+	}
+
 	[HarmonyPatch(typeof(Character), "RPC_Damage")]
 	static class CreatureDamagePatch
 	{
@@ -205,12 +228,24 @@ internal static class Mechanics
 			ZDO zdo = view.GetZDO();
 			bool broken = Broken(zdo);
 			if (!broken && zdo.GetFloat(BrkMaxKey, 0f) > 0f && hit.GetAttacker() is Player && Game.instance != null)
-				AddMeter(zdo, hit.m_damage.GetTotalStaggerDamage() * hit.m_staggerMultiplier * Game.instance.GetDifficultyDamageScaleEnemy(__instance.transform.position), __instance);
+			{
+				// Plain weapon stagger counts for little; damage of a type the boss is weak to (its own weaknesses, or a
+				// trait's) counts in full. Worked out before resistances, so it measures what was swung, not what landed.
+				float scale = Game.instance.GetDifficultyDamageScaleEnemy(__instance.transform.position);
+				float fill = hit.m_damage.GetTotalStaggerDamage() * hit.m_staggerMultiplier * zdo.GetFloat(BrkHitKey, 1f);
+				float weakShare = zdo.GetFloat(BrkWeakKey, 0f);
+				if (weakShare > 0f) fill += WeakDamage(__instance.GetDamageModifiers(), hit.m_damage) * weakShare;
+				fill += hit.m_damage.m_blunt * zdo.GetFloat(BrkBluntKey, 0f);
+				AddMeter(zdo, fill * scale, __instance);
+			}
 			float mult = zdo.GetFloat(TakenKey, 1f);
 			if (mult <= 0f) mult = 1f;
 			Mode mode = Modes.Get(zdo);
 			if (mode != null) mult *= mode.Taken;
-			if (broken) mult *= Mathf.Max(1f, zdo.GetFloat(BrkTakenKey, 2f));
+			// Guarded: hard to hurt until the meter breaks it, and very easy while it is broken. Only with a meter, which ends it.
+			float guard = zdo.GetFloat(BrkMaxKey, 0f) > 0f ? zdo.GetFloat(GuardKey, 0f) : 0f;
+			if (broken) mult *= Mathf.Max(1f, guard > 0f ? zdo.GetFloat(GuardBrokenKey, 3f) : zdo.GetFloat(BrkTakenKey, 2f));
+			else if (guard > 0f) mult *= Mathf.Clamp(guard, 0.01f, 1f);
 			if (!Mathf.Approximately(mult, 1f)) hit.ApplyModifier(Mathf.Clamp(mult, 0.01f, 10f));
 		}
 	}
@@ -294,6 +329,7 @@ internal static class Mechanics
 				if (Broken(zdo)) extra += "\n<size=70%><color=#ffd24a>Broken</color></size>";
 				else
 				{
+					if (zdo.GetFloat(GuardKey, 0f) > 0f && zdo.GetFloat(BrkMaxKey, 0f) > 0f) label = label.Length > 0 ? "Guarded - " + label : "Guarded";
 					if (label.Length > 0) extra += "\n<size=70%>" + label + "</size>";
 					float max = zdo.GetFloat(BrkMaxKey, 0f);
 					if (max > 0f)

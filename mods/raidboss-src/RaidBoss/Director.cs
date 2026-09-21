@@ -41,6 +41,8 @@ internal static class Director
 		public float MechTimer;
 		public readonly List<Wave> Waves = new List<Wave>();
 		public readonly Dictionary<Encounter.Act, int> Cycle = new Dictionary<Encounter.Act, int>();
+		public float[] Guard;             // taken, broken, blunt, size - waiting for the break meter before it is applied
+		public bool GuardApplied;
 		public int TrophyHash;
 		public string TrophyName;
 		public int MaxPlayers;          // most real players seen in range at once; decides the idols
@@ -533,6 +535,10 @@ internal static class Director
 				string first = act.Args.Length > 0 ? act.Args[0] : "";
 				switch (act.Verb)
 				{
+					case "guard":    // guard taken0.3 broken3 blunt0.5 size0.2: hard to hurt until broken, very easy while broken
+						fight.Guard = new[] { Mathf.Clamp(Arg(act.Args, "taken", 0.3f), 0.01f, 1f), Mathf.Clamp(Arg(act.Args, "broken", 3f), 1f, 10f), Mathf.Max(0f, Arg(act.Args, "blunt", 0.5f)), Mathf.Clamp(Arg(act.Args, "size", 0.2f), 0.02f, 5f) };
+						fight.GuardApplied = false;
+						break;
 					case "ward":     // ward 0.5 [break]: the boss takes x0.5 until this rule's adds are dead; "break" = then it breaks
 						if (wave == null) break;
 						wave.Ward = true;
@@ -598,12 +604,29 @@ internal static class Director
 	static void TickMechanics(Fight fight, ZDO boss)
 	{
 		float size = RaidBossPlugin.BreakSize.Value;
+		if (fight.Heroic && !RaidBossPlugin.BreakInHeroic.Value) size = 0f;
 		bool healthSettled = !fight.Heroic || Mathf.Approximately(RaidBossPlugin.HeroicBossHealth.Value, 1f) || boss.GetFloat(Net.HealthKey, 0f) != 0f;
 		if (size > 0f && fight.Script != null && fight.Script.Rules.Count > 0 && healthSettled && fight.MeterAsks < 30 && boss.GetOwner() != 0L && boss.GetFloat("raidboss_brk_max".GetStableHashCode(), 0f) == 0f)
 		{
 			fight.MeterAsks++;
-			string text = FormattableString.Invariant($"size={size};drain={RaidBossPlugin.BreakDrain.Value};parry={RaidBossPlugin.BreakParry.Value};dur={RaidBossPlugin.BreakSeconds.Value};grow={RaidBossPlugin.BreakGrowth.Value};x={RaidBossPlugin.BreakTaken.Value}");
+			string text = FormattableString.Invariant($"size={size};drain={RaidBossPlugin.BreakDrain.Value};parry={RaidBossPlugin.BreakParry.Value};dur={RaidBossPlugin.BreakSeconds.Value};grow={RaidBossPlugin.BreakGrowth.Value};x={RaidBossPlugin.BreakTaken.Value};hit={RaidBossPlugin.BreakHit.Value};weak={RaidBossPlugin.BreakWeak.Value}");
 			Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("meter", "", text));
+		}
+		// A guard needs a break meter to end it; without one (breaks off) it is dropped rather than leave the boss armoured.
+		if (fight.Guard != null && !fight.GuardApplied)
+		{
+			if (size <= 0f) { RaidBossPlugin.Log.LogWarning($"{fight.Prefab}: guard skipped, there is no break meter in this fight"); fight.Guard = null; }
+			else if (boss.GetFloat("raidboss_brk_max".GetStableHashCode(), 0f) > 0f)
+			{
+				fight.GuardApplied = true;
+				float maxHealth = boss.GetFloat(ZDOVars.s_maxHealth, 1f);
+				Net.Want(fight.BossId, "raidboss_guard", fight.Guard[0]);
+				Net.Want(fight.BossId, "raidboss_guard_x", fight.Guard[1]);
+				Net.Want(fight.BossId, "raidboss_brk_blunt", fight.Guard[2]);
+				Net.Want(fight.BossId, "raidboss_brk_max", Mathf.Max(1f, fight.Guard[3] * maxHealth));
+				Net.Want(fight.BossId, "raidboss_brk_grow", 1f);
+				RaidBossPlugin.Log.LogInfo(FormattableString.Invariant($"{fight.Prefab}: guarded - takes x{fight.Guard[0]} until broken, x{fight.Guard[1]} while broken; meter {fight.Guard[3]} of max health, blunt counts x{fight.Guard[2]}"));
+			}
 		}
 		for (int i = fight.Waves.Count - 1; i >= 0; i--)
 		{

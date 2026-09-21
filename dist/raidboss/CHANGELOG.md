@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.1
+
+- The break meter fills from the fight, not from raw weapon weight: parries (twice as much as before), cleared waves
+  (a quarter of the meter) and damage of a type the boss is weak to count; plain weapon stagger counts a tenth. Two new
+  settings: `Break meter, weapon stagger counts (x)` (0.1) and `Break meter, weakness damage counts (x)` (1).
+- New `guard` action: the boss takes 30% damage until broken and triple while broken, with a smaller meter that blunt
+  damage fills too. Heroic Bonemass is guarded from the start.
+- New setting `Break meter in heroic fights` (on): off = no breaks in heroic fights.
+- Minimum version 0.1.1: the meter is kept by whichever player's game runs the boss, so every player needs this one.
+
 ## 0.1.0
 
 - First version. Everything the server-only BossDirector did (add waves at boss health thresholds scaled by the players
