@@ -6,6 +6,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using ServerSync;
+using UnityEngine;
 
 namespace RaidBoss;
 
@@ -23,7 +24,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 	public const string Name = "RaidBoss";
 	public const string Version = "0.1.0";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
-	// must agree on (the two network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
+	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
 	const string MinimumVersion = "0.1.0";
 
@@ -60,8 +61,11 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<float> HeroicAltarRadius;
 	internal static ConfigEntry<float> HeroicTrophyRadius;
 	internal static ConfigEntry<float> HeroicBossDamage;
+	internal static ConfigEntry<string> HeroicBossDamageByBoss;
+	internal static ConfigEntry<float> HeroicBossHealth;
 	internal static ConfigEntry<float> HeroicMoreAdds;
 	internal static ConfigEntry<float> HeroicStarChance;
+	internal static ConfigEntry<bool> HeroicGuaranteedStar;
 	internal static ConfigEntry<string> HeroicMessage;
 	internal static ConfigEntry<float> IdolBase;
 	internal static ConfigEntry<float> IdolPerPlayer;
@@ -69,6 +73,19 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<string> IdolTiers;
 	internal static ConfigEntry<float> RestingTimeAfterDeath;
 	internal static ConfigEntry<float> JustDiedWindow;
+	internal static ConfigEntry<float> ParryTaunt;
+	internal static ConfigEntry<bool> AddsAvoidShields;
+	internal static ConfigEntry<string> VanillaTargetedAdds;
+	internal static ConfigEntry<float> BreakSize;
+	internal static ConfigEntry<float> BreakDrain;
+	internal static ConfigEntry<float> BreakParry;
+	internal static ConfigEntry<float> BreakWaveChunk;
+	internal static ConfigEntry<float> BreakSeconds;
+	internal static ConfigEntry<float> BreakTaken;
+	internal static ConfigEntry<float> BreakGrowth;
+	internal static ConfigEntry<string> Traits;
+	internal static ConfigEntry<string> StrikeFx;
+	internal static ConfigEntry<string> WardLabel;
 
 	static readonly Dictionary<string, ConfigEntry<string>> Scripts = new Dictionary<string, ConfigEntry<string>>();
 
@@ -82,37 +99,51 @@ public class RaidBossPlugin : BaseUnityPlugin
 		"         Wolf* is a one-star wolf, Wolf** two stars.\n" +
 		"         Add @1-2, @3+ or @4 after an entry to use it only for that many players, so one creature can REPLACE another:\n" +
 		"         GoblinBrute 1+0 @1-2, GoblinBrute* 1+0 @3+  sends a plain one to one or two players and a one-star instead from three.\n" +
+		"         Start a rule with  heroic  or  normal  to use it only in that kind of fight: normal 40%: ... | heroic 40%: ...\n" +
+		"         A heroic rule arrives exactly as written; every other threshold wave gains its star in a heroic fight.\n" +
 		"Empty = this boss is left alone. Changes apply within a few seconds, also mid-fight (waves already passed do not fire late).\n" +
 		"These lines live on the server only; players' copies of this file do not need them.";
 
 	const string DragonDefault =
-		"every 45s above 25%: Hatchling 0+0.5 | " +
+		"every 45s above 25%: Hatchling 1+0 @2+, Hatchling 1+0 @3+, Hatchling 1+0 @4+ | " +
 		"75% \"Moder calls her brood\": Hatchling 0+1.34, Wolf 0.5+0.25 | " +
 		"50% \"The pack answers her call\": Wolf 0+1.34, Wolf* 0+0.34 | " +
 		"25% \"Her last guard descends\": StoneGolem 1+0, Hatchling 0+0.34, Hatchling 0+0.34 | " +
-		"every 25s below 25%: Hatchling 0+0.5";
+		"every 25s below 25%: Hatchling 1+0 @2+, Hatchling 1+0 @3+, Hatchling 1+0 @4+ | " +
+		"heroic every 30s: Wolf 1+0 @2+ | " +
+		"heroic every 20s below 75%: strike frost r4 d2.5 dmg150 x2";
+
+	// Eikthyr has no adds: the first boss stays a duel, and the sky joins in. Telegraphed, dodgeable lightning under the
+	// players - one at a time in a normal fight, two at a time and more often in a heroic one.
+	const string EikthyrDefault =
+		"normal every 20s below 90%: strike lightning r3.5 d2.5 dmg20 | " +
+		"heroic every 12s below 90%: strike lightning r3.5 d2 dmg20 x2";
 
 	// The Elder and Bonemass already summon in vanilla (roots; skeletons and blobs), so their scripts are lighter than
 	// Moder's: the Elder keeps a slow trickle, Bonemass has none until the end because his own throw is one.
 	const string ElderDefault =
-		"every 50s above 25%: Greydwarf 0+0.5 | " +
+		"every 50s above 25%: Greydwarf 1+0 @2+, Greydwarf 1+0 @3+, Greydwarf 1+0 @4+ | " +
 		"75% \"The forest stirs\": Greydwarf 0+1.34 | " +
 		"50% \"Shamans tend their king\": Greydwarf_Shaman 0.5+0.5, Greydwarf 1+0 | " +
 		"25% \"The wrath of the forest\": Greydwarf_Elite 1+0, Troll 0+0.34 | " +
-		"every 30s below 25%: Greydwarf 0+0.5";
+		"every 30s below 25%: Greydwarf 1+0 @2+, Greydwarf 1+0 @3+, Greydwarf 1+0 @4+";
 
 	const string BonemassDefault =
 		"75% \"The dead rise from the mire\": Draugr 0+1.34 | " +
 		"50% \"Archers take aim from the murk\": Draugr_Ranged 0.5+0.5, Draugr* 0+0.34 | " +
-		"25% \"A champion of the drowned\": Draugr_Elite 1+0, Wraith 0+0.34 | " +
-		"every 30s below 25%: Draugr 0+0.5";
+		"normal 25% \"A champion of the drowned\": Draugr_Elite 1+0, Wraith 0+0.34 | " +
+		"heroic 25% \"A champion of the drowned\": Draugr_Elite* 1+0, Wraith 0+0.34, ward 0.5 break | " +
+		"every 30s below 25%: Draugr 1+0 @2+, Draugr 1+0 @3+, Draugr 1+0 @4+";
 
 	const string GoblinKingDefault =
 		"80% \"The last of his people answer\": Goblin 0+1 | " +
 		"60% \"Shamans draw upon their king\": GoblinShaman 0.5+0.5, Goblin 0+0.5 | " +
-		"40% \"A champion of the fallen cities\": GoblinBrute 1+0, GoblinBrute* 0+0.25 | " +
+		"normal 40% \"A champion of the fallen cities\": GoblinBrute 1+0, GoblinBrute* 0+0.25 | " +
+		"heroic 40% \"A champion of the fallen cities\": GoblinBrute:Ironhide* 1+0 @1, GoblinBrute:Ironhide** 1+0 @2+, GoblinBrute:Ironhide 0+0.25 | " +
+		"heroic every 25s below 60%: strike fire r4 d2.5 dmg120 x2 | " +
+		"heroic every 45s below 80%: boss cycle Emberborn Stormcalled 20 | " +
 		"20% \"They will not bend or break\": Goblin 1+0, Goblin* 0+0.5, Goblin* 0+0.5, GoblinArcher 0+0.34 | " +
-		"every 20s below 20%: Goblin 0+0.5";
+		"every 20s below 20%: Goblin 1+0 @2+, Goblin 1+0 @3+, Goblin 1+0 @4+";
 
 	float tick;
 	float reloadTimer;
@@ -168,8 +199,11 @@ public class RaidBossPlugin : BaseUnityPlugin
 		HeroicAltarRadius = config("5 - Heroic fights", "Altar within (m)", 80f, new ConfigDescription("How far from the altar a boss may appear and still pick up the altar's challenge.", new AcceptableValueRange<float>(10f, 150f)), false);
 		HeroicTrophyRadius = config("5 - Heroic fights", "Trophy within (m)", 15f, new ConfigDescription("How close to the boss the dropped trophy has to lie.", new AcceptableValueRange<float>(2f, 60f)), false);
 		HeroicBossDamage = config("5 - Heroic fights", "Boss damage (x)", 1.2f, new ConfigDescription("Multiplies 'Boss damage during a fight' for a heroic fight: 1.2 = the boss hits 20% harder.", new AcceptableValueRange<float>(1f, 3f)), false);
+		HeroicBossDamageByBoss = config("5 - Heroic fights", "Boss damage by boss", "", "Bosses that use their own number instead of 'Boss damage (x)', as Prefab=number pairs separated by commas, for example GoblinKing=1.35. Empty = every boss uses the number above.", false);
+		HeroicBossHealth = config("5 - Heroic fights", "Boss health (x)", 1.4f, new ConfigDescription("A heroic boss has this much more health, on top of whatever it spawned with - another mod's boss health multiplies with this one. Raised when the challenge is taken up, at full health. 1 = unchanged.", new AcceptableValueRange<float>(1f, 5f)), false);
 		HeroicMoreAdds = config("5 - Heroic fights", "More adds (x)", 1.25f, new ConfigDescription("Multiplies the wave sizes and the living-adds cap again, on top of 'More adds' (1.3 x 1.25 = about 1.6).", new AcceptableValueRange<float>(1f, 3f)), false);
-		HeroicStarChance = config("5 - Heroic fights", "Star chance for plain adds", 0.25f, new ConfigDescription("Chance that an add written without a star arrives with one. Never makes a two-star.", new AcceptableValueRange<float>(0f, 1f)), false);
+		HeroicGuaranteedStar = config("5 - Heroic fights", "Every wave carries a star", true, "On = in a heroic fight every threshold wave has a starred add. Where the script already stars something in that wave, one of those adds gains a star (a one-star becomes a two-star) and the rest arrive as written. Where it stars nothing, the first add of the wave arrives one-star - for a wave that is a single heavy creature, that is the heavy creature. Trickles are not affected.", false);
+		HeroicStarChance = config("5 - Heroic fights", "Extra star chance for plain adds", 0f, new ConfigDescription("On top of the guaranteed star: chance that any other add written without a star arrives with one, trickles included. 0 = none.", new AcceptableValueRange<float>(0f, 1f)), false);
 		HeroicMessage = config("5 - Heroic fights", "Message", "The challenge is accepted", "Centre-screen message when the trophy is taken. Empty = none.", false);
 		IdolBase = config("5 - Heroic fights", "Idols on the kill, base", -1f, "Idols dropped by a heroic kill = base + per player x players, rounded down, never below 0. Players = the most that were in range at once during the fight. Default -1 + 1: none solo, 1 for two players, 2 for three, 3 for four.", false);
 		IdolPerPlayer = config("5 - Heroic fights", "Idols on the kill, per player", 1f, "See above.", false);
@@ -179,7 +213,22 @@ public class RaidBossPlugin : BaseUnityPlugin
 		RestingTimeAfterDeath = config("6 - Recovery", "Resting time after a death (x)", 0.25f, new ConfigDescription("Multiplier on the fireside wait before the Rested buff arrives, while you have recently died. 1 = vanilla. 0.25 = a quarter of the wait. 0 = Rested the moment you are resting (by a fire, under a roof, unnoticed by enemies). Food, the tombstone and the length of the Rested buff are untouched.", new AcceptableValueRange<float>(0f, 1f)), true);
 		JustDiedWindow = config("6 - Recovery", "Counts as just died for (seconds)", 120f, new ConfigDescription("How long after a death the shorter wait applies. The clock is the game's own time-since-death; it starts when you die and keeps running while you respawn and walk back.", new AcceptableValueRange<float>(0f, 3600f)), true);
 
-		ForcePlayers = config("7 - Debug", "Pretend this many players", 0, "0 = count real players. Anything else sizes every boss wave as if that many were fighting, so one person can see a four-player fight. Someone still has to be in range.", false);
+		ParryTaunt = config("7 - Targeting", "A parry holds the boss for (seconds)", 12f, new ConfigDescription("A player who parries a hit from a boss (a perfect block, any boss attack that can be blocked) is that boss's target for this long. The first two or three seconds pass while the boss is staggered, if it can be. Vanilla bosses simply turn to whoever is closest. 0 = off. From the server.", new AcceptableValueRange<float>(0f, 60f)), true);
+		AddsAvoidShields = config("7 - Targeting", "Melee adds rush players without a shield", true, "On = the opening rush of this mod's melee adds goes to the back line: an add's first target is a player without a shield in hand, the one with the fewest adds sent at them so far. The rush ends when the add comes within 4 m of any player (it arrived, or someone stepped in its way) or after 20 s; from then on the add is vanilla, so whoever intercepted it keeps it while they stay the nearest. With a shield in every hand there is no rush. Wild creatures are never affected. From the server.", true);
+		VanillaTargetedAdds = config("7 - Targeting", "Adds that never rush", "GoblinArcher, GoblinShaman, Draugr_Ranged, Greydwarf_Shaman, Hatchling", "Archers, casters and flyers: prefab names, comma separated. These are vanilla from the start: closest player. From the server.", true);
+
+		BreakSize = config("8 - Mechanics", "Break meter size", 0.4f, new ConfigDescription("Bosses cannot be staggered in vanilla. With this, every scripted boss has a break meter, filled by the stagger value of the players' hits (heavy, blunt weapons fill it fastest; fire, frost and poison not at all), by parries and by cleared waves. Its size is this fraction of the boss's max health. Full = the boss is BROKEN: it stops acting and takes more damage for a few seconds, then the meter needs more. 0.4 means one or two breaks in a fight. 0 = no break meter.", new AcceptableValueRange<float>(0f, 5f)), false);
+		BreakDrain = config("8 - Mechanics", "Break meter drain per second", 0.002f, new ConfigDescription("As a fraction of the boss's max health. 0.002 empties a full 0.4 meter in a little over three minutes of nobody hitting.", new AcceptableValueRange<float>(0f, 1f)), false);
+		BreakParry = config("8 - Mechanics", "Break meter, a parry adds", 0.03f, new ConfigDescription("As a fraction of the boss's max health.", new AcceptableValueRange<float>(0f, 1f)), false);
+		BreakWaveChunk = config("8 - Mechanics", "Break meter, a cleared wave adds", 0.15f, new ConfigDescription("As a fraction of the meter. Killing every add of a threshold wave pays this once.", new AcceptableValueRange<float>(0f, 1f)), false);
+		BreakSeconds = config("8 - Mechanics", "Break length (s)", 8f, new ConfigDescription("How long a broken boss stays down.", new AcceptableValueRange<float>(1f, 60f)), false);
+		BreakTaken = config("8 - Mechanics", "Break damage taken (x)", 2f, new ConfigDescription("A broken boss takes this much more damage. Vanilla's own stagger bonus is x2.", new AcceptableValueRange<float>(1f, 5f)), false);
+		BreakGrowth = config("8 - Mechanics", "Break meter growth (x)", 1.5f, new ConfigDescription("After each break the meter needs this much more.", new AcceptableValueRange<float>(1f, 5f)), false);
+		Traits = config("8 - Mechanics", "Traits", "Ironhide = resist pierce, resist slash | Brittle = weak blunt | Stonebound = resist blunt | Rimebound = infuse frost 0.3, resist frost, weak fire | Emberborn = infuse fire 0.3, resist fire, weak frost | Stormcalled = infuse lightning 0.3, resist lightning | Blighted = infuse poison 0.3, resist poison | Frenzied = frenzy 1.5 | Fleet = swift 1.25 | Renewing = mend 0.5 | Wrathful = frenzy 1.5, swift 1.15", "Named sets of changes to a creature, separated by | . Give one to an add in a script with Prefab:Trait (GoblinBrute:Ironhide 1+0) - its name gains the trait as a prefix - or to the boss with the action 'boss Trait', 'boss Trait 20' (for 20 seconds) or 'boss cycle TraitA TraitB 30' (the next one each time the rule fires), so a boss can shift between them during a fight; 'boss none' clears it. The boss shows its trait under its name. Words: resist, veryresist, slightresist, immune, weak, veryweak, slightweak, then blunt, slash, pierce, fire, frost, lightning, poison or spirit (they replace the creature's own value for that damage type; the game colours the damage numbers as always, yellow weak, grey resistant); infuse ELEMENT 0.3 = its hits on players carry 30% extra damage of that element; frenzy 1.5 = its attacks come round 1.5x as fast; swift 1.25 = movement speed; mend 0.5 = heals 0.5% of max health a second; hardened 0.7 = takes 70% damage.", false);
+		StrikeFx = config("8 - Mechanics", "Strike effects", "fire: > fx_goblinking_meteor_hit | frost: fx_iceshard_launch > fx_fenring_icenova | lightning: fx_lightningweapon_hit > fx_eikthyr_stomp+fx_chainlightning_hit", "Vanilla effects of a ground strike, by element: TELL > IMPACT, several joined with +. The warning ring is always drawn; these come on top.", false);
+		WardLabel = config("8 - Mechanics", "Ward label", "Warded", "Shown under the boss's name while a ward is up.", false);
+
+		ForcePlayers = config("9 - Debug", "Pretend this many players", 0, "0 = count real players. Anything else sizes every boss wave as if that many were fighting, so one person can see a four-player fight. Someone still has to be in range.", false);
 
 		new Harmony(GUID).PatchAll();
 		configStamp = Stamp();
@@ -191,6 +240,74 @@ public class RaidBossPlugin : BaseUnityPlugin
 	}
 
 	internal static string ScriptFor(string bossPrefab) => Scripts.TryGetValue(bossPrefab, out ConfigEntry<string> e) ? e.Value : "";
+
+	// "Ironhide = resist pierce, resist slash | Brittle = weak blunt" -> the resistances of one trait in the game's own
+	// words ("pierce=Resistant,slash=Resistant"), which is what travels on a creature's ZDO. Empty = no such trait.
+	// The whole mode string of one trait (Modes.cs): "name=Frostbound;res=frost=Resistant,fire=Weak;infuse=frost:0.3".
+	internal static string TraitMode(string trait)
+	{
+		if (string.IsNullOrWhiteSpace(trait)) return "";
+		foreach (string entry in (Traits.Value ?? "").Split('|'))
+		{
+			int eq = entry.IndexOf('=');
+			if (eq < 0 || !entry.Substring(0, eq).Trim().Equals(trait.Trim(), StringComparison.OrdinalIgnoreCase)) continue;
+			var res = new List<string>();
+			var rest = new List<string>();
+			foreach (string item in entry.Substring(eq + 1).Split(','))
+			{
+				string[] w = item.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+				if (w.Length < 2) continue;
+				string word = w[0].ToLowerInvariant();
+				string mod = word switch
+				{
+					"resist" => "Resistant", "veryresist" => "VeryResistant", "slightresist" => "SlightlyResistant", "immune" => "Immune",
+					"weak" => "Weak", "veryweak" => "VeryWeak", "slightweak" => "SlightlyWeak", "normal" => "Normal", _ => null,
+				};
+				if (mod != null) { res.Add(w[1].ToLowerInvariant() + "=" + mod); continue; }
+				switch (word)
+				{
+					case "frenzy": rest.Add("aggro=" + w[1]); break;
+					case "swift": rest.Add("quick=" + w[1]); break;
+					case "hardened": rest.Add("taken=" + w[1]); break;
+					// written as per cent of max health a second
+					case "mend": if (float.TryParse(w[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float pct)) rest.Add("regen=" + (pct / 100f).ToString(System.Globalization.CultureInfo.InvariantCulture)); break;
+					case "infuse": rest.Add("infuse=" + w[1].ToLowerInvariant() + ":" + (w.Length > 2 ? w[2] : "0.3")); break;
+				}
+			}
+			string mode = "name=" + entry.Substring(0, eq).Trim();
+			if (res.Count > 0) mode += ";res=" + string.Join(",", res);
+			if (rest.Count > 0) mode += ";" + string.Join(";", rest);
+			return mode;
+		}
+		return "";
+	}
+
+	// "fire: tell > hit | frost: tell > hit": the vanilla effects of a ground strike, by element. Several joined with +.
+	internal static void StrikeEffects(string element, out string tell, out string hit)
+	{
+		tell = hit = "";
+		foreach (string entry in (StrikeFx.Value ?? "").Split('|'))
+		{
+			int colon = entry.IndexOf(':');
+			if (colon < 0 || !entry.Substring(0, colon).Trim().Equals((element ?? "").Trim(), StringComparison.OrdinalIgnoreCase)) continue;
+			string[] sides = entry.Substring(colon + 1).Split('>');
+			tell = sides[0].Trim();
+			hit = sides.Length > 1 ? sides[1].Trim() : "";
+			return;
+		}
+	}
+
+	// The heroic damage multiplier for a boss: its own entry in 'Boss damage by boss', else the general one.
+	internal static float HeroicBossDamageFor(string bossPrefab)
+	{
+		foreach (string pair in (HeroicBossDamageByBoss.Value ?? "").Split(','))
+		{
+			string[] kv = pair.Split('=');
+			if (kv.Length != 2 || !string.Equals(kv[0].Trim(), bossPrefab, StringComparison.OrdinalIgnoreCase)) continue;
+			if (float.TryParse(kv[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float mult) && mult > 0f) return Math.Min(mult, 3f);
+		}
+		return HeroicBossDamage.Value;
+	}
 
 	// "Bonemass=2, Dragon=3" -> tier for a boss prefab, or -1.
 	internal static int IdolTierFor(string bossPrefab)
@@ -214,7 +331,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		bool first = true;
 		foreach (string boss in names)
 		{
-			string def = boss == "Dragon" ? DragonDefault : boss == "GoblinKing" ? GoblinKingDefault : boss == "gd_king" ? ElderDefault : boss == "Bonemass" ? BonemassDefault : "";
+			string def = boss == "Eikthyr" ? EikthyrDefault : boss == "Dragon" ? DragonDefault : boss == "GoblinKing" ? GoblinKingDefault : boss == "gd_king" ? ElderDefault : boss == "Bonemass" ? BonemassDefault : "";
 			string help = (boss == "Dragon" ? "Moder. " : boss == "GoblinKing" ? "Yagluth. " : boss == "gd_king" ? "The Elder. " : "") + (first ? ScriptHelp : "Same format as the first entry in this section.");
 			Scripts[boss] = Config.Bind("3 - Boss fights", boss, def, help);
 			first = false;
@@ -239,6 +356,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 			if (bound) { bound = false; Scripts.Clear(); Director.Reset(); }
 			return;
 		}
+		Mechanics.ClientTick(Time.deltaTime);
 		// Everything below is the director, and the director runs on the server only.
 		if (!ZNet.instance.IsServer()) return;
 		Net.Register();

@@ -15,15 +15,19 @@ Replaces the server-only **BossDirector**, which is retired. Do not run both.
 Vanilla Moder and Yagluth fight alone, so a group gets free shots at them. The Elder and Bonemass do summon, but
 nothing that scales with the group. With RaidBoss:
 
+**Eikthyr** (`Eikthyr`): no adds, the first boss stays a duel. Below 90% health, lightning strikes land under a player every
+20 s in a normal fight, and two at a time every 12 s in a heroic one, each after a warning ring on the ground (see
+Mechanics).
+
 **The Elder** (`gd_king`)
 
 | Boss health | Wave | Solo | Four players |
 |---|---|---|---|
-| hurt, above 25% | greydwarves every 50 s from two players, up to the living-adds cap | none | 2 |
+| hurt, above 25% | greydwarves every 50 s from two players, up to the living-adds cap | none | 3 |
 | 75% | The forest stirs: greydwarves | 1 | 5 |
 | 50% | Shamans tend their king: shamans, plus one greydwarf | 1 + 1 | 2 + 1 |
 | 25% | The wrath of the forest: a greydwarf brute, plus a troll from three players | 1 | 1 + troll |
-| below 25% | greydwarves every 30 s from two players, up to the cap | none | 2 |
+| below 25% | greydwarves every 30 s from two players, up to the cap | none | 3 |
 
 **Bonemass** (`Bonemass`)
 
@@ -32,17 +36,18 @@ nothing that scales with the group. With RaidBoss:
 | 75% | The dead rise from the mire: draugr | 1 | 5 |
 | 50% | Archers take aim from the murk: draugr archers, plus a one-star draugr from three players | 1 | 2 + 1* |
 | 25% | A champion of the drowned: a draugr elite, plus a wraith from three players | 1 | 1 + wraith |
-| below 25% | draugr every 30 s from two players, up to the cap | none | 2 |
+| below 25% | draugr every 30 s from two players, up to the cap | none | 3 |
 
 **Moder** (`Dragon`)
 
 | Boss health | Wave | Solo | Four players |
 |---|---|---|---|
-| hurt, above 25% | drakes every 45 s from two players, up to the living-adds cap | none | 2 |
+| hurt, above 25% | drakes every 45 s from two players, up to the living-adds cap | none | 3 |
 | 75% | Moder calls her brood: drakes, plus a wolf from two players | 1 | 5 + 1 |
 | 50% | The pack answers her call: wolves, plus a one-star wolf from three players | 1 | 5 + 1* |
 | 25% | Her last guard descends: a Stone Golem, plus two drakes from three players | 1 | 1 + 2 |
-| below 25% | drakes every 25 s from two players, up to the cap | none | 2 |
+| below 25% | drakes every 25 s from two players, up to the cap | none | 3 |
+| heroic only, while hurt | a wolf every 30 s from two players, up to the cap | none | 1 |
 
 **Yagluth** (`GoblinKing`)
 
@@ -52,11 +57,14 @@ nothing that scales with the group. With RaidBoss:
 | 60% | Shamans draw upon their king: shamans, each with a Fuling from two players | 1 | 2 + 2 |
 | 40% | A champion of the fallen cities: a Berserker, plus a one-star Berserker from four players | 1 | 1 + 1* |
 | 20% | They will not bend or break: a Fuling, two one-star Fulings per two players, an archer from three | 1 | 1 + 4* + 1 |
-| below 20% | Fulings every 20 s from two players, up to the cap | none | 2 |
+| below 20% | Fulings every 20 s from two players, up to the cap | none | 3 |
 
 These are the counts as written. `More adds (x)` (1.3) then multiplies every count and the cap and rounds down: 4
 becomes 5, 5 becomes 6, 8 becomes 10, and 1 to 3 stay as they are. Every other boss has an empty script and is left
 exactly as vanilla; any boss can be given one.
+
+The repeating trickles send one add for every player beyond the first, up to three: none solo, 1 for two players, 2
+for three, 3 for four or more.
 
 Adds hunt the players, deal `Add damage (x)` (0.9) of their normal damage to players, and vanish when the boss dies;
 adds killed during the fight drop their normal loot. A boss first seen already hurt (the server restarted mid-fight)
@@ -74,14 +82,74 @@ normally once first.
 The older way still works: drop the boss's own trophy on the ground within 15 m of the boss before anyone hurts it; the
 server takes the whole stack that was dropped. A trophy on an item stand does not count.
 
-- the boss hits 20% harder;
+- the boss hits 20% harder and has 40% more health (`Boss health (x)`, on top of whatever it spawned with);
 - waves and the cap are multiplied again by 1.25 (about 1.6 in all);
-- a quarter of the plain adds arrive with one star (never two);
+- every threshold wave carries a star: where the script already stars an add in that wave, one of them gains a star (a
+  one-star becomes a two-star); where it stars nothing, the first add of the wave arrives one-star, and for a wave that
+  is a single heavy creature that is the heavy creature. Trickles are not starred;
+- a wave can be written separately for heroic fights (see Writing a fight). Yagluth's 40% wave is: a one-star Berserker
+  solo, a two-star Berserker from two players, and a plain one beside it from four;
+- extra rules: frost strikes under Moder, a ward on Bonemass's champion wave, Ironhide Berserkers, fire strikes and
+  shifting traits at Yagluth's (see Mechanics);
 - **the kill drops idols: players minus one.** None solo, 1 for two players, 2 for three, 3 for four, counted as the most
   players in range at once during the fight. Each is randomly a Battle or a Protection idol of the boss's tier: Wooden
   for Eikthyr, Bronze for the Elder, Iron for Bonemass, Silver for Moder, Black Metal for Yagluth, and so on up.
 
 In vanilla, idols come only from treasure chests at a few per cent a chest.
+
+## Mechanics
+
+Waves are only part of a fight. A script rule can also do things, and several are used by the default scripts:
+
+- **Break meter.** Bosses cannot be staggered in vanilla. Here every scripted boss has a meter under its name, filled
+  by the stagger value of your hits (heavy and blunt weapons fastest; fire, frost and poison not at all), by parries,
+  and by clearing a whole threshold wave. It is big: expect one or two breaks a fight. Full = **Broken**: the boss stops
+  acting and takes double damage for 8 seconds, and the meter then needs half as much again. A flying boss breaks when
+  it lands.
+- **Ward** (`ward 0.5 break`). The boss takes half damage until every add of that wave is dead; "Warded" shows under
+  its name. With `break`, the ward falling breaks the boss.
+- **Ground strikes** (`strike lightning r3.5 d2 dmg20 x2`). A coloured ring fills on the ground under a player for the
+  warning time, then fire, frost, lightning or poison lands there: dodge-roll through it or step out. It cannot be
+  blocked.
+- **Traits** (`GoblinBrute:Ironhide 1+0` on an add, `boss Emberborn`, `boss Frenzied 12` or
+  `boss cycle Emberborn Stormcalled 20` on the boss). Named sets of changes, defined in the `Traits` setting:
+
+  | Trait | Effect |
+  |---|---|
+  | Ironhide | resists pierce and slash |
+  | Brittle | weak to blunt |
+  | Stonebound | resists blunt |
+  | Rimebound | hits carry 30% extra frost; resists frost, weak to fire |
+  | Emberborn | hits carry 30% extra fire; resists fire, weak to frost |
+  | Stormcalled | hits carry 30% extra lightning; resists lightning |
+  | Blighted | hits carry 30% extra poison; resists poison |
+  | Frenzied | attacks come round 1.5x as fast |
+  | Fleet | moves 25% faster |
+  | Renewing | heals 0.5% of its max health a second |
+  | Wrathful | Frenzied, and a little faster |
+
+  An add's trait is a prefix on its name; a boss's is shown under its name. A boss can shift between traits during a
+  fight, and one given for a number of seconds lapses by itself. Resistances show in the game's own damage colours:
+  yellow for a weakness, grey for a resistance.
+- `heal 5` (5% of max health), `break` (break now), `weather SnowStorm 60`, `status Wet`, `effect fx_name`.
+
+The default scripts use them in heroic fights: frost strikes under Moder, a ward on Bonemass's champion wave, Ironhide
+Berserkers and fire strikes at Yagluth's, who shifts between Emberborn and Stormcalled. Eikthyr has lightning strikes in
+both kinds of fight.
+
+## Who they go after
+
+Vanilla has no threat: every two seconds a creature turns to whoever is closest. Two rules change that, for bosses and
+for this mod's adds only.
+
+- **A parry is a taunt.** Parry any hit from a boss (bosses only) and that boss is yours for `A parry holds the boss for` (12 s; the first two or three
+  pass while it is staggered). The
+  latest parry wins.
+- **The opening rush goes to the back line.** A melee add's first target is a player without a shield in hand, the one
+  with the fewest adds sent at them so far, so a wave spreads out. The rush ends when the add comes within 4 m of any
+  player (it arrived, or someone stepped in its way) or after 20 s. From then on the add is vanilla: it goes for the
+  closest player, so whoever intercepted it keeps it while they stay the nearest. If everyone holds a shield there is no
+  rush. Archers, casters and flyers never rush (`Adds that never rush`).
 
 ## World encounters
 
@@ -105,9 +173,12 @@ is followed by id once a second. When a rule fires it creates the adds as bare o
 them to the player whose game is simulating the boss; that game brings them to life like anything else that streams in.
 Idols are made the same way. Wave announcements use the vanilla centre-screen message.
 
-The client part does four things, all on the player's own game: it adds the Shift + Use challenge to boss altars; it scales the damage a player takes from a boss in a
+The client part runs on the player's own game: it gives bosses and adds a second opinion on their target (above); it
+adds the Shift + Use challenge to boss altars; it keeps the break meter, applies wards and traits, and draws and lands
+ground strikes; it scales the damage a player takes from a boss in a
 fight (the server announces which bosses, and by how much) or from an add (the add carries its number); it reports
-kills exactly to the server; and it shortens the fireside wait after a death. Wild creatures, tames, structures and the
+kills exactly to the server; it shortens the fireside wait after a death; and, when it is the one simulating a boss, it
+changes that boss when the server asks (heroic health, a ward, a trait). Vanilla effects are made by the server. Wild creatures, tames, structures and the
 settings of other mods are never touched.
 
 ## Writing a fight
@@ -128,6 +199,8 @@ Rules are separated by `|`. A rule is `TRIGGER "optional message": SPAWNS`.
   `Hatchling 1+1` is 2 solo and 5 with four. `StoneGolem 0+0.25` only appears with four or more. `Wolf*` is a one-star
   wolf, `Wolf**` two stars. Add `@1-2`, `@3+` or `@4` after an entry to use it only for that many players, so one
   creature can replace another as the group grows: `GoblinBrute 1+0 @1-2, GoblinBrute* 1+0 @3+`.
+- Start a rule with `normal` or `heroic` to use it only in that kind of fight: `normal 40% ...: GoblinBrute 1+0 | heroic
+  40% ...: GoblinBrute** 1+0`. A `heroic` rule arrives exactly as written, without the automatic star.
 
 World encounters (section 4) are one entry, rules separated by `|`:
 
@@ -140,7 +213,7 @@ scripted fight worked out for one and for four players.
 
 ## Config
 
-Only **1 - General: Enabled** and **6 - Recovery** are pushed from the server to the players; everything else is read
+Only **1 - General: Enabled**, **6 - Recovery** and **7 - Targeting** are pushed from the server to the players; everything else is read
 by the server alone.
 
 - **1 - General:** `Config is locked`, `Enabled`, `Engaged range (m)` (100), `Adds hunt players`, `Remove adds when the
@@ -150,14 +223,19 @@ by the server alone.
   damage numbers multiply with any other mod's enemy-damage setting.
 - **3 - Boss fights:** one entry per boss prefab in the game (server only).
 - **4 - World encounters**, **5 - Heroic fights**, **6 - Recovery:** as above.
-- **7 - Debug:** `Pretend this many players` (0).
+- **7 - Targeting:** `A parry holds the boss for (seconds)` (12), `Melee adds rush players without a shield` (on), `Adds that
+  never rush`. Pushed from the server.
+- **8 - Mechanics:** the break meter (`Break meter size` 0.4 of the boss's max health, drain, parry and cleared-wave
+  shares, `Break length (s)` 8, `Break damage taken (x)` 2, growth 1.5), `Traits`, `Strike effects`, `Ward label`.
+- **9 - Debug:** `Pretend this many players` (0).
 
 ## Known limits
 
 - The server has no terrain, so heights come from the world generator, or from a nearby player standing a little higher
   (a flattened arena). An add can drop a metre or two on arrival.
 - Whether adds land well inside an indoor arena is untested; those bosses' scripts are empty by default.
-- 0.1.0 has been tested headless on a dedicated server. The client part has not yet been through a real fight.
+- 0.1.0 has been tested headless on a dedicated server. The client part - targeting, the break meter, strikes,
+  traits - has not yet been through a real fight.
 
 ## License
 

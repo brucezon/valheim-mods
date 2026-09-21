@@ -36,6 +36,11 @@ internal static class Director
 		public float LastMultiplier = 1f;
 		// Heroic fight: the boss's own trophy was lying by the boss before anyone hurt it. Harder, and it pays idols.
 		public bool Heroic;
+		public int HealthAsks;          // heroic health: requests sent to the boss's owner so far
+		public int MeterAsks;
+		public float MechTimer;
+		public readonly List<Wave> Waves = new List<Wave>();
+		public readonly Dictionary<Encounter.Act, int> Cycle = new Dictionary<Encounter.Act, int>();
 		public int TrophyHash;
 		public string TrophyName;
 		public int MaxPlayers;          // most real players seen in range at once; decides the idols
@@ -129,13 +134,15 @@ internal static class Director
 				// What a boss does to a player is worked out on that player's game, so the clients are told which
 				// bosses are being fought and how hard each one hits.
 				if (UpdateFight(fight, boss, dt))
-					Net.ActiveFights[fight.BossId] = RaidBossPlugin.BossDamage.Value * (fight.Heroic ? RaidBossPlugin.HeroicBossDamage.Value : 1f);
+					Net.ActiveFights[fight.BossId] = RaidBossPlugin.BossDamage.Value * (fight.Heroic ? RaidBossPlugin.HeroicBossDamageFor(fight.Prefab) : 1f);
 			}
 			catch (Exception e) { RaidBossPlugin.Log.LogError($"{fight.Prefab}: {e}"); }
 		}
 		foreach (ZDOID id in Ended) EndFight(id);
 		Encounter.CountMultiplier = BaseMultiplier;
 		Net.BroadcastFights(dt);
+		Net.TickWanted(dt);
+		TickEffects(dt);
 	}
 
 	// A client reported that a creature it was simulating died. Exact, unlike watching ZDOs vanish.
@@ -223,6 +230,7 @@ internal static class Director
 	{
 		if (!Fights.TryGetValue(id, out Fight fight)) return;
 		Fights.Remove(id);
+		Net.Forget(id);
 		int removed = 0, alive = 0;
 		foreach (Add add in fight.Adds)
 		{
@@ -373,9 +381,18 @@ internal static class Director
 		if (how != null)
 		{
 			fight.Heroic = true;
-			RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: {how}. HEROIC fight: boss damage x{RaidBossPlugin.BossDamage.Value * RaidBossPlugin.HeroicBossDamage.Value:0.##}, waves x{RaidBossPlugin.HeroicMoreAdds.Value:0.##}, {RaidBossPlugin.HeroicStarChance.Value * 100f:0}% of plain adds get a star, idols on the kill.");
+			RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: {how}. HEROIC fight: boss damage x{RaidBossPlugin.BossDamage.Value * RaidBossPlugin.HeroicBossDamageFor(fight.Prefab):0.##}, boss health x{RaidBossPlugin.HeroicBossHealth.Value:0.##}, waves x{RaidBossPlugin.HeroicMoreAdds.Value:0.##}, every wave carries a star, idols on the kill.");
 			if (RaidBossPlugin.HeroicMessage.Value.Length > 0) Message(bossPos, RaidBossPlugin.HeroicMessage.Value);
 		}
+		// Heroic health: asked of the boss's owner until the boss carries the mark (the owner can change in between).
+		float heroicHealth = RaidBossPlugin.HeroicBossHealth.Value;
+		if (fight.Heroic && !Mathf.Approximately(heroicHealth, 1f) && fight.HealthAsks < 30 && boss.GetOwner() != 0L && boss.GetFloat(Net.HealthKey, 0f) == 0f)
+		{
+			fight.HealthAsks++;
+			Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("hpmult", "", "", heroicHealth));
+		}
+		fight.MechTimer += dt;
+		if (fight.MechTimer >= 1f) { fight.MechTimer = 0f; TickMechanics(fight, boss); }
 		Encounter.CountMultiplier = BaseMultiplier * (fight.Heroic ? RaidBossPlugin.HeroicMoreAdds.Value : 1f);
 		if (Encounter.CountMultiplier != fight.LastMultiplier)
 		{
@@ -398,12 +415,16 @@ internal static class Director
 		for (int i = 0; i < fight.Script.Rules.Count; i++)
 		{
 			Encounter.Rule rule = fight.Script.Rules[i];
+			if (rule.HeroicOnly && !fight.Heroic) continue;
+			if (rule.NormalOnly && fight.Heroic) continue;
 			if (!rule.Repeating)
 			{
 				if (fight.Fired[i] || fraction > rule.Threshold) continue;
 				fight.Fired[i] = true;
 				RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: {rule.Threshold * 100f:0}% wave at {fraction * 100f:0.0}% health, {players} player(s)");
+				int before = fight.Adds.Count;
 				SpawnRule(fight, boss, rule, players, int.MaxValue);
+				AfterRule(fight, boss, rule, before);
 				continue;
 			}
 			if (!hurt || fraction >= rule.Below || fraction < rule.Above) { fight.Timers[i] = 0f; continue; }
@@ -412,24 +433,237 @@ internal static class Director
 			fight.Timers[i] = 0f;
 			int cap = Mathf.FloorToInt((RaidBossPlugin.CapBase.Value + RaidBossPlugin.CapPerPlayer.Value * players) * Encounter.CountMultiplier + 0.001f);
 			int room = cap - CountAlive(fight);
-			if (room <= 0) continue;
-			SpawnRule(fight, boss, rule, players, room);
+			if (room <= 0 && rule.Spawns.Count > 0) continue;
+			int beforeRepeat = fight.Adds.Count;
+			if (rule.Spawns.Count > 0) SpawnRule(fight, boss, rule, players, room);
+			AfterRule(fight, boss, rule, beforeRepeat);
 		}
 		return true;
 	}
 
+	// ---- vanilla effects. Every fx_/vfx_/sfx_ prefab in the game is a networked object with its own lifetime, so the
+	// server shows one the way it makes an add: a bare ZDO handed to a nearby player. No client code is involved.
+
+	sealed class PendingFx { public float At; public string Names; public Vector3 Pos; }
+	static readonly List<PendingFx> pendingFx = new List<PendingFx>();
+	static readonly List<KeyValuePair<float, ZDOID>> madeFx = new List<KeyValuePair<float, ZDOID>>();
+	static float clock;
+
+	internal static void ShowEffect(string names, Vector3 pos, float delay = 0f)
+	{
+		if (string.IsNullOrWhiteSpace(names)) return;
+		if (delay > 0f) { pendingFx.Add(new PendingFx { At = clock + delay, Names = names, Pos = pos }); return; }
+		foreach (string raw in names.Split('+'))
+		{
+			GameObject prefab = ZNetScene.instance.GetPrefab(raw.Trim());
+			ZNetView view = prefab != null ? prefab.GetComponent<ZNetView>() : null;
+			if (view == null || prefab.GetComponent<Character>() != null) { RaidBossPlugin.Log.LogWarning($"effect '{raw.Trim()}' is not an effect prefab, skipped"); continue; }
+			int hash = prefab.name.GetStableHashCode();
+			ZDO zdo = ZDOMan.instance.CreateNewZDO(pos, hash);
+			zdo.Persistent = false;
+			zdo.Type = view.m_type;
+			zdo.Distant = view.m_distant;
+			zdo.SetPrefab(hash);
+			zdo.SetRotation(Quaternion.identity);
+			long owner = NearestPlayer(pos);
+			if (owner != 0L) zdo.SetOwner(owner);
+			madeFx.Add(new KeyValuePair<float, ZDOID>(clock + 20f, zdo.m_uid));
+		}
+	}
+
+	static void TickEffects(float dt)
+	{
+		clock += dt;
+		for (int i = pendingFx.Count - 1; i >= 0; i--)
+		{
+			if (pendingFx[i].At > clock) continue;
+			PendingFx fx = pendingFx[i];
+			pendingFx.RemoveAt(i);
+			try { ShowEffect(fx.Names, fx.Pos); } catch (Exception e) { RaidBossPlugin.Log.LogWarning($"effect failed: {e.Message}"); }
+		}
+		// an effect without its own lifetime, or one nobody picked up, is cleared away after 20 s
+		for (int i = madeFx.Count - 1; i >= 0; i--)
+		{
+			if (madeFx[i].Key > clock) continue;
+			ZDO zdo = ZDOMan.instance.GetZDO(madeFx[i].Value);
+			madeFx.RemoveAt(i);
+			if (zdo == null || !zdo.IsValid() || zdo.Persistent) continue;
+			zdo.SetOwner(ZDOMan.GetSessionID());
+			ZDOMan.instance.DestroyZDO(zdo);
+		}
+	}
+
+	// ---- mechanics: what a rule does besides spawning (Encounter.Act), carried out through the general client tools
+
+	// The adds one rule sent, remembered until they are all dead: that ends a ward, feeds the break meter, and can break the boss.
+	sealed class Wave
+	{
+		public readonly List<ZDOID> Ids = new List<ZDOID>();
+		public bool Ward, BreakAfter;
+	}
+
+	internal static void OnEvent(ZDOID creature, string what)
+	{
+		if (Fights.TryGetValue(creature, out Fight fight)) RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: {what} (reported by the boss's owner)");
+	}
+
+	static float Arg(string[] args, string prefix, float fallback)
+	{
+		foreach (string a in args)
+			if (a.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && float.TryParse(a.Substring(prefix.Length), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float v)) return v;
+		return fallback;
+	}
+
+	static void AfterRule(Fight fight, ZDO boss, Encounter.Rule rule, int addsBefore)
+	{
+		Wave wave = null;
+		if (!rule.Repeating && fight.Adds.Count > addsBefore)
+		{
+			wave = new Wave();
+			for (int i = addsBefore; i < fight.Adds.Count; i++) wave.Ids.Add(fight.Adds[i].Id);
+			fight.Waves.Add(wave);
+		}
+		if (rule.Actions.Count == 0) return;
+		if (rule.Spawns.Count == 0 && rule.Message.Length > 0) Message(boss.GetPosition(), rule.Message);
+		Vector3 bossPos = boss.GetPosition();
+		foreach (Encounter.Act act in rule.Actions)
+		{
+			try
+			{
+				string first = act.Args.Length > 0 ? act.Args[0] : "";
+				switch (act.Verb)
+				{
+					case "ward":     // ward 0.5 [break]: the boss takes x0.5 until this rule's adds are dead; "break" = then it breaks
+						if (wave == null) break;
+						wave.Ward = true;
+						wave.BreakAfter = Array.Exists(act.Args, a => a.Equals("break", StringComparison.OrdinalIgnoreCase));
+						Net.Want(fight.BossId, "raidboss_taken", Mathf.Clamp(Arg(act.Args, "", 0.5f), 0.01f, 1f));
+						Net.Want(fight.BossId, "raidboss_label", RaidBossPlugin.WardLabel.Value);
+						break;
+					case "boss":     // boss Frostbound [20] | boss cycle Frostbound Emberborn [30] | boss none. A number = seconds, then it lapses.
+						var names = new List<string>(act.Args);
+						float seconds = 0f;
+						if (names.Count > 0 && float.TryParse(names[names.Count - 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float s)) { seconds = s; names.RemoveAt(names.Count - 1); }
+						string pick = names.Count > 0 ? names[0] : "none";
+						if (pick.Equals("cycle", StringComparison.OrdinalIgnoreCase) && names.Count > 1)
+						{
+							fight.Cycle.TryGetValue(act, out int turn);
+							pick = names[1 + turn % (names.Count - 1)];
+							fight.Cycle[act] = turn + 1;
+						}
+						string mode = pick.Equals("none", StringComparison.OrdinalIgnoreCase) ? "" : RaidBossPlugin.TraitMode(pick);
+						if (mode.Length == 0 && !pick.Equals("none", StringComparison.OrdinalIgnoreCase)) { RaidBossPlugin.Log.LogWarning($"{fight.Prefab}: trait '{pick}' is not in the Traits setting"); break; }
+						Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("set_s", Modes.ModeName, mode), new Net.Op("set_until", Modes.UntilName, "", seconds));
+						break;
+					case "strike":   // strike frost r4 d2 dmg90 x2: telegraphed ground strikes under random engaged players
+						var targets = new List<Vector3>();
+						foreach (PlayerPos p in Players) if (Flat(p.Pos, bossPos) <= RaidBossPlugin.Range.Value) targets.Add(p.Pos);
+						int count = Mathf.Clamp(Mathf.RoundToInt(Arg(act.Args, "x", 1f)), 1, 12);
+						RaidBossPlugin.StrikeEffects(first, out string tell, out string hit);
+						for (int i = 0; i < count && targets.Count > 0; i++)
+						{
+							int at0 = UnityEngine.Random.Range(0, targets.Count);
+							Vector3 at = targets[at0];
+							if (count <= targets.Count) targets.RemoveAt(at0);
+							else at += new Vector3(UnityEngine.Random.Range(-3f, 3f), 0f, UnityEngine.Random.Range(-3f, 3f));
+							float delay = Arg(act.Args, "d", 2f);
+							Net.SendStrike(at, Arg(act.Args, "r", 4f), delay, first, Arg(act.Args, "dmg", 60f), fight.BossId, "", "");
+							ShowEffect(tell, at);
+							ShowEffect(hit, at, delay);
+						}
+						break;
+					case "break":
+						Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("break", "", "", Arg(act.Args, "", 0f)));
+						break;
+					case "heal":     // heal 5 = 5% of max health
+						Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("heal", "", "", Arg(act.Args, "", 5f) / 100f));
+						break;
+					case "weather":  // weather EnvName [seconds]
+						Net.SendEnv(first, bossPos, RaidBossPlugin.Range.Value, act.Args.Length > 1 ? Arg(new[] { act.Args[1] }, "", 120f) : 120f);
+						break;
+					case "effect":
+						ShowEffect(first, bossPos);
+						break;
+					case "status":   // status Wet [remove]
+						Net.SendStatus(first, bossPos, RaidBossPlugin.Range.Value, act.Args.Length > 1 && act.Args[1].Equals("remove", StringComparison.OrdinalIgnoreCase));
+						break;
+				}
+				RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: {act}");
+			}
+			catch (Exception e) { RaidBossPlugin.Log.LogWarning($"{fight.Prefab}: action '{act}' failed: {e.Message}"); }
+		}
+	}
+
+	// Once a second per fight: the break meter's settings reach the boss once, and finished waves are settled.
+	static void TickMechanics(Fight fight, ZDO boss)
+	{
+		float size = RaidBossPlugin.BreakSize.Value;
+		bool healthSettled = !fight.Heroic || Mathf.Approximately(RaidBossPlugin.HeroicBossHealth.Value, 1f) || boss.GetFloat(Net.HealthKey, 0f) != 0f;
+		if (size > 0f && fight.Script != null && fight.Script.Rules.Count > 0 && healthSettled && fight.MeterAsks < 30 && boss.GetOwner() != 0L && boss.GetFloat("raidboss_brk_max".GetStableHashCode(), 0f) == 0f)
+		{
+			fight.MeterAsks++;
+			string text = FormattableString.Invariant($"size={size};drain={RaidBossPlugin.BreakDrain.Value};parry={RaidBossPlugin.BreakParry.Value};dur={RaidBossPlugin.BreakSeconds.Value};grow={RaidBossPlugin.BreakGrowth.Value};x={RaidBossPlugin.BreakTaken.Value}");
+			Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("meter", "", text));
+		}
+		for (int i = fight.Waves.Count - 1; i >= 0; i--)
+		{
+			Wave wave = fight.Waves[i];
+			bool alive = false;
+			foreach (ZDOID id in wave.Ids)
+			{
+				ZDO zdo = ZDOMan.instance.GetZDO(id);
+				if (zdo != null && zdo.IsValid() && zdo.GetBool(AddTag)) { alive = true; break; }
+			}
+			if (alive) continue;
+			fight.Waves.RemoveAt(i);
+			var ops = new List<Net.Op>();
+			if (wave.Ward)
+			{
+				bool otherWard = fight.Waves.Exists(w => w.Ward);
+				if (!otherWard) { Net.Want(fight.BossId, "raidboss_taken", 1f); Net.Want(fight.BossId, "raidboss_label", ""); }
+				if (wave.BreakAfter) ops.Add(new Net.Op("break"));
+			}
+			if (RaidBossPlugin.BreakWaveChunk.Value > 0f && !wave.BreakAfter) ops.Add(new Net.Op("brk_add", "", "", RaidBossPlugin.BreakWaveChunk.Value));
+			if (ops.Count > 0) Net.SendOps(boss.GetOwner(), fight.BossId, ops.ToArray());
+			RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: a wave of {wave.Ids.Count} is cleared{(wave.Ward ? ", the ward falls" : "")}{(wave.BreakAfter ? ", the boss breaks" : "")}");
+		}
+	}
+
 	static void SpawnRule(Fight fight, ZDO boss, Encounter.Rule rule, int players, int room)
 	{
+		// Heroic threshold waves always carry a star. Where the script already stars something in this wave (for this
+		// many players), ONE of those adds gains a star - a one-star becomes a two-star - and that is the wave's star;
+		// the rest arrive as written, so a wave of six one-stars does not become six two-stars.
+		// Where it stars nothing, the first add of the wave arrives one-star; for a wave that is a single heavy creature,
+		// that is the heavy creature. Trickles are left alone: a starred add every half minute would bury the fight.
+		// A rule written for heroic fights ("heroic 40%: ...") arrives exactly as written.
+		bool heroicWave = fight.Heroic && !rule.Repeating && !rule.HeroicOnly && RaidBossPlugin.HeroicGuaranteedStar.Value;
+		bool scriptedStar = false;
+		if (heroicWave)
+			foreach (Encounter.Spawn s in rule.Spawns)
+				if (s.Level > 1 && s.Count(players) > 0) { scriptedStar = true; break; }
+		bool promoted = false;
+
 		int made = 0;
 		foreach (Encounter.Spawn spawn in rule.Spawns)
 		{
 			int count = Mathf.Min(spawn.Count(players), room - made);
-			for (int i = 0; i < count; i++) if (SpawnAdd(fight, boss, spawn)) made++;
+			for (int i = 0; i < count; i++)
+			{
+				int level = spawn.Level;
+				if (heroicWave)
+				{
+					if (level > 1) { if (!promoted) { level = Mathf.Min(3, level + 1); promoted = true; } }
+					else if (!scriptedStar && !promoted) { level = 2; promoted = true; }
+				}
+				if (fight.Heroic && level == 1 && UnityEngine.Random.value < RaidBossPlugin.HeroicStarChance.Value) level = 2;
+				if (SpawnAdd(fight, boss, spawn, level)) made++;
+			}
 		}
 		if (made > 0 && rule.Message.Length > 0) Message(boss.GetPosition(), rule.Message);
 	}
 
-	static bool SpawnAdd(Fight fight, ZDO boss, Encounter.Spawn spawn)
+	static bool SpawnAdd(Fight fight, ZDO boss, Encounter.Spawn spawn, int level)
 	{
 		GameObject prefab = ZNetScene.instance.GetPrefab(spawn.Prefab);
 		ZNetView view = prefab != null ? prefab.GetComponent<ZNetView>() : null;
@@ -464,9 +698,6 @@ internal static class Director
 		zdo.SetPrefab(hash);
 		Vector3 facing = bossPos - pos; facing.y = 0f;
 		zdo.SetRotation(facing.sqrMagnitude > 0.01f ? Quaternion.LookRotation(facing) : Quaternion.identity);
-		// Heroic fights star some of the PLAIN adds. Never above one star: a two-star Fuling on Hard is an instant kill.
-		int level = spawn.Level;
-		if (fight.Heroic && level == 1 && UnityEngine.Random.value < RaidBossPlugin.HeroicStarChance.Value) level = 2;
 		if (level > 1) zdo.Set(ZDOVars.s_level, level);
 		if (RaidBossPlugin.AddsHunt.Value) zdo.Set(ZDOVars.s_huntPlayer, true);
 		zdo.Set(AddTag, true);
@@ -482,6 +713,12 @@ internal static class Director
 			float max = prefab.GetComponent<Character>().m_health * Mathf.Max(1, spawn.Level);
 			zdo.Set(ZDOVars.s_maxHealth, max);
 			zdo.Set(ZDOVars.s_health, max * hp);
+		}
+		if (spawn.Trait.Length > 0)
+		{
+			string mode = RaidBossPlugin.TraitMode(spawn.Trait);
+			if (mode.Length > 0) zdo.Set(Modes.ModeName.GetStableHashCode(), mode);
+			else RaidBossPlugin.Log.LogWarning($"{fight.Prefab}: trait '{spawn.Trait}' is not in the Traits setting");
 		}
 		if (owner != 0L) zdo.SetOwner(owner);
 

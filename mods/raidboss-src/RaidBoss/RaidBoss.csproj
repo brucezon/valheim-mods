@@ -19,6 +19,9 @@
     <Compile Include="WorldEncounters.cs" />
     <Compile Include="Net.cs" />
     <Compile Include="ClientSide.cs" />
+    <Compile Include="Targeting.cs" />
+    <Compile Include="Mechanics.cs" />
+    <Compile Include="Modes.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="ServerSync.src.cs" />
     <Compile Include="IgnoresAccessChecksTo.cs" />

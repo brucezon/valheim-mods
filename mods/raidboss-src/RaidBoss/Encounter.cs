@@ -21,6 +21,7 @@ internal sealed class Encounter
 	internal sealed class Spawn
 	{
 		public string Prefab;
+		public string Trait = "";       // "GoblinBrute:Ironhide" - a named set of resistances from the Traits setting
 		public int Level = 1;
 		public float Base;
 		public float PerPlayer;
@@ -47,15 +48,29 @@ internal sealed class Encounter
 		}
 	}
 
+	// Something a rule does besides spawning: "ward 0.5 break", "strike ice r4 d2 dmg90 x2", "boss Ironhide", "break 8",
+	// "heal 5", "weather Twilight_SnowStorm 60", "effect fx_name", "status Wet". Carried out by Director.RunActions.
+	internal sealed class Act
+	{
+		public string Verb;
+		public string[] Args;
+		public override string ToString() => Verb + (Args.Length > 0 ? " " + string.Join(" ", Args) : "");
+	}
+
+	internal static readonly HashSet<string> Verbs = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "ward", "boss", "strike", "break", "heal", "weather", "effect", "status" };
+
 	internal sealed class Rule
 	{
 		public bool Repeating;
+		public bool HeroicOnly;         // "heroic 60%: ..." - this rule exists only in a heroic fight
+		public bool NormalOnly;         // "normal 40%: ..." - this rule is left out of a heroic fight (a "heroic 40%" rule replaces it)
 		public float Threshold;          // 0..1, threshold rules
 		public float Interval;           // seconds, repeating rules
 		public float Below = 1f;         // repeating rules run while Above <= health < Below
 		public float Above;
 		public string Message = "";
 		public readonly List<Spawn> Spawns = new List<Spawn>();
+		public readonly List<Act> Actions = new List<Act>();
 	}
 
 	public readonly List<Rule> Rules = new List<Rule>();
@@ -77,7 +92,8 @@ internal sealed class Encounter
 		if (!sm.Success) return false;
 		spawn = new Spawn
 		{
-			Prefab = sm.Groups[1].Value,
+			Prefab = sm.Groups[1].Value.Split(':')[0],
+			Trait = sm.Groups[1].Value.Contains(":") ? sm.Groups[1].Value.Substring(sm.Groups[1].Value.IndexOf(':') + 1) : "",
 			Level = 1 + sm.Groups[2].Value.Length,
 			Base = F(sm.Groups[3].Value),
 			PerPlayer = sm.Groups[4].Success ? F(sm.Groups[4].Value) : 0f,
@@ -110,6 +126,8 @@ internal sealed class Encounter
 			int colon = s.IndexOf(':');
 			if (colon < 0) { enc.Errors.Add($"no ':' in rule '{rawRule.Trim()}'"); continue; }
 			string trigger = s.Substring(0, colon).Trim();
+			if (trigger.StartsWith("heroic ", StringComparison.OrdinalIgnoreCase)) { rule.HeroicOnly = true; trigger = trigger.Substring(7).Trim(); }
+			else if (trigger.StartsWith("normal ", StringComparison.OrdinalIgnoreCase)) { rule.NormalOnly = true; trigger = trigger.Substring(7).Trim(); }
 			string spawns = s.Substring(colon + 1).Trim();
 
 			Match m;
@@ -133,10 +151,18 @@ internal sealed class Encounter
 			{
 				string sp = rawSpawn.Trim();
 				if (sp.Length == 0) continue;
+				string[] words = sp.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+				if (Verbs.Contains(words[0]))
+				{
+					var args = new string[words.Length - 1];
+					Array.Copy(words, 1, args, 0, args.Length);
+					rule.Actions.Add(new Act { Verb = words[0].ToLowerInvariant(), Args = args });
+					continue;
+				}
 				if (!TryParseSpawn(sp, out Spawn parsed)) { enc.Errors.Add($"spawn '{sp}' is not 'Prefab[*] base+perPlayer [@players]'"); continue; }
 				rule.Spawns.Add(parsed);
 			}
-			if (rule.Spawns.Count == 0) { enc.Errors.Add($"rule '{trigger}' spawns nothing"); continue; }
+			if (rule.Spawns.Count == 0 && rule.Actions.Count == 0) { enc.Errors.Add($"rule '{trigger}' does nothing"); continue; }
 			enc.Rules.Add(rule);
 		}
 		return enc;
@@ -148,8 +174,9 @@ internal sealed class Encounter
 		foreach (Rule r in Rules)
 		{
 			var sp = new List<string>();
-			foreach (Spawn s in r.Spawns) sp.Add($"{s.Count(players)}x {s.Prefab}{new string('*', s.Level - 1)}{s.Suffix}");
-			string when = r.Repeating ? $"every {r.Interval:0}s [{r.Above * 100:0}-{r.Below * 100:0}%)" : $"{r.Threshold * 100:0}%";
+			foreach (Spawn s in r.Spawns) sp.Add($"{s.Count(players)}x {s.Prefab}{(s.Trait.Length > 0 ? ":" + s.Trait : "")}{new string('*', s.Level - 1)}{s.Suffix}");
+			foreach (Act a in r.Actions) sp.Add("[" + a + "]");
+			string when = (r.HeroicOnly ? "heroic " : r.NormalOnly ? "normal " : "") + (r.Repeating ? $"every {r.Interval:0}s [{r.Above * 100:0}-{r.Below * 100:0}%)" : $"{r.Threshold * 100:0}%");
 			parts.Add($"{when}: {string.Join(" + ", sp)}");
 		}
 		return string.Join(" | ", parts);
