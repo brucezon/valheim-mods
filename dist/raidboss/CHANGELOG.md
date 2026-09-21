@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.10
+
+- Idols fall properly: they could settle on the boss's body and be left hanging in the air once it was gone. They
+  still drop where the boss fell. Minimum version 0.1.10.
+
 ## 0.1.9
 
 - The bubble setting is now `Visual ward bubble`: it only changes the look, never the ward.

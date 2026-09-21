@@ -154,4 +154,41 @@ internal static class ClientSide
 			player.GetSEMan().AddStatusEffect(__instance.m_statusEffectHash, resetTime: true, 0, 0f, -1);
 		}
 	}
+	// ---- 5. Idols fall.
+	//
+	// The server drops a heroic kill's idols where the boss fell (Director.SpawnItem), flagged "raidboss_loot". An item
+	// that lands on the boss's body settles and the physics puts it to sleep; when the body is gone a sleeping item does
+	// not notice and is left hanging in the air. So for its first half minute the game simulating a flagged item keeps
+	// waking it up, and it drops to the ground when there is nothing under it any more.
+	static readonly int LootKey = "raidboss_loot".GetStableHashCode();
+
+	[HarmonyPatch(typeof(ItemDrop), "Awake")]
+	static class LootPatch
+	{
+		static void Postfix(ItemDrop __instance)
+		{
+			ZNetView view = __instance.m_nview;
+			if (view == null || !view.IsValid() || !view.GetZDO().GetBool(LootKey)) return;
+			if (__instance.GetComponent<Rigidbody>() == null || __instance.gameObject.GetComponent<LootWaker>() != null) return;
+			__instance.gameObject.AddComponent<LootWaker>();
+		}
+	}
+
+	sealed class LootWaker : MonoBehaviour
+	{
+		float age, next;
+		Rigidbody body;
+		ZNetView view;
+
+		void Awake() { body = GetComponent<Rigidbody>(); view = GetComponent<ZNetView>(); }
+
+		void Update()
+		{
+			age += Time.deltaTime;
+			if (age > 30f || body == null) { Destroy(this); return; }
+			if (age < next) return;
+			next = age + 0.25f;
+			if (view != null && view.IsValid() && view.IsOwner() && !body.isKinematic && body.IsSleeping()) body.WakeUp();
+		}
+	}
 }

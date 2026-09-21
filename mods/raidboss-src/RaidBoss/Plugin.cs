@@ -22,11 +22,11 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.9";
+	public const string Version = "0.1.10";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
-	const string MinimumVersion = "0.1.6";   // 0.1.6: the boss's owner wears its ward down, and the hunt button needs the server's new message
+	const string MinimumVersion = "0.1.10";   // 0.1.10: idols dropped by a heroic kill need the players' games to keep them falling
 
 	static readonly ConfigSync configSync = new(Name) { DisplayName = Name, CurrentVersion = Version, MinimumRequiredVersion = MinimumVersion, ModRequired = true };
 

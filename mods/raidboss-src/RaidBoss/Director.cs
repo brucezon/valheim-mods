@@ -293,14 +293,17 @@ internal static class Director
 		}
 		Vector2 off = UnityEngine.Random.insideUnitCircle * 2f;
 		Vector3 pos = new Vector3(at.x + off.x, 0f, at.z + off.y);
-		// A flying boss dies in the air; items go to the ground under it, a little above it so they fall rather than sink.
-		pos.y = Mathf.Max(GroundHeight(pos), ZoneSystem.instance.m_waterLevel) + 1.5f;
+		// Where the boss fell, a little above it (its own height, or the ground's if that is higher) so the item drops into
+		// place. It carries the loot flag: its physics is kept awake for a while (ClientSide.LootPatch), because an item
+		// that settles on the boss's body would otherwise be left hanging in the air once the body is gone.
+		pos.y = Mathf.Max(at.y, GroundHeight(pos), ZoneSystem.instance.m_waterLevel) + 1.5f;
 		int hash = prefab.name.GetStableHashCode();
 		ZDO zdo = ZDOMan.instance.CreateNewZDO(pos, hash);
 		zdo.Persistent = view.m_persistent;
 		zdo.Type = view.m_type;
 		zdo.Distant = view.m_distant;
 		zdo.SetPrefab(hash);
+		zdo.Set("raidboss_loot".GetStableHashCode(), true);
 		zdo.SetRotation(Quaternion.identity);
 		if (owner != 0L) zdo.SetOwner(owner);
 		return true;
