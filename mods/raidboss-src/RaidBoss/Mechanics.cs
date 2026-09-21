@@ -14,7 +14,7 @@ namespace RaidBoss;
 //                          raidboss_label (a line under a boss's name). Read here by whoever needs them; written by
 //                          the server on the adds it creates, and by a boss's owner when the server asks (Net.Op).
 //   the break meter        hits on a boss are only seen by its owner, so the owner keeps the meter on the boss's ZDO:
-//                          weakness damage in full, a little of each hit's stagger value (bosses normally throw it away), a chunk
+//                          weakness damage in full, a share of each MELEE hit's stagger value (bosses normally throw it away), a chunk
 //                          for a parry, a chunk when the server says a wave is cleared, draining over time. Full = a
 //                          break: the boss stops acting, is slowed to a crawl and takes more damage for a few seconds;
 //                          then the meter needs more. A flying boss breaks when it lands.
@@ -35,7 +35,6 @@ internal static class Mechanics
 	static readonly int BrkTakenKey = "raidboss_brk_x".GetStableHashCode();
 	static readonly int BrkHitKey = "raidboss_brk_hit".GetStableHashCode();
 	static readonly int BrkWeakKey = "raidboss_brk_weak".GetStableHashCode();
-	static readonly int BrkBluntKey = "raidboss_brk_blunt".GetStableHashCode();
 	static readonly int GuardKey = "raidboss_guard".GetStableHashCode();
 	static readonly int GuardBrokenKey = "raidboss_guard_x".GetStableHashCode();
 	static readonly int BreakUntilKey = "raidboss_break_t".GetStableHashCode();
@@ -85,7 +84,7 @@ internal static class Mechanics
 			case "heal":     // a fraction of max health
 				zdo.Set(ZDOVars.s_health, Mathf.Min(max, zdo.GetFloat(ZDOVars.s_health, max) + max * Mathf.Clamp01(op.Value)));
 				break;
-			case "meter":    // "size=0.4;drain=0.002;parry=0.06;dur=8;grow=1.5;x=2;hit=0.1;weak=1", sizes as fractions of max health. Once.
+			case "meter":    // "size=0.4;drain=0.002;parry=0.06;dur=8;grow=1.5;x=2;hit=0.25;weak=1", sizes as fractions of max health. Once.
 				if (zdo.GetFloat(BrkMaxKey, 0f) != 0f) break;
 				var v = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 				foreach (string pair in op.Text.Split(';'))
@@ -201,6 +200,12 @@ internal static class Mechanics
 
 	// ---- damage a creature takes (owner side): the ward / break multiplier, and the meter
 
+	// Melee hits feed the meter by their weight; arrows, bolts and magic only through the boss's weaknesses. Up close is
+	// where a break is earned.
+	static bool IsMelee(Skills.SkillType skill) => skill == Skills.SkillType.Swords || skill == Skills.SkillType.Knives || skill == Skills.SkillType.Clubs
+		|| skill == Skills.SkillType.Polearms || skill == Skills.SkillType.Spears || skill == Skills.SkillType.Axes || skill == Skills.SkillType.Unarmed
+		|| skill == Skills.SkillType.Pickaxes || skill == Skills.SkillType.WoodCutting;
+
 	static bool IsWeak(HitData.DamageModifier m) => m == HitData.DamageModifier.Weak || m == HitData.DamageModifier.VeryWeak || m == HitData.DamageModifier.SlightlyWeak;
 
 	static float WeakDamage(HitData.DamageModifiers mods, HitData.DamageTypes d)
@@ -232,10 +237,9 @@ internal static class Mechanics
 				// Plain weapon stagger counts for little; damage of a type the boss is weak to (its own weaknesses, or a
 				// trait's) counts in full. Worked out before resistances, so it measures what was swung, not what landed.
 				float scale = Game.instance.GetDifficultyDamageScaleEnemy(__instance.transform.position);
-				float fill = hit.m_damage.GetTotalStaggerDamage() * hit.m_staggerMultiplier * zdo.GetFloat(BrkHitKey, 1f);
+				float fill = IsMelee(hit.m_skill) ? hit.m_damage.GetTotalStaggerDamage() * hit.m_staggerMultiplier * zdo.GetFloat(BrkHitKey, 1f) : 0f;
 				float weakShare = zdo.GetFloat(BrkWeakKey, 0f);
 				if (weakShare > 0f) fill += WeakDamage(__instance.GetDamageModifiers(), hit.m_damage) * weakShare;
-				fill += hit.m_damage.m_blunt * zdo.GetFloat(BrkBluntKey, 0f);
 				AddMeter(zdo, fill * scale, __instance);
 			}
 			float mult = zdo.GetFloat(TakenKey, 1f);

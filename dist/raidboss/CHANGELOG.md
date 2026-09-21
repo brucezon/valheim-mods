@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+- Every melee hit feeds the break meter by its weight (setting `Break meter, melee hits count (x)`, 0.25), not only
+  blunt ones: a reason for melee to get up close. Arrows, bolts and magic feed it only through a weakness.
+- `guard` takes `melee0.5` (was `blunt0.5`): melee hits fill a guarded boss's meter at twice the usual share.
+- Minimum version 0.1.2, for the same reason as 0.1.1.
+
 ## 0.1.1
 
 - The break meter fills from the fight, not from raw weapon weight: parries (twice as much as before), cleared waves

@@ -22,11 +22,11 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.1";
+	public const string Version = "0.1.2";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
-	const string MinimumVersion = "0.1.1";   // 0.1.1: the break meter is kept by the boss's owner; a 0.1.0 owner would still fill it from every weapon hit
+	const string MinimumVersion = "0.1.2";   // 0.1.2: the break meter is kept by the boss's owner, and what fills it changed (melee hits)
 
 	static readonly ConfigSync configSync = new(Name) { DisplayName = Name, CurrentVersion = Version, MinimumRequiredVersion = MinimumVersion, ModRequired = true };
 
@@ -135,7 +135,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		"75% \"The dead rise from the mire\": Draugr 0+1.34 | " +
 		"50% \"Archers take aim from the murk\": Draugr_Ranged 0.5+0.5, Draugr* 0+0.34 | " +
 		"normal 25% \"A champion of the drowned\": Draugr_Elite 1+0, Wraith 0+0.34 | " +
-		"heroic 100%: guard taken0.3 broken3 blunt0.5 size0.2 | " +
+		"heroic 100%: guard taken0.3 broken3 melee0.5 size0.2 | " +
 		"heroic 25% \"A champion of the drowned\": Draugr_Elite* 1+0, Wraith 0+0.34, ward 0.5 break | " +
 		"every 30s below 25%: Draugr 1+0 @2+, Draugr 1+0 @3+, Draugr 1+0 @4+";
 
@@ -221,11 +221,11 @@ public class RaidBossPlugin : BaseUnityPlugin
 		AddsAvoidShields = config("7 - Targeting", "Melee adds rush players without a shield", true, "On = the opening rush of this mod's melee adds goes to the back line: an add's first target is a player without a shield in hand, the one with the fewest adds sent at them so far. The rush ends when the add comes within 4 m of any player (it arrived, or someone stepped in its way) or after 20 s; from then on the add is vanilla, so whoever intercepted it keeps it while they stay the nearest. With a shield in every hand there is no rush. Wild creatures are never affected. From the server.", true);
 		VanillaTargetedAdds = config("7 - Targeting", "Adds that never rush", "GoblinArcher, GoblinShaman, Draugr_Ranged, Greydwarf_Shaman, Hatchling", "Archers, casters and flyers: prefab names, comma separated. These are vanilla from the start: closest player. From the server.", true);
 
-		BreakSize = config("8 - Mechanics", "Break meter size", 0.4f, new ConfigDescription("Bosses cannot be staggered in vanilla. With this, every scripted boss has a break meter, filled mostly by playing the fight: parries, cleared waves and damage of a type the boss is weak to. Plain weapon stagger adds only a little. Its size is this fraction of the boss's max health. Full = the boss is BROKEN: it stops acting and takes more damage for a few seconds, then the meter needs more. 0.4 means one or two breaks in a fight. 0 = no break meter.", new AcceptableValueRange<float>(0f, 5f)), false);
+		BreakSize = config("8 - Mechanics", "Break meter size", 0.4f, new ConfigDescription("Bosses cannot be staggered in vanilla. With this, every scripted boss has a break meter, filled by playing the fight: parries, cleared waves, melee hits and damage of a type the boss is weak to. Its size is this fraction of the boss's max health. Full = the boss is BROKEN: it stops acting and takes more damage for a few seconds, then the meter needs more. 0.4 means one or two breaks in a fight. 0 = no break meter.", new AcceptableValueRange<float>(0f, 5f)), false);
 		BreakDrain = config("8 - Mechanics", "Break meter drain per second", 0.002f, new ConfigDescription("As a fraction of the boss's max health. 0.002 empties a full 0.4 meter in a little over three minutes of nobody hitting.", new AcceptableValueRange<float>(0f, 1f)), false);
 		BreakParry = config("8 - Mechanics", "Break meter, a parry adds", 0.06f, new ConfigDescription("As a fraction of the boss's max health.", new AcceptableValueRange<float>(0f, 1f)), false);
 		BreakWaveChunk = config("8 - Mechanics", "Break meter, a cleared wave adds", 0.25f, new ConfigDescription("As a fraction of the meter. Killing every add of a threshold wave pays this once.", new AcceptableValueRange<float>(0f, 1f)), false);
-		BreakHit = config("8 - Mechanics", "Break meter, weapon stagger counts (x)", 0.1f, new ConfigDescription("Share of a hit's ordinary stagger value (blunt, slash, pierce, lightning) that goes into the meter. 1 = all of it, as a staggerable creature would take it.", new AcceptableValueRange<float>(0f, 2f)), false);
+		BreakHit = config("8 - Mechanics", "Break meter, melee hits count (x)", 0.25f, new ConfigDescription("Share of a melee hit's stagger value (its blunt, slash and pierce) that goes into the meter - melee of every kind, so getting up close is how a break is earned. Arrows, bolts and magic add nothing here; they feed the meter only through the boss's weaknesses.", new AcceptableValueRange<float>(0f, 2f)), false);
 		BreakWeak = config("8 - Mechanics", "Break meter, weakness damage counts (x)", 1f, new ConfigDescription("Damage of a type the boss is weak to - its own weaknesses, or its current trait's - goes into the meter at this share, on top.", new AcceptableValueRange<float>(0f, 5f)), false);
 		BreakInHeroic = config("8 - Mechanics", "Break meter in heroic fights", true, "Off = heroic fights have no break meter and no breaks (a guard, which only a break ends, is then skipped too). Normal fights are unaffected.", false);
 		BreakSeconds = config("8 - Mechanics", "Break length (s)", 8f, new ConfigDescription("How long a broken boss stays down.", new AcceptableValueRange<float>(1f, 60f)), false);

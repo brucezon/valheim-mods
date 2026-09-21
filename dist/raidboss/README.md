@@ -102,16 +102,17 @@ In vanilla, idols come only from treasure chests at a few per cent a chest.
 Waves are only part of a fight. A script rule can also do things, and several are used by the default scripts:
 
 - **Break meter.** Bosses cannot be staggered in vanilla. Here every scripted boss has a meter under its name, filled
-  by playing the fight rather than by hitting hard: a parry adds a big share, clearing a whole threshold wave a quarter
-  of the meter, and damage of a type the boss is weak to (its own weaknesses, or its trait's) counts in full. Plain
-  weapon stagger adds only a little. It is big: expect one or two breaks a fight. Full = **Broken**: the boss stops
+  by playing the fight: a parry adds a big share, clearing a whole threshold wave a quarter of the meter, every melee
+  hit a share of its weight - sword, axe, mace, spear, knife or fists, so there is a reason to get up close - and damage
+  of a type the boss is weak to (its own weaknesses, or its trait's) counts in full. Arrows, bolts and magic feed it
+  only through a weakness. It is big: expect one or two breaks a fight. Full = **Broken**: the boss stops
   acting and takes double damage for 8 seconds, and the meter then needs half as much again. A flying boss breaks when
   it lands.
 - **Ward** (`ward 0.5 break`). The boss takes half damage until every add of that wave is dead; "Warded" shows under
   its name. With `break`, the ward falling breaks the boss.
-- **Guard** (`guard taken0.3 broken3 blunt0.5 size0.2`). The boss takes only 30% damage until it is broken, and triple
-  damage while broken. Its meter is smaller and does not grow, and blunt damage fills it too, so breaks come round
-  again and again: melee players break it with parries and blunt weapons while the ranged players deal with the adds,
+- **Guard** (`guard taken0.3 broken3 melee0.5 size0.2`). The boss takes only 30% damage until it is broken, and triple
+  damage while broken. Its meter is smaller and does not grow, and melee hits fill it twice as fast, so breaks come
+  round again and again: melee players break it with parries and their weapons while the ranged players deal with the adds,
   then everyone turns on it for the break. "Guarded" shows under its name. Needs the break meter; with breaks off it is
   skipped.
 - **Ground strikes** (`strike lightning r3.5 d2 dmg20 x2`). A coloured ring fills on the ground under a player for the
@@ -233,7 +234,7 @@ by the server alone.
 - **7 - Targeting:** `A parry holds the boss for (seconds)` (12), `Melee adds rush players without a shield` (on), `Adds that
   never rush`. Pushed from the server.
 - **8 - Mechanics:** the break meter (`Break meter size` 0.4 of the boss's max health, drain, parry and cleared-wave
-  shares, weapon-stagger and weakness shares, `Break length (s)` 8, `Break damage taken (x)` 2, growth 1.5, `Break meter in heroic fights` on), `Traits`, `Strike effects`, `Ward label`.
+  shares, melee and weakness shares, `Break length (s)` 8, `Break damage taken (x)` 2, growth 1.5, `Break meter in heroic fights` on), `Traits`, `Strike effects`, `Ward label`.
 - **9 - Debug:** `Pretend this many players` (0).
 
 ## Known limits
