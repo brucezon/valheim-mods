@@ -18,7 +18,7 @@ namespace BruceQoL;
 public class BruceQoLPlugin : BaseUnityPlugin
 {
 	private const string ModName = "BruceQoL";
-	private const string ModVersion = "1.19.2";
+	private const string ModVersion = "1.20.0";
 	private const string ModGUID = "bruceirons.BruceQoL";
 	// Oldest client/server version still let in. RULE (host, 18 Sep 2026): this is the PREVIOUS release unless a
 	// release is truly breaking (changes data both sides must agree on, or makes an old client misbehave rather
@@ -140,7 +140,6 @@ public class BruceQoLPlugin : BaseUnityPlugin
 
 	// 13 - Combat
 	private static ConfigEntry<float> enemyDamageToPlayers;
-	private static ConfigEntry<float> bossDamageToPlayers;
 	private static ConfigEntry<float> enemyDamageToTames;
 	private static ConfigEntry<float> playerDamageToEnemies;
 	private static ConfigEntry<float> enemyHealthMult;
@@ -289,7 +288,6 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		secondsPerHoney = config("12 - Beehives", "Honey time (seconds)", 1200f, "Seconds to produce one honey. Vanilla 1200 (20 min).");
 
 		enemyDamageToPlayers = config("13 - Combat", "Enemy damage to players", 1f, "Multiplier on damage creatures and bosses deal to players. Stacks with the Combat world slider. 1 = as the world is set.");
-		bossDamageToPlayers = config("13 - Combat", "Boss damage to players", 0f, new ConfigDescription("Multiplier on damage BOSSES deal to players, used instead of 'Enemy damage to players' for them. 0 = no separate number: bosses follow 'Enemy damage to players', as they did before 1.19.2. Stacks with the Combat world slider. The server-side BossDirector mod can set this and the entry above for the length of a boss fight (adds softer, boss at full strength) and puts them back afterwards.", new AcceptableValueRange<float>(0f, 5f)));
 		BlockCompensation.ParryCompensation = config("13 - Combat", "Parry difficulty compensation", 0f,
 			new ConfigDescription("0 = vanilla: a timed block is judged against Combat-scaled enemy damage (Hard = 1.5x; the stagger bar fills 2.25x faster than Normal). 1 = parry timing, stagger fill and stamina cost are exactly what they are on Combat Normal; damage that still gets through is scaled as usual. Values between are partial. No effect when Combat is Normal.",
 				new AcceptableValueRange<float>(0f, 1f)));
@@ -373,10 +371,6 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		Stars.TwoStarMax = config("19 - Stars", "Two-star chance max (%)", 10f, new ConfigDescription("Ceiling on the two-star chance. It can also never exceed the one-star chance at that spot, because a two-star creature is a starred creature: with a 14% one-star chance, asking for 20% two-stars gives 14%, all of them two-star.", new AcceptableValueRange<float>(0f, 50f)));
 		Exploration.RadiusMult = config("20 - Exploration", "Map reveal radius (x)", 1.5f, new ConfigDescription("Multiplier on how far around you the map is uncovered while on foot. 1 = vanilla. 1.5 = half as far again, which is a little over twice the area per step. 2 = twice as far, four times the area. The log prints the game's own radius in metres the first time the map updates. Each player's own map; nothing is sent to anyone.", new AcceptableValueRange<float>(0.1f, 10f)));
 		Exploration.ShipRadiusMult = config("20 - Exploration", "Map reveal radius aboard a ship (x)", 2f, new ConfigDescription("The same multiplier while you are aboard a ship, used INSTEAD of the one above, not on top of it. 1 = vanilla. 2 = a coastline is charted from twice as far out. Aboard means inside the ship's deck area, the same test the game uses for its own ship checks, so rafts, karves, longships and modded hulls all count.", new AcceptableValueRange<float>(0.1f, 10f)));
-		Recovery.RestingTimeAfterDeath = config("21 - Recovery", "Resting time after a death (x)", 1f, new ConfigDescription("Multiplier on the fireside wait before the Rested buff arrives, while you have recently died. 1 = vanilla. 0.25 = a quarter of the wait. 0 = Rested the moment you are resting (by a fire, under a roof, unnoticed by enemies). Food, the tombstone and the length of the Rested buff are untouched. The log prints the game's own wait in seconds the first time you rest.", new AcceptableValueRange<float>(0f, 1f)));
-		Recovery.JustDiedWindow = config("21 - Recovery", "Counts as just died for (seconds)", 120f, new ConfigDescription("How long after a death the shorter wait above applies. The clock is the game's own time-since-death (the one behind the no-skill-drain grace period); it starts when you die and keeps running while you respawn and walk back.", new AcceptableValueRange<float>(0f, 3600f)));
-		BossAdds.HonourScaling = config("22 - Boss adds", "Scaled damage from boss adds", Toggle.On, "Creatures spawned by the server-side BossDirector mod carry a damage multiplier chosen in ITS config (for example 0.65). On = a hit from such a creature on a player is scaled by that number. Off = they hit at full strength. Without BossDirector on the server no creature carries the number and this does nothing. Wild creatures and the bosses themselves are never affected.");
-		BossAdds.HonourScaling.SettingChanged += (_, _) => BossAdds.WriteMarker();
 		foreach (ConfigEntry<float> e in new[] { raidIntervalMult, raidChanceMult, raidDurationMult })
 		{
 			e.SettingChanged += (_, _) => ApplyRaids();
@@ -1119,7 +1113,7 @@ public class BruceQoLPlugin : BaseUnityPlugin
 			float mult = 1f;
 			if (!attacker.IsPlayer())
 			{
-				if (__instance.IsPlayer()) mult = attacker.IsBoss() && bossDamageToPlayers.Value > 0f ? bossDamageToPlayers.Value : enemyDamageToPlayers.Value;
+				if (__instance.IsPlayer()) mult = enemyDamageToPlayers.Value;
 				else if (__instance.IsTamed()) mult = enemyDamageToTames.Value;
 			}
 			else if (!__instance.IsPlayer() && !__instance.IsTamed())

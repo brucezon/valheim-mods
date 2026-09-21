@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.20.0 - 2026-09-20
+- **Boss-fight pieces moved out to the RaidBoss mod**, which is installed on clients too and does these jobs itself:
+  section 21 (shorter fireside wait after a death), section 22 (scaled damage from BossDirector's adds, and the player
+  marker) and `Boss damage to players` in 13 - Combat are removed. `Enemy damage to players` is unchanged. They were
+  stop-gaps from when the boss mod was server-only.
+- The minimum version is unchanged (1.16.0).
+
 ## 1.19.2 - 2026-09-20
 - **13 - Combat: `Boss damage to players`** (0 = bosses follow `Enemy damage to players`, exactly as before). A
   separate multiplier for bosses, so adds can be softened without softening the boss. The server-side BossDirector

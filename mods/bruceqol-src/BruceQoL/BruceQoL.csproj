@@ -22,8 +22,6 @@
     <Compile Include="Hoe.cs" />
     <Compile Include="Stars.cs" />
     <Compile Include="Exploration.cs" />
-    <Compile Include="Recovery.cs" />
-    <Compile Include="BossAdds.cs" />
     <Compile Include="PassiveTames.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="ServerSync.src.cs" />
