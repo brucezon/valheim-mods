@@ -573,9 +573,8 @@ internal static class Director
 							if (count <= targets.Count) targets.RemoveAt(at0);
 							else at += new Vector3(UnityEngine.Random.Range(-3f, 3f), 0f, UnityEngine.Random.Range(-3f, 3f));
 							float delay = Arg(act.Args, "d", 2f);
-							Net.SendStrike(at, Arg(act.Args, "r", 4f), delay, first, Arg(act.Args, "dmg", 60f), fight.BossId, "", "");
-							ShowEffect(tell, at);
-							ShowEffect(hit, at, delay);
+							// The effects travel with the strike and are played by each player's game, timed to its own ring.
+							Net.SendStrike(at, Arg(act.Args, "r", 4f), delay, first, Arg(act.Args, "dmg", 60f), fight.BossId, tell, hit);
 						}
 						break;
 					case "break":

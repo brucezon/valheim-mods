@@ -475,12 +475,20 @@ internal static class Mechanics
 	internal static void PlayEffect(string prefabName, Vector3 pos)
 	{
 		if (string.IsNullOrEmpty(prefabName) || ZNetScene.instance == null || ZNet.instance == null || ZNet.instance.IsDedicated()) return;
+		// Every vanilla effect prefab carries a ZNetView. Made with ZNetView.m_forceDisableInit (as the game does for a
+		// build ghost), the view removes itself and the copy stays a purely local visual: no network object, and it plays
+		// exactly when this game says - so a strike's impact lands the moment its ring fills.
 		foreach (string name in prefabName.Split('+'))
 		{
 			GameObject prefab = ZNetScene.instance.GetPrefab(name.Trim());
-			if (prefab == null || prefab.GetComponent<ZNetView>() != null) continue;
-			GameObject made = UnityEngine.Object.Instantiate(prefab, pos, Quaternion.identity);
-			if (made.GetComponent<TimedDestruction>() == null) UnityEngine.Object.Destroy(made, 12f);
+			if (prefab == null || prefab.GetComponent<Character>() != null) continue;
+			GameObject made;
+			bool was = ZNetView.m_forceDisableInit;
+			ZNetView.m_forceDisableInit = true;
+			try { made = UnityEngine.Object.Instantiate(prefab, pos, Quaternion.identity); }
+			catch (Exception e) { RaidBossPlugin.Log.LogWarning($"effect '{name.Trim()}' failed: {e.Message}"); continue; }
+			finally { ZNetView.m_forceDisableInit = was; }
+			UnityEngine.Object.Destroy(made, 12f);
 		}
 	}
 

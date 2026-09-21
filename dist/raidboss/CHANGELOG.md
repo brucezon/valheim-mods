@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- Ground strikes: the impact now lands exactly when the ring fills. Strike effects are played by each player's own game,
+  timed to its ring, instead of being made by the server. The lightning strike no longer flashes when the ring appears.
+
 ## 0.1.2
 
 - Every melee hit feeds the break meter by its weight (setting `Break meter, melee hits count (x)`, 0.25), not only
