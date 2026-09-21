@@ -55,11 +55,11 @@ The biggest waves come early; the last one is a starred elite with a small escor
 
 | Boss health | Wave | Solo | Four players |
 |---|---|---|---|
-| 80% | The last of his people answer: a Fuling pack | 5 | 8 |
-| 60% | Shamans draw upon their king: shamans with a Fuling pack, archers from two players | 1 + 3 | 2 + 6 + 2 |
-| 40% | A champion of the fallen cities: a Berserker with an escort, a one-star Berserker too from four players | 1 + 1 | 1 + 1* + 3 |
-| 20% (heroic: 30%) | They will not bend or break: one-star Fulings with an escort, an archer from three players | 1* | 3* + 2 + 1 |
-| below 20% | Fulings every 20 s from two players, up to the cap | none | 3 |
+| 90% | The last of his people answer: a Fuling pack | 5 | 8 |
+| 70% | Shamans draw upon their king: shamans with a Fuling pack, archers from two players | 1 + 3 | 2 + 6 + 2 |
+| 50% | A champion of the fallen cities: a Berserker with an escort, a one-star Berserker too from four players | 1 + 1 | 1 + 1* + 3 |
+| 30% | They will not bend or break: one-star Fulings with an escort, an archer from three players | 1* | 3* + 2 + 1 |
+| below 30% | Fulings every 20 s from two players, up to the cap | none | 3 |
 
 These are the counts that spawn: `More adds (x)` is 1, so the scripts are taken as written (above 1, every count and
 the cap are multiplied and rounded down). A threshold wave waits while more than a third of the previous one is still
