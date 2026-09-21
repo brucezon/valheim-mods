@@ -1,9 +1,13 @@
 # Changelog
 
+## 0.1.9
+
+- The bubble setting is now `Visual ward bubble`: it only changes the look, never the ward.
+
 ## 0.1.8
 
 - The ward falling no longer breaks the boss: with a shaman every 40 s, one shaman was one break.
-- The ward shows as a light-blue "Warded" under the boss's name; the shaman's bubble is off by default (`Ward bubble`).
+- The ward shows as a light-blue "Warded" under the boss's name; the shaman's bubble is off by default.
 
 ## 0.1.7
 

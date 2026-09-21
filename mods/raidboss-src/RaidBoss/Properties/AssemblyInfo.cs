@@ -8,6 +8,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("MIT, 2026 bruceirons-team")]
 [assembly: ComVisible(false)]
 [assembly: Guid("b3d94f16-7a2c-4e85-9c61-2f8e0a5d7b94")]
-[assembly: AssemblyVersion("0.1.8.0")]
-[assembly: AssemblyFileVersion("0.1.8.0")]
+[assembly: AssemblyVersion("0.1.9.0")]
+[assembly: AssemblyFileVersion("0.1.9.0")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("RaidBossTest")]

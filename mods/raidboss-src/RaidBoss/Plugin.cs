@@ -22,7 +22,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.8";
+	public const string Version = "0.1.9";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
@@ -257,7 +257,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		StrikeFx = config("8 - Mechanics", "Strike effects", "fire: > fx_goblinking_meteor_hit | frost: > fx_iceshard_hit+fx_fenring_icenova | lightning: > fx_eikthyr_stomp+fx_chainlightning_hit", "Vanilla effects of a ground strike, by element: TELL > IMPACT, several joined with +. The warning ring is always drawn and is the warning; a TELL plays when it appears, so keep it subtle (or empty) - anything that looks like an impact reads as the strike landing early. Played by each player's own game, the IMPACT exactly when the ring fills.", false);
 		WardLabel = config("8 - Mechanics", "Ward label", "Warded", "Shown under the boss's name while a ward is up. Pushed to the players.", true);
 		WardColour = config("8 - Mechanics", "Ward colour", "#9fd8ff", "Colour of the ward's status under the boss's name (and of its bubble, if shown). HTML colour. Pushed to the players.", true);
-		WardBubble = config("8 - Mechanics", "Ward bubble", false, "On = a warded boss also wears the Fuling shaman's bubble, in the ward colour. Off (default) = the status under its name only. Pushed to the players.", true);
+		WardBubble = config("8 - Mechanics", "Visual ward bubble", false, "Only the look of a ward: on = a warded boss also wears the Fuling shaman's bubble, in the ward colour. Off (default) = the status under its name only. The ward itself works either way. Pushed to the players.", true);
 
 		HuntOrder = config("9 - Debug", "Start a hunt", "", "A boss's add waves in the open world, with no boss: write the boss's prefab name, optionally 'heroic', optionally a player's name (default: the first player connected), and save - e.g. 'GoblinKing heroic Anthony'. The waves arrive around that player one after another: the next when the last is dead, or after 'Hunt, next wave after (s)'; the trickles run in between. It ends after the last wave. 'stop' ends one early. The server clears this line once it has read it.", false);
 		HuntBossChoice = config("9 - Debug", "Hunt: waves of", HuntBoss.Yagluth, new ConfigDescription("Whose waves the hunt button sends.", null, new ConfigurationManagerAttributes { Order = 3 }), false);
