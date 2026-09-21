@@ -22,7 +22,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.3";
+	public const string Version = "0.1.4";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
@@ -89,6 +89,10 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<string> Traits;
 	internal static ConfigEntry<string> StrikeFx;
 	internal static ConfigEntry<string> WardLabel;
+	internal static ConfigEntry<string> HuntOrder;
+	internal static ConfigEntry<string> HuntMessage;
+	internal static ConfigEntry<string> HuntEndMessage;
+	internal static ConfigEntry<float> HuntWaveGap;
 
 	static readonly Dictionary<string, ConfigEntry<string>> Scripts = new Dictionary<string, ConfigEntry<string>>();
 
@@ -235,6 +239,10 @@ public class RaidBossPlugin : BaseUnityPlugin
 		StrikeFx = config("8 - Mechanics", "Strike effects", "fire: > fx_goblinking_meteor_hit | frost: > fx_iceshard_hit+fx_fenring_icenova | lightning: > fx_eikthyr_stomp+fx_chainlightning_hit", "Vanilla effects of a ground strike, by element: TELL > IMPACT, several joined with +. The warning ring is always drawn and is the warning; a TELL plays when it appears, so keep it subtle (or empty) - anything that looks like an impact reads as the strike landing early. Played by each player's own game, the IMPACT exactly when the ring fills.", false);
 		WardLabel = config("8 - Mechanics", "Ward label", "Warded", "Shown under the boss's name while a ward is up.", false);
 
+		HuntOrder = config("9 - Debug", "Start a hunt", "", "A boss's add waves in the open world, with no boss: write the boss's prefab name, optionally 'heroic', optionally a player's name (default: the first player connected), and save - e.g. 'GoblinKing heroic Anthony'. The waves arrive around that player one after another: the next when the last is dead, or after 'Hunt, next wave after (s)'; the trickles run in between. It ends after the last wave. 'stop' ends one early. The server clears this line once it has read it.", false);
+		HuntWaveGap = config("9 - Debug", "Hunt, next wave after (s)", 90f, new ConfigDescription("The longest a hunt waits for a wave to be killed before sending the next.", new AcceptableValueRange<float>(10f, 600f)), false);
+		HuntMessage = config("9 - Debug", "Hunt message", "You are being hunted", "Centre-screen message when a hunt starts. Empty = none.", true);
+		HuntEndMessage = config("9 - Debug", "Hunt over message", "The hunt is over", "Centre-screen message when a hunt's last wave is dead. Empty = none.", true);
 		ForcePlayers = config("9 - Debug", "Pretend this many players", 0, "0 = count real players. Anything else sizes every boss wave as if that many were fighting, so one person can see a four-player fight. Someone still has to be in range.", false);
 
 		new Harmony(GUID).PatchAll();
@@ -390,5 +398,6 @@ public class RaidBossPlugin : BaseUnityPlugin
 		try { WorldEncounters.Tick(); } catch (Exception e) { Log.LogError(e); }
 		try { Director.Tick(step); }
 		catch (Exception e) { Log.LogError(e); }
+		try { Hunts.Tick(step); } catch (Exception e) { Log.LogError(e); }
 	}
 }

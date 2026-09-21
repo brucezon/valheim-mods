@@ -167,6 +167,22 @@ Away from bosses: kill enough of something at a known place and the place answer
 |---|---|---|
 | Fuling village (`GoblinCamp2`) | 10 Fulings, archers or shamans killed within 10 minutes, within 80 m of the village | one Fuling Berserker, hunting (a one-star Berserker instead when three or more players are there); then that village is quiet for 30 minutes |
 
+## Hunts: the waves without the boss
+
+A way to try a boss's waves in the open world. In the SERVER's config, section **9 - Debug**, set `Start a hunt` to the
+boss's prefab name, optionally `heroic`, optionally a player's name, and save:
+
+```
+Start a hunt = GoblinKing heroic Anthony
+```
+
+It starts like a raid: the red circle on the map, on that player and following them, the raid music, and "You are
+being hunted". The boss's waves then arrive around the player one after another, as in the fight - counts, stars,
+traits and wave messages included - the next when the last is dead, or after `Hunt, next wave after (s)` (90). The
+trickles run in between. After the last wave: "The hunt is over". `stop` ends one early. The server clears the line once
+it has read it. Boss mechanics - ground strikes, wards, guards, breaks - are left out: a hunt is only the waves. A hunt
+will not start while a real raid is on.
+
 ## Recovery
 
 Dying in a hard fight costs a corpse run, your food and a wait by the fire. For `Counts as just died for` (120 s) after a

@@ -795,7 +795,7 @@ internal static class Director
 		}
 	}
 
-	static void Message(Vector3 center, string text)
+	internal static void Message(Vector3 center, string text)
 	{
 		if (DebugPlayers != null) return;
 		float range = RaidBossPlugin.Range.Value;

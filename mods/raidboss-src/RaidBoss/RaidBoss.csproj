@@ -22,6 +22,7 @@
     <Compile Include="Targeting.cs" />
     <Compile Include="Mechanics.cs" />
     <Compile Include="Modes.cs" />
+    <Compile Include="Hunts.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />
     <Compile Include="ServerSync.src.cs" />
     <Compile Include="IgnoresAccessChecksTo.cs" />

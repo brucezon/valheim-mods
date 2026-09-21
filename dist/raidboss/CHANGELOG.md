@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- Hunts: a boss's add waves in the open world, around a player, with no boss - started from the server's config
+  (`Start a hunt` = `GoblinKing heroic Anthony`). Looks like a raid: map circle following the player, raid music,
+  "You are being hunted". For trying the waves out.
+
 ## 0.1.3
 
 - Ground strikes: the impact now lands exactly when the ring fills. Strike effects are played by each player's own game,
