@@ -100,15 +100,7 @@ internal static class Hunts
 	static void Start(string order)
 	{
 		string[] words = order.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-		if (words[0].Equals("stop", StringComparison.OrdinalIgnoreCase))
-		{
-			if (hunt != null) Log($"stopped ({hunt.All.Count} adds sent)");
-			EndEvent();
-			hunt = null;
-			return;
-		}
-		if (hunt != null) { Log($"one is already running ({hunt.Boss} on {hunt.Player}); 'stop' first"); return; }
-		string boss = words[0];
+		if (words[0].Equals("stop", StringComparison.OrdinalIgnoreCase)) { Log(Stop()); return; }
 		bool heroic = false;
 		string who = "";
 		for (int i = 1; i < words.Length; i++)
@@ -116,18 +108,35 @@ internal static class Hunts
 			if (words[i].Equals("heroic", StringComparison.OrdinalIgnoreCase)) heroic = true;
 			else who = who.Length == 0 ? words[i] : who + " " + words[i];
 		}
-		string raw = RaidBossPlugin.ScriptFor(boss);
-		Encounter script = Encounter.Parse(raw);
-		if (script.Rules.Count == 0) { Log($"'{boss}' has no script (use the boss's prefab name: Eikthyr, gd_king, Bonemass, Dragon, GoblinKing)"); return; }
-		if (!Find(who, out Target peer)) { Log(who.Length > 0 ? $"no player called '{who}' is connected" : "nobody is connected"); return; }
-		if (Current != null && Current.m_name != EventName) { Log($"a raid ({Current.m_name}) is on; try again when it is over"); return; }
+		Log(Begin(words[0], heroic, who));
+	}
+
+	internal static string Stop()
+	{
+		if (hunt == null) return "no hunt is running";
+		string said = $"stopped ({hunt.Boss} on {hunt.Player})";
+		EndEvent();
+		hunt = null;
+		return said;
+	}
+
+	internal static string Begin(string boss, bool heroic, string who)
+	{
+		if (hunt != null) return $"one is already running ({hunt.Boss} on {hunt.Player}); stop it first";
+		Encounter script = Encounter.Parse(RaidBossPlugin.ScriptFor(boss));
+		if (script.Rules.Count == 0) return $"'{boss}' has no script (use the boss's prefab name: Eikthyr, gd_king, Bonemass, Dragon, GoblinKing)";
+		if (!Find(who, out Target peer)) return who.Length > 0 ? $"no player called '{who}' is connected" : "nobody is connected";
+		if (Current != null && Current.m_name != EventName) return $"a raid ({Current.m_name}) is on; try again when it is over";
 		hunt = new Hunt
 		{
 			Boss = boss, Player = peer.Name, Script = script, Heroic = heroic,
 			Fired = new bool[script.Rules.Count], Timers = new float[script.Rules.Count],
 		};
-		Log($"{(heroic ? "HEROIC " : "")}{boss} waves on {peer.Name}");
+		// Rules that send no adds (boss mechanics only) are not waves: marked done from the start, so they never stand in
+		// for one.
+		for (int i = 0; i < script.Rules.Count; i++) if (script.Rules[i].Spawns.Count == 0) hunt.Fired[i] = true;
 		RandEventSystem.instance?.SetRandomEventByName(EventName, peer.Pos);
+		return $"{(heroic ? "HEROIC " : "")}{boss} waves on {peer.Name}";
 	}
 
 	// The hunted player: a connected peer by name (or the first one), or the test harness's first fake player.

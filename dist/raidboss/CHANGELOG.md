@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6
+
+- New `shield` action: a ward the boss's casters keep up, working like the Fuling shaman's shield sized for a boss
+  (swallows every hit, breaks after 5% of the boss's health, feeds the break meter when broken, fades when its casters
+  are dead). Shown as the shaman's bubble, recoloured. Heroic Yagluth is warded by his shamans; a shaman joins every 40 s.
+- A hunt button in the in-game config menu: choose the waves, press "Start hunt on me". Admins only.
+- Minimum version 0.1.6.
+
 ## 0.1.5
 
 - A staggered creature, or a broken boss, has its guard down: a trait's resistances (Ironhide's pierce and slash, and

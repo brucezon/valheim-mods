@@ -242,6 +242,7 @@ internal static class Mechanics
 				if (weakShare > 0f) fill += WeakDamage(__instance.GetDamageModifiers(), hit.m_damage) * weakShare;
 				AddMeter(zdo, fill * scale, __instance);
 			}
+			if (!broken && Shield.Absorb(__instance, zdo, hit, share => AddMeter(zdo, share * zdo.GetFloat(BrkMaxKey, 0f), __instance))) return;
 			float mult = zdo.GetFloat(TakenKey, 1f);
 			if (mult <= 0f) mult = 1f;
 			Mode mode = Modes.Get(zdo);
@@ -334,6 +335,9 @@ internal static class Mechanics
 				ZDO zdo = c.m_nview.GetZDO();
 				string extra = "";
 				string label = zdo.GetString(LabelKey, "");
+				Shield.UpdateBubble(c, zdo);
+				float ward = Shield.Pool(zdo), wardMax = Shield.Max(zdo);
+				if (ward > 0f && wardMax > 0f) label = (label.Length > 0 ? label + " - " : "") + RaidBossPlugin.WardLabel.Value + " (" + Mathf.CeilToInt(ward / wardMax * 100f) + "%)";
 				string modeName = Modes.Get(zdo)?.Name ?? "";
 				if (modeName.Length > 0) label = label.Length > 0 ? label + " - " + modeName : modeName;
 				if (Broken(zdo)) extra += "\n<size=70%><color=#ffd24a>Broken</color></size>";
@@ -480,22 +484,27 @@ internal static class Mechanics
 	// every player's game at once; the server creates those itself instead.
 	internal static void PlayEffect(string prefabName, Vector3 pos)
 	{
-		if (string.IsNullOrEmpty(prefabName) || ZNetScene.instance == null || ZNet.instance == null || ZNet.instance.IsDedicated()) return;
-		// Every vanilla effect prefab carries a ZNetView. Made with ZNetView.m_forceDisableInit (as the game does for a
-		// build ghost), the view removes itself and the copy stays a purely local visual: no network object, and it plays
-		// exactly when this game says - so a strike's impact lands the moment its ring fills.
+		if (string.IsNullOrEmpty(prefabName)) return;
 		foreach (string name in prefabName.Split('+'))
 		{
-			GameObject prefab = ZNetScene.instance.GetPrefab(name.Trim());
-			if (prefab == null || prefab.GetComponent<Character>() != null) continue;
-			GameObject made;
-			bool was = ZNetView.m_forceDisableInit;
-			ZNetView.m_forceDisableInit = true;
-			try { made = UnityEngine.Object.Instantiate(prefab, pos, Quaternion.identity); }
-			catch (Exception e) { RaidBossPlugin.Log.LogWarning($"effect '{name.Trim()}' failed: {e.Message}"); continue; }
-			finally { ZNetView.m_forceDisableInit = was; }
-			UnityEngine.Object.Destroy(made, 12f);
+			GameObject made = MakeLocal(name.Trim(), pos);
+			if (made != null) UnityEngine.Object.Destroy(made, 12f);
 		}
+	}
+
+	// Every vanilla effect prefab carries a ZNetView. Made with ZNetView.m_forceDisableInit (as the game does for a build
+	// ghost), the view removes itself and the copy stays a purely local visual: no network object, and it plays exactly
+	// when this game says - so a strike's impact lands the moment its ring fills. The caller decides when it goes.
+	internal static GameObject MakeLocal(string prefabName, Vector3 pos)
+	{
+		if (string.IsNullOrEmpty(prefabName) || ZNetScene.instance == null || ZNet.instance == null || ZNet.instance.IsDedicated()) return null;
+		GameObject prefab = ZNetScene.instance.GetPrefab(prefabName);
+		if (prefab == null || prefab.GetComponent<Character>() != null) return null;
+		bool was = ZNetView.m_forceDisableInit;
+		ZNetView.m_forceDisableInit = true;
+		try { return UnityEngine.Object.Instantiate(prefab, pos, Quaternion.identity); }
+		catch (Exception e) { RaidBossPlugin.Log.LogWarning($"effect '{prefabName}' failed: {e.Message}"); return null; }
+		finally { ZNetView.m_forceDisableInit = was; }
 	}
 
 	internal static void PlayerStatus(string effect, Vector3 pos, float radius, bool remove)

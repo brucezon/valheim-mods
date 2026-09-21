@@ -22,11 +22,11 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.5";
+	public const string Version = "0.1.6";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
-	const string MinimumVersion = "0.1.2";   // 0.1.2: the break meter is kept by the boss's owner, and what fills it changed (melee hits)
+	const string MinimumVersion = "0.1.6";   // 0.1.6: the boss's owner wears its ward down, and the hunt button needs the server's new message
 
 	static readonly ConfigSync configSync = new(Name) { DisplayName = Name, CurrentVersion = Version, MinimumRequiredVersion = MinimumVersion, ModRequired = true };
 
@@ -89,7 +89,22 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<string> Traits;
 	internal static ConfigEntry<string> StrikeFx;
 	internal static ConfigEntry<string> WardLabel;
+	internal static ConfigEntry<string> WardColour;
 	internal static ConfigEntry<string> HuntOrder;
+	internal static ConfigEntry<HuntBoss> HuntBossChoice;
+	internal static ConfigEntry<bool> HuntHeroic;
+	internal static ConfigEntry<bool> HuntButtons;
+	internal enum HuntBoss { Eikthyr, Elder, Bonemass, Moder, Yagluth }
+	static string HuntPrefab(HuntBoss b) => b switch { HuntBoss.Elder => "gd_king", HuntBoss.Bonemass => "Bonemass", HuntBoss.Moder => "Dragon", HuntBoss.Yagluth => "GoblinKing", _ => "Eikthyr" };
+
+	// Two buttons in the in-game config menu (F1): the click goes to the server, which starts the hunt on whoever clicked.
+	static void DrawHuntButtons(ConfigEntryBase entry)
+	{
+		GUILayout.BeginHorizontal();
+		if (GUILayout.Button("Start hunt on me", GUILayout.ExpandWidth(true))) Net.RequestHunt(HuntPrefab(HuntBossChoice.Value), HuntHeroic.Value, false);
+		if (GUILayout.Button("Stop hunt", GUILayout.ExpandWidth(true))) Net.RequestHunt("", false, true);
+		GUILayout.EndHorizontal();
+	}
 	internal static ConfigEntry<string> HuntMessage;
 	internal static ConfigEntry<string> HuntEndMessage;
 	internal static ConfigEntry<float> HuntWaveGap;
@@ -150,6 +165,8 @@ public class RaidBossPlugin : BaseUnityPlugin
 		"heroic 40% \"A champion of the fallen cities\": GoblinBrute:Ironhide* 1+0 @1, GoblinBrute:Ironhide** 1+0 @2+, GoblinBrute:Ironhide 0+0.25 | " +
 		"heroic every 25s below 60%: strike fire r4 d2.5 dmg120 x2 | " +
 		"heroic every 45s below 80%: boss cycle Emberborn Stormcalled 20 | " +
+		"heroic 100%: shield pool0.05 refresh25 range35 feed0.5 by:GoblinShaman | " +
+		"heroic every 40s: GoblinShaman 1+0 | " +
 		"20% \"They will not bend or break\": Goblin 1+0, Goblin* 0+0.5, Goblin* 0+0.5, GoblinArcher 0+0.34 | " +
 		"every 20s below 20%: Goblin 1+0 @2+, Goblin 1+0 @3+, Goblin 1+0 @4+";
 
@@ -237,9 +254,13 @@ public class RaidBossPlugin : BaseUnityPlugin
 		BreakGrowth = config("8 - Mechanics", "Break meter growth (x)", 1.5f, new ConfigDescription("After each break the meter needs this much more.", new AcceptableValueRange<float>(1f, 5f)), false);
 		Traits = config("8 - Mechanics", "Traits", "Ironhide = resist pierce, resist slash | Brittle = weak blunt | Stonebound = resist blunt | Rimebound = infuse frost 0.3, resist frost, weak fire | Emberborn = infuse fire 0.3, resist fire, weak frost | Stormcalled = infuse lightning 0.3, resist lightning | Blighted = infuse poison 0.3, resist poison | Frenzied = frenzy 1.5 | Fleet = swift 1.25 | Renewing = mend 0.5 | Wrathful = frenzy 1.5, swift 1.15", "Named sets of changes to a creature, separated by | . Give one to an add in a script with Prefab:Trait (GoblinBrute:Ironhide 1+0) - its name gains the trait as a prefix - or to the boss with the action 'boss Trait', 'boss Trait 20' (for 20 seconds) or 'boss cycle TraitA TraitB 30' (the next one each time the rule fires), so a boss can shift between them during a fight; 'boss none' clears it. The boss shows its trait under its name. Words: resist, veryresist, slightresist, immune, weak, veryweak, slightweak, then blunt, slash, pierce, fire, frost, lightning, poison or spirit (they replace the creature's own value for that damage type; the game colours the damage numbers as always, yellow weak, grey resistant); infuse ELEMENT 0.3 = its hits on players carry 30% extra damage of that element; frenzy 1.5 = its attacks come round 1.5x as fast; swift 1.25 = movement speed; mend 0.5 = heals 0.5% of max health a second; hardened 0.7 = takes 70% damage.", false);
 		StrikeFx = config("8 - Mechanics", "Strike effects", "fire: > fx_goblinking_meteor_hit | frost: > fx_iceshard_hit+fx_fenring_icenova | lightning: > fx_eikthyr_stomp+fx_chainlightning_hit", "Vanilla effects of a ground strike, by element: TELL > IMPACT, several joined with +. The warning ring is always drawn and is the warning; a TELL plays when it appears, so keep it subtle (or empty) - anything that looks like an impact reads as the strike landing early. Played by each player's own game, the IMPACT exactly when the ring fills.", false);
-		WardLabel = config("8 - Mechanics", "Ward label", "Warded", "Shown under the boss's name while a ward is up.", false);
+		WardLabel = config("8 - Mechanics", "Ward label", "Warded", "Shown under the boss's name while a ward is up. Pushed to the players.", true);
+		WardColour = config("8 - Mechanics", "Ward colour", "#ff7a1f", "Colour of a boss's ward bubble (the Fuling shaman's bubble, recoloured so it reads as the boss's). HTML colour. Pushed to the players.", true);
 
 		HuntOrder = config("9 - Debug", "Start a hunt", "", "A boss's add waves in the open world, with no boss: write the boss's prefab name, optionally 'heroic', optionally a player's name (default: the first player connected), and save - e.g. 'GoblinKing heroic Anthony'. The waves arrive around that player one after another: the next when the last is dead, or after 'Hunt, next wave after (s)'; the trickles run in between. It ends after the last wave. 'stop' ends one early. The server clears this line once it has read it.", false);
+		HuntBossChoice = config("9 - Debug", "Hunt: waves of", HuntBoss.Yagluth, new ConfigDescription("Whose waves the hunt button sends.", null, new ConfigurationManagerAttributes { Order = 3 }), false);
+		HuntHeroic = config("9 - Debug", "Hunt: heroic", false, new ConfigDescription("Send the heroic waves.", null, new ConfigurationManagerAttributes { Order = 2 }), false);
+		HuntButtons = config("9 - Debug", "Hunt", false, new ConfigDescription("Start a hunt on yourself with the waves chosen above, or stop the one running. For admins (on a dedicated server, the server's admin list).", null, new ConfigurationManagerAttributes { CustomDrawer = DrawHuntButtons, HideDefaultButton = true, Order = 1 }), false);
 		HuntWaveGap = config("9 - Debug", "Hunt, next wave after (s)", 90f, new ConfigDescription("The longest a hunt waits for a wave to be killed before sending the next.", new AcceptableValueRange<float>(10f, 600f)), false);
 		HuntMessage = config("9 - Debug", "Hunt message", "You are being hunted", "Centre-screen message when a hunt starts. Empty = none.", true);
 		HuntEndMessage = config("9 - Debug", "Hunt over message", "The hunt is over", "Centre-screen message when a hunt's last wave is dead. Empty = none.", true);

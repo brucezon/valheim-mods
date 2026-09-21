@@ -31,6 +31,7 @@ internal static class Net
 	const string StatusRpc = "RaidBoss_Status";
 	const string EnvRpc = "RaidBoss_Env";
 	const string EventRpc = "RaidBoss_Event";
+	const string HuntRpc = "RaidBoss_Hunt";
 	internal static readonly int HealthKey = "raidboss_hp".GetStableHashCode();
 
 	// Server side: filled by the director every tick.
@@ -63,6 +64,7 @@ internal static class Net
 		ZRoutedRpc.instance.Register<ZPackage>(StatusRpc, RPC_Status);
 		ZRoutedRpc.instance.Register<ZPackage>(EnvRpc, RPC_Env);
 		ZRoutedRpc.instance.Register<ZPackage>(EventRpc, RPC_Event);
+		ZRoutedRpc.instance.Register<ZPackage>(HuntRpc, RPC_Hunt);
 	}
 
 	// ---- server -> clients
@@ -247,6 +249,34 @@ internal static class Net
 	{
 		if (!FromServer(sender)) return;
 		Mechanics.ForceWeather(pkg.ReadString(), pkg.ReadVector3(), pkg.ReadSingle(), pkg.ReadSingle());
+	}
+
+	// ---- a player -> server: the hunt button (RaidBossPlugin.DrawHuntButtons). Admins only on a dedicated server.
+
+	internal static void RequestHunt(string boss, bool heroic, bool stop)
+	{
+		if (ZRoutedRpc.instance == null) return;
+		var pkg = new ZPackage();
+		pkg.Write(boss ?? ""); pkg.Write(heroic); pkg.Write(stop);
+		ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), HuntRpc, pkg);
+	}
+
+	static void RPC_Hunt(long sender, ZPackage pkg)
+	{
+		if (ZNet.instance == null || !ZNet.instance.IsServer()) return;
+		string boss = pkg.ReadString();
+		bool heroic = pkg.ReadBool(), stop = pkg.ReadBool();
+		ZNetPeer peer = ZNet.instance.GetPeer(sender);
+		string name = peer != null ? peer.m_playerName : (Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerName() : "");
+		if (peer != null && ZNet.instance.IsDedicated() && !ZNet.instance.ListContainsId(ZNet.instance.m_adminList, peer.m_socket.GetHostName()))
+		{
+			RaidBossPlugin.Log.LogInfo($"hunt: {name} is not an admin; refused");
+			ZRoutedRpc.instance.InvokeRoutedRPC(sender, "ShowMessage", (int)MessageHud.MessageType.Center, "Only an admin can start a hunt");
+			return;
+		}
+		string said = stop ? Hunts.Stop() : Hunts.Begin(boss, heroic, name);
+		RaidBossPlugin.Log.LogInfo($"hunt (button, {name}): {said}");
+		if (stop || !said.Contains(" waves on ")) ZRoutedRpc.instance.InvokeRoutedRPC(sender, "ShowMessage", (int)MessageHud.MessageType.TopLeft, "Hunt: " + said);
 	}
 
 	// ---- a boss's owner -> server

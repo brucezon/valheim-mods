@@ -57,7 +57,7 @@ internal sealed class Encounter
 		public override string ToString() => Verb + (Args.Length > 0 ? " " + string.Join(" ", Args) : "");
 	}
 
-	internal static readonly HashSet<string> Verbs = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "ward", "guard", "boss", "strike", "break", "heal", "weather", "effect", "status" };
+	internal static readonly HashSet<string> Verbs = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "ward", "guard", "shield", "boss", "strike", "break", "heal", "weather", "effect", "status" };
 
 	internal sealed class Rule
 	{

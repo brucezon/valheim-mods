@@ -115,6 +115,12 @@ Waves are only part of a fight. A script rule can also do things, and several ar
   round again and again: melee players break it with parries and their weapons while the ranged players deal with the adds,
   then everyone turns on it for the break. "Guarded" shows under its name. Needs the break meter; with breaks off it is
   skipped.
+- **Shield** (`shield pool0.05 refresh25 range35 feed0.5 by:GoblinShaman`). A ward the boss's casters raise and keep up -
+  the Fuling shaman's own shield, sized for a boss. While it holds it swallows every hit whole, and each hit wears it
+  down by its damage; 5% of the boss's health breaks it, and a broken ward pays half a break meter. A living caster
+  within 35 m raises it again 25 s after it breaks; when the last caster is dead it fades. It shows as the shaman's
+  bubble, recoloured (`Ward colour`), with "Warded (n%)" under the boss's name. Heroic Yagluth: his shamans ward him,
+  and a shaman joins the fight every 40 s.
 - **Ground strikes** (`strike lightning r3.5 d2 dmg20 x2`). A coloured ring fills on the ground under a player for the
   warning time, then fire, frost, lightning or poison lands there: dodge-roll through it or step out. It cannot be
   blocked.
@@ -170,7 +176,9 @@ Away from bosses: kill enough of something at a known place and the place answer
 
 ## Hunts: the waves without the boss
 
-A way to try a boss's waves in the open world. In the SERVER's config, section **9 - Debug**, set `Start a hunt` to the
+A way to try a boss's waves in the open world. An admin can press **Start hunt on me** in the in-game config
+menu (F1, RaidBoss, 9 - Debug) after choosing `Hunt: waves of` and `Hunt: heroic`; **Stop hunt** ends it. Or, in the
+SERVER's config, section **9 - Debug**, set `Start a hunt` to the
 boss's prefab name, optionally `heroic`, optionally a player's name, and save:
 
 ```

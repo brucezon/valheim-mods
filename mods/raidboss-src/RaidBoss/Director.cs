@@ -43,6 +43,9 @@ internal static class Director
 		public readonly Dictionary<Encounter.Act, int> Cycle = new Dictionary<Encounter.Act, int>();
 		public float[] Guard;             // taken, broken, melee share, size - waiting for the break meter before it is applied
 		public bool GuardApplied;
+		public float[] ShieldArgs;        // pool (share of max health), refresh (s), range (m), feed (share of the meter)
+		public string ShieldBy = "";     // the adds that raise it
+		public float ShieldTimer;
 		public int TrophyHash;
 		public string TrophyName;
 		public int MaxPlayers;          // most real players seen in range at once; decides the idols
@@ -535,6 +538,12 @@ internal static class Director
 				string first = act.Args.Length > 0 ? act.Args[0] : "";
 				switch (act.Verb)
 				{
+					case "shield":   // shield pool0.05 refresh25 range35 feed0.5 by:GoblinShaman - a ward its casters raise and keep up
+						fight.ShieldArgs = new[] { Mathf.Clamp(Arg(act.Args, "pool", 0.05f), 0.001f, 2f), Mathf.Clamp(Arg(act.Args, "refresh", 25f), 1f, 600f), Mathf.Clamp(Arg(act.Args, "range", 35f), 2f, 200f), Mathf.Clamp(Arg(act.Args, "feed", 0.5f), 0f, 1f) };
+						fight.ShieldBy = "GoblinShaman";
+						foreach (string a in act.Args) if (a.StartsWith("by:", StringComparison.OrdinalIgnoreCase)) fight.ShieldBy = a.Substring(3);
+						fight.ShieldTimer = fight.ShieldArgs[1];   // the first living caster raises it at once
+						break;
 					case "guard":    // guard taken0.3 broken3 melee0.5 size0.2: hard to hurt until broken, very easy while broken
 						fight.Guard = new[] { Mathf.Clamp(Arg(act.Args, "taken", 0.3f), 0.01f, 1f), Mathf.Clamp(Arg(act.Args, "broken", 3f), 1f, 10f), Mathf.Max(0f, Arg(act.Args, "melee", 0.5f)), Mathf.Clamp(Arg(act.Args, "size", 0.2f), 0.02f, 5f) };
 						fight.GuardApplied = false;
@@ -600,6 +609,43 @@ internal static class Director
 	}
 
 	// Once a second per fight: the break meter's settings reach the boss once, and finished waves are settled.
+	// The ward (Shield.cs). Its casters are this fight's living adds of one kind: while none is left the ward fades, and
+	// once it is down, a caster within range raises it again after the refresh time. Breaking it is the boss owner's
+	// business (it wears the ward down hit by hit); the server only raises it and lets it fade.
+	static void TickShield(Fight fight, ZDO boss)
+	{
+		Vector3 bossPos = boss.GetPosition();
+		int alive = 0, near = 0;
+		foreach (Add add in fight.Adds)
+		{
+			if (!add.Prefab.Equals(fight.ShieldBy, StringComparison.OrdinalIgnoreCase)) continue;
+			ZDO zdo = ZDOMan.instance.GetZDO(add.Id);
+			if (zdo == null || !zdo.IsValid() || !zdo.GetBool(AddTag)) continue;
+			alive++;
+			if (Flat(zdo.GetPosition(), bossPos) <= fight.ShieldArgs[2]) near++;
+		}
+		float pool = boss.GetFloat(Shield.PoolName.GetStableHashCode(), 0f);
+		if (pool > 0f)
+		{
+			fight.ShieldTimer = 0f;
+			if (alive == 0)
+			{
+				Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("set_f", Shield.PoolName, "", 0f));
+				RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: the last {fight.ShieldBy} is dead, the ward fades");
+			}
+			return;
+		}
+		fight.ShieldTimer += 1f;
+		if (near == 0 || fight.ShieldTimer < fight.ShieldArgs[1]) return;
+		fight.ShieldTimer = 0f;
+		int level = Mathf.Max(1, boss.GetInt(ZDOVars.s_level, 1));
+		float maxHealth = boss.GetFloat(ZDOVars.s_maxHealth, (BossBaseHealth.TryGetValue(boss.GetPrefab(), out float b) ? b : 1000f) * level);
+		float full = Mathf.Max(1f, fight.ShieldArgs[0] * maxHealth);
+		Net.SendOps(boss.GetOwner(), fight.BossId,
+			new Net.Op("set_f", Shield.MaxName, "", full), new Net.Op("set_f", Shield.FeedName, "", fight.ShieldArgs[3]), new Net.Op("set_f", Shield.PoolName, "", full));
+		RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: warded by {near} {fight.ShieldBy} - takes {full:0} damage to break");
+	}
+
 	static void TickMechanics(Fight fight, ZDO boss)
 	{
 		float size = RaidBossPlugin.BreakSize.Value;
@@ -611,6 +657,7 @@ internal static class Director
 			string text = FormattableString.Invariant($"size={size};drain={RaidBossPlugin.BreakDrain.Value};parry={RaidBossPlugin.BreakParry.Value};dur={RaidBossPlugin.BreakSeconds.Value};grow={RaidBossPlugin.BreakGrowth.Value};x={RaidBossPlugin.BreakTaken.Value};hit={RaidBossPlugin.BreakHit.Value};weak={RaidBossPlugin.BreakWeak.Value}");
 			Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("meter", "", text));
 		}
+		if (fight.ShieldArgs != null && healthSettled && boss.GetOwner() != 0L) TickShield(fight, boss);
 		// A guard needs a break meter to end it; without one (breaks off) it is dropped rather than leave the boss armoured.
 		if (fight.Guard != null && !fight.GuardApplied)
 		{
