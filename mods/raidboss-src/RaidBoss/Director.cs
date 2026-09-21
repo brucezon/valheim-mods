@@ -616,6 +616,21 @@ internal static class Director
 							Net.SendStrike(at, Arg(act.Args, "r", 4f), delay, first, Arg(act.Args, "dmg", 60f), fight.BossId, tell, hit);
 						}
 						break;
+					case "rain":     // rain fire r2.5 d1.5 over4 dmg80 each5 near12: rings scattered around every engaged player, one on each
+						RaidBossPlugin.StrikeEffects(first, out string rainTell, out string rainHit);
+						int each = Mathf.Clamp(Mathf.RoundToInt(Arg(act.Args, "each", 5f)), 1, 20);
+						float near = Mathf.Clamp(Arg(act.Args, "near", 12f), 2f, 60f), over = Mathf.Clamp(Arg(act.Args, "over", 4f), 0f, 20f);
+						float rainDelay = Arg(act.Args, "d", 1.5f), rainR = Arg(act.Args, "r", 2.5f), rainDmg = Arg(act.Args, "dmg", 80f);
+						foreach (PlayerPos p in Players)
+						{
+							if (Flat(p.Pos, bossPos) > RaidBossPlugin.Range.Value) continue;
+							for (int k = 0; k < each; k++)
+							{
+								Vector2 off = k == 0 ? Vector2.zero : UnityEngine.Random.insideUnitCircle * near;   // the first falls where they stand
+								Net.SendStrike(p.Pos + new Vector3(off.x, 0f, off.y), rainR, rainDelay + UnityEngine.Random.Range(0f, over), first, rainDmg, fight.BossId, rainTell, rainHit);
+							}
+						}
+						break;
 					case "chase":    // chase fire r3 d1.2 dmg90 every0.9 for5 x1: strikes that follow a random engaged player
 						var hunted = new List<long>();
 						foreach (PlayerPos p in Players)

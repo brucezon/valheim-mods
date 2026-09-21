@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.15
+
+- New `rain` action: rings scattered around every engaged player, one right under them, landing over a few seconds.
+  Heroic Yagluth's enrage: "The sky falls" at 30%, then rain every 35 s (with the fire chase every 30 s).
+- Falling meteors and impact effects are sized to their ring: a 4 m strike brings a full meteor, a 2.5 m rain ring a
+  smaller one.
+
 ## 0.1.14
 
 - Fire strikes (and fire chases) come down as one of Yagluth's own meteors, falling over the last 0.6 s and touching

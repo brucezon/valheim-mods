@@ -423,13 +423,14 @@ internal static class Mechanics
 	}
 
 	// An impact effect with its particles' built-in start delays squeezed to at most a tenth of a second.
-	static void PlayImpact(string prefabName, Vector3 pos)
+	static void PlayImpact(string prefabName, Vector3 pos, float scale = 1f)
 	{
 		if (string.IsNullOrEmpty(prefabName)) return;
 		foreach (string name in prefabName.Split('+'))
 		{
 			GameObject made = MakeLocal(name.Trim(), pos);
 			if (made == null) continue;
+			if (!Mathf.Approximately(scale, 1f)) made.transform.localScale *= scale;
 			foreach (ParticleSystem ps in made.GetComponentsInChildren<ParticleSystem>(true))
 			{
 				ParticleSystem.MainModule main = ps.main;
@@ -529,6 +530,8 @@ internal static class Mechanics
 			Destroy(gameObject);
 		}
 
+		float Size => Mathf.Clamp(Radius / 4f, 0.4f, 1.5f);
+
 		void Fall()
 		{
 			if (!fell && Element == "fire")
@@ -540,6 +543,8 @@ internal static class Mechanics
 				fallFrom = transform.position + new Vector3(side.x, 26f, side.y);
 				fallStart = time;
 				falling = MakeLocalBody("projectile_meteor", fallFrom);
+				// sized to its ring: a full meteor for a 4 m strike, smaller ones for chases and rain
+				if (falling != null) falling.transform.localScale *= Size;
 				if (falling != null) falling.transform.rotation = Quaternion.LookRotation(transform.position - fallFrom);
 			}
 			if (falling == null) return;
@@ -549,7 +554,7 @@ internal static class Mechanics
 
 		void Land()
 		{
-			PlayImpact(HitFx, transform.position);
+			PlayImpact(HitFx, transform.position, Size);
 			Player p = Player.m_localPlayer;
 			if (p == null || p.IsDead() || Damage <= 0f) return;
 			Vector3 d = p.transform.position - transform.position;

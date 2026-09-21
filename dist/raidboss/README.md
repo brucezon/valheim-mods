@@ -127,6 +127,8 @@ Waves are only part of a fight. A script rule can also do things, and several ar
 - **Ground strikes** (`strike lightning r3.5 d2 dmg20 x2`). A coloured ring fills on the ground under a player for the
   warning time, then fire, frost, lightning or poison lands there (fire as a falling meteor that touches down as the ring fills): dodge-roll through it or step out. It cannot be
   blocked.
+- **Rain** (`rain fire r2.5 d1.5 over4 dmg80 each5 near12`). Rings scattered around every engaged player - five each, one
+  right where they stand, the rest within 12 m - landing over 4 s. Heroic Yagluth's enrage below 30%.
 - **Chase** (`chase fire r3 d1.2 dmg90 every0.9 for5`). Strikes that follow one player: a ring at their feet every 0.9 s
   for 5 s, each landing when it fills (1.2 s). Stand still and you are hit; keep moving and each lands where you were.
   Dodgeable, not blockable. `x2` chases two players.
@@ -158,7 +160,7 @@ Waves are only part of a fight. A script rule can also do things, and several ar
 
 The default scripts use them in heroic fights: frost strikes under Moder, Bonemass guarded from the start and
 warded at his champion wave, Ironhide
-Berserkers, fire strikes and fire chases at Yagluth's, who shifts between Emberborn and Stormcalled. Eikthyr has lightning strikes in
+Berserkers, fire strikes, and below 30% meteor rain and fire chases at Yagluth's, who shifts between Emberborn and Stormcalled. Eikthyr has lightning strikes in
 both kinds of fight.
 
 ## Who they go after
