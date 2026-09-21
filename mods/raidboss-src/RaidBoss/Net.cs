@@ -28,6 +28,7 @@ internal static class Net
 	const string CreatureRpc = "RaidBoss_Creature";
 	const string StrikeRpc = "RaidBoss_Strike";
 	const string ChaseRpc = "RaidBoss_Chase";
+	const string StormRpc = "RaidBoss_Storm";
 	const string FxRpc = "RaidBoss_Fx";
 	const string StatusRpc = "RaidBoss_Status";
 	const string EnvRpc = "RaidBoss_Env";
@@ -62,6 +63,7 @@ internal static class Net
 		ZRoutedRpc.instance.Register<ZPackage>(CreatureRpc, RPC_Creature);
 		ZRoutedRpc.instance.Register<ZPackage>(StrikeRpc, RPC_Strike);
 		ZRoutedRpc.instance.Register<ZPackage>(ChaseRpc, RPC_Chase);
+		ZRoutedRpc.instance.Register<ZPackage>(StormRpc, RPC_Storm);
 		ZRoutedRpc.instance.Register<ZPackage>(FxRpc, RPC_Fx);
 		ZRoutedRpc.instance.Register<ZPackage>(StatusRpc, RPC_Status);
 		ZRoutedRpc.instance.Register<ZPackage>(EnvRpc, RPC_Env);
@@ -218,6 +220,22 @@ internal static class Net
 	{
 		if (!FromServer(sender)) return;
 		Mechanics.Chase(pkg.ReadLong(), pkg.ReadString(), pkg.ReadSingle(), pkg.ReadSingle(), pkg.ReadSingle(), pkg.ReadSingle(), pkg.ReadSingle(), pkg.ReadZDOID(), pkg.ReadString());
+	}
+
+	// A storm: the sky turns to a thunderstorm and ground lightning falls around a place for a while. Every game makes its
+	// own bolts (a third of them near its own player) and judges its own player; there is no warning ring.
+	internal static void SendStorm(Vector3 center, float radius, float seconds, float every, float damage, ZDOID attacker, string boltFx, string weather)
+	{
+		if (ZRoutedRpc.instance == null) return;
+		var pkg = new ZPackage();
+		pkg.Write(center); pkg.Write(radius); pkg.Write(seconds); pkg.Write(every); pkg.Write(damage); pkg.Write(attacker); pkg.Write(boltFx ?? ""); pkg.Write(weather ?? "");
+		ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, StormRpc, pkg);
+	}
+
+	static void RPC_Storm(long sender, ZPackage pkg)
+	{
+		if (!FromServer(sender)) return;
+		Mechanics.Storm(pkg.ReadVector3(), pkg.ReadSingle(), pkg.ReadSingle(), pkg.ReadSingle(), pkg.ReadSingle(), pkg.ReadZDOID(), pkg.ReadString(), pkg.ReadString());
 	}
 
 	static void RPC_Strike(long sender, ZPackage pkg)

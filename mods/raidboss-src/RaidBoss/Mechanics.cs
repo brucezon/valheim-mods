@@ -359,6 +359,67 @@ internal static class Mechanics
 
 	// ---- ground strikes
 
+	// ---- a storm: thunderstorm weather, and ground lightning around a place - the game's own Thunderstone strike
+	// (lightningAOE) as a visual, its own 400-damage rod stripped out; ours is small and has no warning.
+	internal static void Storm(Vector3 center, float radius, float seconds, float every, float damage, ZDOID attacker, string boltFx, string weather)
+	{
+		if (ZNet.instance == null || ZNet.instance.IsDedicated() || !RaidBossPlugin.IsOn) return;
+		if (!string.IsNullOrEmpty(weather)) ForceWeather(weather, center, radius + 40f, seconds + 3f);
+		var go = new GameObject("RaidBoss_Storm");
+		StormRunner runner = go.AddComponent<StormRunner>();
+		runner.Center = center; runner.Radius = Mathf.Clamp(radius, 5f, 80f); runner.Seconds = Mathf.Clamp(seconds, 1f, 120f);
+		runner.Every = Mathf.Clamp(every, 0.3f, 10f); runner.Damage = damage; runner.Attacker = attacker;
+		runner.BoltFx = string.IsNullOrEmpty(boltFx) ? "lightningAOE" : boltFx;
+	}
+
+	sealed class StormRunner : MonoBehaviour
+	{
+		public Vector3 Center;
+		public float Radius, Seconds, Every, Damage;
+		public ZDOID Attacker;
+		public string BoltFx;
+		float age, next;
+		const float BoltReach = 2.5f;
+
+		void Update()
+		{
+			age += Time.deltaTime;
+			if (age > Seconds) { Destroy(gameObject); return; }
+			next -= Time.deltaTime;
+			if (next > 0f) return;
+			next = UnityEngine.Random.Range(Every * 0.5f, Every * 1.5f);
+			Player me = Player.m_localPlayer;
+			Vector3 at;
+			bool near = me != null && Utils.DistanceXZ(me.transform.position, Center) < Radius + 10f && UnityEngine.Random.value < 0.34f;
+			Vector2 off = UnityEngine.Random.insideUnitCircle * (near ? 7f : Radius);
+			at = (near ? me.transform.position : Center) + new Vector3(off.x, 0f, off.y);
+			if (ZoneSystem.instance != null && ZoneSystem.instance.GetSolidHeight(at, out float h)) at.y = h;
+			Bolt(at);
+		}
+
+		void Bolt(Vector3 at)
+		{
+			GameObject bolt = MakeLocal(BoltFx, at);
+			if (bolt != null)
+			{
+				foreach (Aoe a in bolt.GetComponentsInChildren<Aoe>(true)) UnityEngine.Object.DestroyImmediate(a);   // the rod's own damage
+				foreach (TimedDestruction td in bolt.GetComponentsInChildren<TimedDestruction>(true)) UnityEngine.Object.DestroyImmediate(td);
+				UnityEngine.Object.Destroy(bolt, 10f);
+			}
+			Player p = Player.m_localPlayer;
+			if (p == null || p.IsDead() || Damage <= 0f || Utils.DistanceXZ(p.transform.position, at) > BoltReach || Mathf.Abs(p.transform.position.y - at.y) > 4f) return;
+			var hit = new HitData();
+			hit.m_damage.m_lightning = Damage;
+			hit.m_point = p.GetCenterPoint();
+			Vector3 d = p.transform.position - at; d.y = 0f;
+			hit.m_dir = d.sqrMagnitude > 0.01f ? d.normalized : Vector3.up;
+			hit.m_attacker = Attacker;
+			hit.m_blockable = false;
+			hit.m_dodgeable = true;
+			p.Damage(hit);
+		}
+	}
+
 	// ---- a chase: a strike at the hunted player's feet every so often, each with its own warning ring, for a few seconds.
 	// Standing still gets you hit; keep moving and each lands where you were.
 	internal static void Chase(long playerId, string element, float radius, float delay, float damage, float every, float seconds, ZDOID attacker, string hitFx)

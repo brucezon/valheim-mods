@@ -616,6 +616,15 @@ internal static class Director
 							Net.SendStrike(at, Arg(act.Args, "r", 4f), delay, first, Arg(act.Args, "dmg", 60f), fight.BossId, tell, hit);
 						}
 						break;
+					case "storm":    // storm every1.5 for30 near30 dmg30 weather:ThunderStorm - sky and ground lightning around the boss
+						string stormSky = "ThunderStorm", bolt = "lightningAOE";
+						foreach (string a in act.Args)
+						{
+							if (a.StartsWith("weather:", StringComparison.OrdinalIgnoreCase)) stormSky = a.Substring(8);
+							if (a.StartsWith("fx:", StringComparison.OrdinalIgnoreCase)) bolt = a.Substring(3);
+						}
+						Net.SendStorm(bossPos, Arg(act.Args, "near", 30f), Arg(act.Args, "for", 30f), Arg(act.Args, "every", 1.5f), Arg(act.Args, "dmg", 30f), fight.BossId, bolt, stormSky);
+						break;
 					case "rain":     // rain fire r2.5 d1.5 over4 dmg80 each5 near12: rings scattered around every engaged player, one on each
 						RaidBossPlugin.StrikeEffects(first, out string rainTell, out string rainHit);
 						int each = Mathf.Clamp(Mathf.RoundToInt(Arg(act.Args, "each", 5f)), 1, 20);

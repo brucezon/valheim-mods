@@ -58,7 +58,7 @@ The biggest waves come early; the last one is a starred elite with a small escor
 | 80% | The last of his people answer: a Fuling pack | 5 | 8 |
 | 60% | Shamans draw upon their king: shamans with a Fuling pack, archers from two players | 1 + 3 | 2 + 6 + 2 |
 | 40% | A champion of the fallen cities: a Berserker with an escort, a one-star Berserker too from four players | 1 + 1 | 1 + 1* + 3 |
-| 20% | They will not bend or break: one-star Fulings with an escort, an archer from three players | 1* | 3* + 2 + 1 |
+| 20% (heroic: 30%) | They will not bend or break: one-star Fulings with an escort, an archer from three players | 1* | 3* + 2 + 1 |
 | below 20% | Fulings every 20 s from two players, up to the cap | none | 3 |
 
 These are the counts that spawn: `More adds (x)` is 1, so the scripts are taken as written (above 1, every count and
@@ -129,6 +129,10 @@ Waves are only part of a fight. A script rule can also do things, and several ar
   blocked.
 - **Rain** (`rain fire r2.5 d1.5 over4 dmg80 each5 near12`). Rings scattered around every engaged player - five each, one
   right where they stand, the rest within 12 m - landing over 4 s. Heroic Yagluth's enrage below 30%.
+- **Storm** (`storm every1.5 for30 near30 dmg30 weather:ThunderStorm`). The sky turns to a thunderstorm, and ground
+  lightning - the game's own Thunderstone strike - falls around the boss for 30 s, a bolt every second or two, a third of
+  them near each player. No warning ring and little damage (30 lightning within 2.5 m, dodgeable): it is the weather of
+  the fight more than a mechanic.
 - **Chase** (`chase fire r3 d1.2 dmg90 every0.9 for5`). Strikes that follow one player: a ring at their feet every 0.9 s
   for 5 s, each landing when it fills (1.2 s). Stand still and you are hit; keep moving and each lands where you were.
   Dodgeable, not blockable. `x2` chases two players.
