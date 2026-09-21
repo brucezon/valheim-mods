@@ -164,6 +164,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		"every 30s below 25%: Draugr 1+0 @2+, Draugr 1+0 @3+, Draugr 1+0 @4+";
 
 	const string GoblinKingDefault =
+		"every 25s above 30%: Goblin 1+0 | " +
 		"90% \"The last of his people answer\": Goblin 4+1 | " +
 		"70% \"Shamans draw upon their king\": GoblinShaman 0.5+0.5, Goblin 2+1, GoblinArcher 0+0.5 | " +
 		"normal 50% \"A champion of the fallen cities\": GoblinBrute 1+0, GoblinBrute* 0+0.25, Goblin 1+0.5 | " +

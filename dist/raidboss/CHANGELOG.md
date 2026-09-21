@@ -4,6 +4,7 @@
 
 - Yagluth's waves come at 90, 70, 50 and 30% (were 80, 60, 40 and 20), in both kinds of fight; heroic fire strikes
   start at 70%, and his Fuling trickle below 30%.
+- Yagluth: one Fuling every 25 s from the start of the fight until 30%, solo too.
 
 ## 0.1.16
 

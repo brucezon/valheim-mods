@@ -55,6 +55,7 @@ The biggest waves come early; the last one is a starred elite with a small escor
 
 | Boss health | Wave | Solo | Four players |
 |---|---|---|---|
+| hurt, above 30% | one Fuling every 25 s, up to the living-adds cap | 1 | 1 |
 | 90% | The last of his people answer: a Fuling pack | 5 | 8 |
 | 70% | Shamans draw upon their king: shamans with a Fuling pack, archers from two players | 1 + 3 | 2 + 6 + 2 |
 | 50% | A champion of the fallen cities: a Berserker with an escort, a one-star Berserker too from four players | 1 + 1 | 1 + 1* + 3 |
