@@ -15,7 +15,7 @@ public class BossDirectorPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.BossDirector";
 	public const string Name = "BossDirector";
-	public const string Version = "0.4.1";
+	public const string Version = "0.5.0";
 
 	internal static ManualLogSource Log;
 	internal static BossDirectorPlugin Instance;
@@ -39,6 +39,16 @@ public class BossDirectorPlugin : BaseUnityPlugin
 	internal static ConfigEntry<float> FightModeLinger;
 	internal static ConfigEntry<bool> WorldEncountersEnabled;
 	internal static ConfigEntry<string> WorldEncounterRules;
+	internal static ConfigEntry<bool> HeroicEnabled;
+	internal static ConfigEntry<float> HeroicTrophyRadius;
+	internal static ConfigEntry<float> HeroicBossDamage;
+	internal static ConfigEntry<float> HeroicMoreAdds;
+	internal static ConfigEntry<float> HeroicStarChance;
+	internal static ConfigEntry<string> HeroicMessage;
+	internal static ConfigEntry<float> IdolBase;
+	internal static ConfigEntry<float> IdolPerPlayer;
+	internal static ConfigEntry<float> IdolBattleShare;
+	internal static ConfigEntry<string> IdolTiers;
 
 	static readonly Dictionary<string, ConfigEntry<string>> Scripts = new Dictionary<string, ConfigEntry<string>>();
 
@@ -55,33 +65,33 @@ public class BossDirectorPlugin : BaseUnityPlugin
 		"Empty = this boss is left alone. Changes apply within a few seconds, also mid-fight (waves already passed do not fire late).";
 
 	const string DragonDefault =
-		"every 45s above 25%: Hatchling 0+0.34 | " +
+		"every 45s above 25%: Hatchling 0+0.5 | " +
 		"75% \"Moder calls her brood\": Hatchling 0+1.34, Wolf 0.5+0.25 | " +
 		"50% \"The pack answers her call\": Wolf 0+1.34, Wolf* 0+0.34 | " +
 		"25% \"Her last guard descends\": StoneGolem 1+0, Hatchling 0+0.34, Hatchling 0+0.34 | " +
-		"every 25s below 25%: Hatchling 0+0.34";
+		"every 25s below 25%: Hatchling 0+0.5";
 
 	// The Elder and Bonemass already summon in vanilla (roots; skeletons and blobs), so their scripts are lighter than
 	// Moder's: the Elder keeps a slow trickle, Bonemass has none until the end because his own throw is one.
 	const string ElderDefault =
-		"every 50s above 25%: Greydwarf 0+0.34 | " +
+		"every 50s above 25%: Greydwarf 0+0.5 | " +
 		"75% \"The forest stirs\": Greydwarf 0+1.34 | " +
 		"50% \"Shamans tend their king\": Greydwarf_Shaman 0.5+0.5, Greydwarf 1+0 | " +
 		"25% \"The wrath of the forest\": Greydwarf_Elite 1+0, Troll 0+0.34 | " +
-		"every 30s below 25%: Greydwarf 0+0.34";
+		"every 30s below 25%: Greydwarf 0+0.5";
 
 	const string BonemassDefault =
 		"75% \"The dead rise from the mire\": Draugr 0+1.34 | " +
 		"50% \"Archers take aim from the murk\": Draugr_Ranged 0.5+0.5, Draugr* 0+0.34 | " +
 		"25% \"A champion of the drowned\": Draugr_Elite 1+0, Wraith 0+0.34 | " +
-		"every 30s below 25%: Draugr 0+0.34";
+		"every 30s below 25%: Draugr 0+0.5";
 
 	const string GoblinKingDefault =
 		"80% \"The last of his people answer\": Goblin 0+1 | " +
 		"60% \"Shamans draw upon their king\": GoblinShaman 0.5+0.5, Goblin 0+0.5 | " +
 		"40% \"A champion of the fallen cities\": GoblinBrute 1+0, GoblinBrute* 0+0.25 | " +
 		"20% \"They will not bend or break\": Goblin 1+0, Goblin* 0+0.5, Goblin* 0+0.5, GoblinArcher 0+0.34 | " +
-		"every 20s below 20%: Goblin 0+0.34";
+		"every 20s below 20%: Goblin 0+0.5";
 
 	float tick;
 	float reloadTimer;
@@ -120,6 +130,16 @@ public class BossDirectorPlugin : BaseUnityPlugin
 			"              players (counted within 80 m of the last kill). It appears 14-24 m from the\n" +
 			"              last kill, hunting, with its normal loot. No message is shown.\n" +
 			"  cooldown    seconds before the same location can answer again (real time while the server runs).");
+		HeroicEnabled = Config.Bind("7 - Heroic fights", "Enabled", true, "A harder version of a boss fight that the players choose, and the only one that pays idols. To ask for it, drop the boss's OWN trophy on the ground by the altar before summoning (or by the boss before anyone hurts it). The server takes the trophy - the whole stack that was dropped, so drop one - and the fight is heroic. A first kill can never be heroic, because nobody has the trophy yet. A trophy on an item stand does not count.");
+		HeroicTrophyRadius = Config.Bind("7 - Heroic fights", "Trophy within (m)", 15f, new ConfigDescription("How close to the boss the dropped trophy has to lie.", new AcceptableValueRange<float>(2f, 60f)));
+		HeroicBossDamage = Config.Bind("7 - Heroic fights", "Boss damage (x)", 1.2f, new ConfigDescription("Multiplies 'Boss damage to players during a fight' (section 5) for a heroic fight: 1.2 = the boss hits 20% harder. Needs boss fight mode and BruceQoL 1.19.2+.", new AcceptableValueRange<float>(1f, 3f)));
+		HeroicMoreAdds = Config.Bind("7 - Heroic fights", "More adds (x)", 1.25f, new ConfigDescription("Multiplies the wave sizes and the living-adds cap again, on top of boss fight mode's own multiplier (1.3 x 1.25 = about 1.6).", new AcceptableValueRange<float>(1f, 3f)));
+		HeroicStarChance = Config.Bind("7 - Heroic fights", "Star chance for plain adds", 0.25f, new ConfigDescription("Chance that an add written without a star arrives with one. Never makes a two-star.", new AcceptableValueRange<float>(0f, 1f)));
+		HeroicMessage = Config.Bind("7 - Heroic fights", "Message", "The challenge is accepted", "Centre-screen message when the trophy is taken. Empty = none.");
+		IdolBase = Config.Bind("7 - Heroic fights", "Idols on the kill, base", -1f, "Idols dropped by a heroic kill = base + per player x players, rounded down, never below 0. Players = the most that were in range at once during the fight. Default -1 + 1: none solo, 1 for two players, 2 for three, 3 for four.");
+		IdolPerPlayer = Config.Bind("7 - Heroic fights", "Idols on the kill, per player", 1f, "See above.");
+		IdolBattleShare = Config.Bind("7 - Heroic fights", "Battle idol share", 0.5f, new ConfigDescription("Each idol is a Battle (weapon) idol with this chance, otherwise a Protection (armour) idol. 0.5 = even. Vanilla chests hold weapon idols half as often as protection ones (0.33).", new AcceptableValueRange<float>(0f, 1f)));
+		IdolTiers = Config.Bind("7 - Heroic fights", "Idol tier by boss", "Eikthyr=0, gd_king=1, Bonemass=2, Dragon=3, GoblinKing=4, SeekerQueen=5, Fader=6, FrozenKing_p3=7", "Which idol tier each boss pays: the item is Upgrader<tier>Weapon or Upgrader<tier>Armor. 0 Wooden, 1 Bronze, 2 Iron, 3 Silver, 4 Black Metal, and so on up. A boss not listed pays nothing.");
 		ForcePlayers = Config.Bind("4 - Debug", "Pretend this many players", 0, "0 = count real players. Anything else sizes every wave as if that many were fighting, so one person can see a four-player fight. Someone still has to be in range.");
 		configStamp = Stamp();
 	}
@@ -130,6 +150,18 @@ public class BossDirectorPlugin : BaseUnityPlugin
 	}
 
 	internal static string ScriptFor(string bossPrefab) => Scripts.TryGetValue(bossPrefab, out ConfigEntry<string> e) ? e.Value : "";
+
+	// "Bonemass=2, Dragon=3" -> tier for a boss prefab, or -1.
+	internal static int IdolTierFor(string bossPrefab)
+	{
+		foreach (string pair in (IdolTiers.Value ?? "").Split(','))
+		{
+			string[] kv = pair.Split('=');
+			if (kv.Length != 2 || !string.Equals(kv[0].Trim(), bossPrefab, StringComparison.OrdinalIgnoreCase)) continue;
+			return int.TryParse(kv[1].Trim(), out int tier) && tier >= 0 ? tier : -1;
+		}
+		return -1;
+	}
 
 	// Boss prefabs are only known once the game has loaded them, so their config entries are bound late.
 	void BindScripts()

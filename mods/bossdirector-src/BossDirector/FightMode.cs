@@ -47,9 +47,16 @@ internal static class FightMode
 	}
 
 	// Called once a second with whether anybody is in range of a known boss.
-	internal static void Tick(bool engaged, float dt)
+	static bool heroic;
+
+	internal static void Tick(bool engaged, bool heroicFight, float dt)
 	{
 		if (!Available) return;
+		if (heroicFight != heroic)
+		{
+			heroic = heroicFight;
+			if (Active) BossDirectorPlugin.Log.LogInfo($"boss fight mode: heroic {(heroic ? "ON" : "off")}, boss damage x{BossValue():0.##}");
+		}
 		bool want = engaged && BossDirectorPlugin.FightModeEnabled.Value;
 		if (want) quiet = 0f; else quiet += dt;
 
@@ -87,7 +94,7 @@ internal static class FightMode
 		}
 		lastSetEnemy = e;
 		if (boss == null) return;
-		float b = BossDirectorPlugin.FightBossDamage.Value;
+		float b = BossValue();
 		if (Math.Abs(boss.Value - b) > 0.0001f)
 		{
 			if (lastSetBoss >= 0f && Math.Abs(boss.Value - lastSetBoss) > 0.0001f) bossNormal = boss.Value;
@@ -98,10 +105,14 @@ internal static class FightMode
 
 	static float lastSetEnemy = -1f, lastSetBoss = -1f;
 
+	// The boss number for the fight in progress: harder while a heroic fight is engaged.
+	static float BossValue() => BossDirectorPlugin.FightBossDamage.Value * (heroic && BossDirectorPlugin.HeroicEnabled.Value ? BossDirectorPlugin.HeroicBossDamage.Value : 1f);
+
 	internal static void Leave(string why)
 	{
 		if (!Active) return;
 		Active = false;
+		heroic = false;
 		lastSetEnemy = lastSetBoss = -1f;
 		try
 		{

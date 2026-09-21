@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 (built and tested headless, not published: this work moves into the RaidBoss mod)
+
+- **Heroic fights.** Drop the boss's own trophy within 15 m of the boss before anyone hurts it; the server takes it and
+  the fight is heroic: boss damage x1.2 (through boss fight mode), waves x1.25 on top of the fight-mode multiplier, 25%
+  of plain adds arrive with one star (never two). A first kill can never be heroic.
+- **Idols on a heroic kill:** players minus one (none solo, 1/2/3 for 2/3/4 players, counted as the most in range at
+  once), each randomly a Battle or Protection idol of the boss's tier (Eikthyr Wooden ... Yagluth Black Metal).
+- Trickle raised (0+0.5 per tick) in all four scripts.
+
 ## 0.4.1
 
 - **Player ranges on spawn entries:** add `@1-2`, `@3+` or `@4` after an entry and it only exists for that many

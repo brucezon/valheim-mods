@@ -34,6 +34,12 @@ internal static class Director
 		public float LastFraction = 1f;
 		public int LastPlayers;
 		public float LastMultiplier = 1f;
+		// Heroic fight: the boss's own trophy was lying by the boss before anyone hurt it. Harder, and it pays idols.
+		public bool Heroic;
+		public int TrophyHash;
+		public string TrophyName;
+		public int MaxPlayers;          // most real players seen in range at once; decides the idols
+		public Vector3 LastPos;
 	}
 
 	struct PlayerPos { public long Uid; public Vector3 Pos; public ZDOID Character; }
@@ -50,6 +56,7 @@ internal static class Director
 	static readonly int AddDamageKey = "bossdirector_dmg".GetStableHashCode();
 	static float searchTimer = 999f;
 	static bool warnedStacking;
+	static float BaseMultiplier = 1f;   // the boss-fight-mode wave multiplier this tick, before a heroic fight's own
 
 	// Test hook: when set, used instead of the connected peers.
 	internal static List<KeyValuePair<long, Vector3>> DebugPlayers;
@@ -109,18 +116,25 @@ internal static class Director
 		}
 
 		// Bigger waves go with softer adds: both are on exactly while boss fight mode is.
-		Encounter.CountMultiplier = FightMode.Active ? BossDirectorPlugin.MoreAdds.Value : 1f;
-		bool engaged = false;
+		BaseMultiplier = FightMode.Active ? BossDirectorPlugin.MoreAdds.Value : 1f;
+		Encounter.CountMultiplier = BaseMultiplier;
+		bool engaged = false, heroic = false;
 		Ended.Clear();
 		foreach (Fight fight in Fights.Values)
 		{
 			ZDO boss = ZDOMan.instance.GetZDO(fight.BossId);
 			if (boss == null || !boss.IsValid() || boss.GetPrefab() == 0) { Ended.Add(fight.BossId); continue; }
-			try { engaged |= UpdateFight(fight, boss, dt); }
+			try
+			{
+				bool here = UpdateFight(fight, boss, dt);
+				engaged |= here;
+				heroic |= here && fight.Heroic;
+			}
 			catch (Exception e) { BossDirectorPlugin.Log.LogError($"{fight.Prefab}: {e}"); }
 		}
 		foreach (ZDOID id in Ended) EndFight(id);
-		FightMode.Tick(engaged, dt);
+		Encounter.CountMultiplier = BaseMultiplier;
+		FightMode.Tick(engaged, heroic, dt);
 	}
 
 	static void FindBosses()
@@ -179,11 +193,21 @@ internal static class Director
 
 	static void StartFight(ZDO boss, string name)
 	{
-		var fight = new Fight { BossId = boss.m_uid, Prefab = name };
+		var fight = new Fight { BossId = boss.m_uid, Prefab = name, LastPos = boss.GetPosition() };
 		float fraction = Fraction(boss);
 		LoadScript(fight, true, fraction);
 		fight.LastFraction = fraction;
 		Fights[boss.m_uid] = fight;
+		// The trophy this boss drops is the one that challenges it: the first "Trophy..." entry of its own drop table.
+		CharacterDrop drops = ZNetScene.instance.GetPrefab(name)?.GetComponent<CharacterDrop>();
+		if (drops != null)
+			foreach (CharacterDrop.Drop d in drops.m_drops)
+				if (d.m_prefab != null && d.m_prefab.name.StartsWith("Trophy", StringComparison.Ordinal))
+				{
+					fight.TrophyName = d.m_prefab.name;
+					fight.TrophyHash = d.m_prefab.name.GetStableHashCode();
+					break;
+				}
 		BossDirectorPlugin.Log.LogInfo($"found {name} {boss.m_uid} at {boss.GetPosition():0} health {fraction * 100f:0}% owner {boss.GetOwner()}; " +
 			(fight.Script.Rules.Count == 0 ? "no script for this boss" : $"script for 1 player: {fight.Script.Describe(1)}"));
 	}
@@ -205,6 +229,82 @@ internal static class Director
 			removed++;
 		}
 		BossDirectorPlugin.Log.LogInfo($"{fight.Prefab} {id} is gone (last seen at {fight.LastFraction * 100f:0}%). Adds alive {alive}, removed {removed}.");
+		if (fight.Heroic) PayIdols(fight);
+	}
+
+	// The server cannot tell a boss dying from a boss vanishing, so a kill is "gone while nearly dead". Bosses do not
+	// despawn, so that is reliable; a boss removed by an admin at full health pays nothing.
+	static void PayIdols(Fight fight)
+	{
+		if (fight.LastFraction > 0.1f)
+		{
+			BossDirectorPlugin.Log.LogInfo($"{fight.Prefab}: heroic fight ended with the boss at {fight.LastFraction * 100f:0}% - not a kill, no idols");
+			return;
+		}
+		int tier = BossDirectorPlugin.IdolTierFor(fight.Prefab);
+		int count = Mathf.Max(0, Mathf.FloorToInt(BossDirectorPlugin.IdolBase.Value + BossDirectorPlugin.IdolPerPlayer.Value * fight.MaxPlayers + 0.001f));
+		if (tier < 0 || count == 0)
+		{
+			BossDirectorPlugin.Log.LogInfo($"{fight.Prefab}: heroic kill by up to {fight.MaxPlayers} player(s): no idols ({(tier < 0 ? "no idol tier is set for this boss" : "too few players")})");
+			return;
+		}
+		GatherPlayers();
+		long owner = NearestPlayer(fight.LastPos);
+		var given = new List<string>();
+		for (int i = 0; i < count; i++)
+		{
+			bool battle = UnityEngine.Random.value < BossDirectorPlugin.IdolBattleShare.Value;
+			string item = $"Upgrader{tier}{(battle ? "Weapon" : "Armor")}";
+			if (SpawnItem(item, fight.LastPos, owner)) given.Add(item);
+		}
+		BossDirectorPlugin.Log.LogInfo($"{fight.Prefab}: heroic kill by up to {fight.MaxPlayers} player(s): dropped {given.Count} idol(s): {string.Join(", ", given)}");
+	}
+
+	// An item lying in the world is its own prefab with an ItemDrop on it; a bare ZDO of that prefab is a stack of one.
+	static bool SpawnItem(string prefabName, Vector3 at, long owner)
+	{
+		GameObject prefab = ZNetScene.instance.GetPrefab(prefabName);
+		ZNetView view = prefab != null ? prefab.GetComponent<ZNetView>() : null;
+		if (view == null || prefab.GetComponent<ItemDrop>() == null)
+		{
+			BossDirectorPlugin.Log.LogWarning($"'{prefabName}' is not an item in this game, skipped");
+			return false;
+		}
+		Vector2 off = UnityEngine.Random.insideUnitCircle * 2f;
+		Vector3 pos = new Vector3(at.x + off.x, 0f, at.z + off.y);
+		// A flying boss dies in the air; items go to the ground under it, a little above it so they fall rather than sink.
+		pos.y = Mathf.Max(GroundHeight(pos), ZoneSystem.instance.m_waterLevel) + 1.5f;
+		int hash = prefab.name.GetStableHashCode();
+		ZDO zdo = ZDOMan.instance.CreateNewZDO(pos, hash);
+		zdo.Persistent = view.m_persistent;
+		zdo.Type = view.m_type;
+		zdo.Distant = view.m_distant;
+		zdo.SetPrefab(hash);
+		zdo.SetRotation(Quaternion.identity);
+		if (owner != 0L) zdo.SetOwner(owner);
+		return true;
+	}
+
+	// Looks for the boss's own trophy lying near it. If there is one, it is taken (the whole stack that was dropped).
+	static bool TakeTrophy(Fight fight, Vector3 bossPos)
+	{
+		if (fight.TrophyHash == 0) return false;
+		float radius = BossDirectorPlugin.HeroicTrophyRadius.Value;
+		SimulationDistance synced = ZNet.instance.GetSyncedSimulationDistance();
+		Scan.Clear();
+		ZDOMan.instance.FindSectorObjects(ZoneSystem.GetZone(bossPos), new SimulationDistance(1, 0, synced.IsClassic), Scan);
+		ZDO found = null;
+		foreach (ZDO zdo in Scan)
+		{
+			if (zdo.GetPrefab() != fight.TrophyHash || Flat(zdo.GetPosition(), bossPos) > radius) continue;
+			found = zdo;
+			break;
+		}
+		Scan.Clear();
+		if (found == null) return false;
+		found.SetOwner(ZDOMan.GetSessionID());
+		ZDOMan.instance.DestroyZDO(found);
+		return true;
 	}
 
 	static int CountAlive(Fight fight)
@@ -228,6 +328,17 @@ internal static class Director
 		int players = 0;
 		foreach (PlayerPos p in Players) if (Flat(p.Pos, bossPos) <= range) players++;
 		if (players == 0) return false;   // nobody here: timers pause, nothing fires
+		fight.LastPos = bossPos;
+		if (players > fight.MaxPlayers) fight.MaxPlayers = players;
+
+		// The challenge has to be made before the first blow: once the boss is hurt, a trophy on the ground is just a trophy.
+		if (!fight.Heroic && BossDirectorPlugin.HeroicEnabled.Value && Fraction(boss) >= 0.999f && TakeTrophy(fight, bossPos))
+		{
+			fight.Heroic = true;
+			BossDirectorPlugin.Log.LogInfo($"{fight.Prefab}: a {fight.TrophyName} lay within {BossDirectorPlugin.HeroicTrophyRadius.Value:0} m and was taken. HEROIC fight: boss damage x{BossDirectorPlugin.HeroicBossDamage.Value:0.##}, waves x{BossDirectorPlugin.HeroicMoreAdds.Value:0.##}, {BossDirectorPlugin.HeroicStarChance.Value * 100f:0}% of plain adds get a star, idols on the kill.");
+			if (BossDirectorPlugin.HeroicMessage.Value.Length > 0) Message(bossPos, BossDirectorPlugin.HeroicMessage.Value);
+		}
+		Encounter.CountMultiplier = BaseMultiplier * (fight.Heroic ? BossDirectorPlugin.HeroicMoreAdds.Value : 1f);
 		if (Encounter.CountMultiplier != fight.LastMultiplier)
 		{
 			fight.LastMultiplier = Encounter.CountMultiplier;
@@ -315,7 +426,10 @@ internal static class Director
 		zdo.SetPrefab(hash);
 		Vector3 facing = bossPos - pos; facing.y = 0f;
 		zdo.SetRotation(facing.sqrMagnitude > 0.01f ? Quaternion.LookRotation(facing) : Quaternion.identity);
-		if (spawn.Level > 1) zdo.Set(ZDOVars.s_level, spawn.Level);
+		// Heroic fights star some of the PLAIN adds. Never above one star: a two-star Fuling on Hard is an instant kill.
+		int level = spawn.Level;
+		if (fight.Heroic && level == 1 && UnityEngine.Random.value < BossDirectorPlugin.HeroicStarChance.Value) level = 2;
+		if (level > 1) zdo.Set(ZDOVars.s_level, level);
 		if (BossDirectorPlugin.AddsHunt.Value) zdo.Set(ZDOVars.s_huntPlayer, true);
 		zdo.Set(AddTag, true);
 		// One reduction, never two. Boss fight mode already lowers what every non-boss deals to players (BruceQoL's
@@ -344,7 +458,7 @@ internal static class Director
 		if (owner != 0L) zdo.SetOwner(owner);
 
 		fight.Adds.Add(new Add { Id = zdo.m_uid, Prefab = prefab.name });
-		BossDirectorPlugin.Log.LogInfo($"{fight.Prefab}: spawned {prefab.name}{new string('*', spawn.Level - 1)} {zdo.m_uid} at {pos:0.0} ({Flat(pos, bossPos):0} m from the boss) owner {owner}");
+		BossDirectorPlugin.Log.LogInfo($"{fight.Prefab}: spawned {prefab.name}{new string('*', level - 1)} {zdo.m_uid} at {pos:0.0} ({Flat(pos, bossPos):0} m from the boss) owner {owner}");
 		return true;
 	}
 
