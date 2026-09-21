@@ -292,6 +292,29 @@ internal static class Director
 		return true;
 	}
 
+	// A player pressed Shift + Use on the altar: the altar's ZDO carries "raidboss_heroic". Any object near the boss
+	// with that flag counts, so nothing here needs to know what each altar prefab is called. The flag is cleared by
+	// taking the object for a moment; it goes back to a nearby player like any other persistent object.
+	static bool TakeAltarChallenge(Vector3 bossPos)
+	{
+		float radius = RaidBossPlugin.HeroicAltarRadius.Value;
+		SimulationDistance synced = ZNet.instance.GetSyncedSimulationDistance();
+		Scan.Clear();
+		ZDOMan.instance.FindSectorObjects(ZoneSystem.GetZone(bossPos), new SimulationDistance(1, 0, synced.IsClassic), Scan);
+		ZDO altar = null;
+		foreach (ZDO zdo in Scan)
+		{
+			if (!zdo.GetBool(ClientSide.AltarKey) || Flat(zdo.GetPosition(), bossPos) > radius) continue;
+			altar = zdo;
+			break;
+		}
+		Scan.Clear();
+		if (altar == null) return false;
+		altar.SetOwner(ZDOMan.GetSessionID());
+		altar.Set(ClientSide.AltarKey, false);
+		return true;
+	}
+
 	// Looks for the boss's own trophy lying near it. If there is one, it is taken (the whole stack that was dropped).
 	static bool TakeTrophy(Fight fight, Vector3 bossPos)
 	{
@@ -339,10 +362,18 @@ internal static class Director
 		if (players > fight.MaxPlayers) fight.MaxPlayers = players;
 
 		// The challenge has to be made before the first blow: once the boss is hurt, a trophy on the ground is just a trophy.
-		if (!fight.Heroic && RaidBossPlugin.HeroicEnabled.Value && Fraction(boss) >= 0.999f && TakeTrophy(fight, bossPos))
+		// Two ways to make it: Shift + Use on the altar (ClientSide.cs; the altar carries the challenge), or the older one,
+		// the boss's trophy lying on the ground near the boss.
+		string how = null;
+		if (!fight.Heroic && RaidBossPlugin.HeroicEnabled.Value && Fraction(boss) >= 0.999f)
+		{
+			if (TakeAltarChallenge(bossPos)) how = "the altar carried a challenge";
+			else if (TakeTrophy(fight, bossPos)) how = $"a {fight.TrophyName} lay within {RaidBossPlugin.HeroicTrophyRadius.Value:0} m and was taken";
+		}
+		if (how != null)
 		{
 			fight.Heroic = true;
-			RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: a {fight.TrophyName} lay within {RaidBossPlugin.HeroicTrophyRadius.Value:0} m and was taken. HEROIC fight: boss damage x{RaidBossPlugin.BossDamage.Value * RaidBossPlugin.HeroicBossDamage.Value:0.##}, waves x{RaidBossPlugin.HeroicMoreAdds.Value:0.##}, {RaidBossPlugin.HeroicStarChance.Value * 100f:0}% of plain adds get a star, idols on the kill.");
+			RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: {how}. HEROIC fight: boss damage x{RaidBossPlugin.BossDamage.Value * RaidBossPlugin.HeroicBossDamage.Value:0.##}, waves x{RaidBossPlugin.HeroicMoreAdds.Value:0.##}, {RaidBossPlugin.HeroicStarChance.Value * 100f:0}% of plain adds get a star, idols on the kill.");
 			if (RaidBossPlugin.HeroicMessage.Value.Length > 0) Message(bossPos, RaidBossPlugin.HeroicMessage.Value);
 		}
 		Encounter.CountMultiplier = BaseMultiplier * (fight.Heroic ? RaidBossPlugin.HeroicMoreAdds.Value : 1f);

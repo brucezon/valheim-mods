@@ -64,10 +64,14 @@ does not replay the waves it is already past. With nobody in range the fight pau
 
 ## Heroic fights and idols
 
-A harder fight that the players choose, and the only one that pays idols. **Drop the boss's own trophy on the ground by
-the altar before summoning** (or within 15 m of the boss before anyone hurts it). The server takes the trophy - the whole
-stack that was dropped, so drop one - and shows "The challenge is accepted". A first kill can never be heroic, because
-nobody has the trophy yet. A trophy on an item stand does not count.
+A harder fight that the players choose, and the only one that pays idols. **Hold Shift and press Use on the boss's altar
+before summoning.** It takes one of that boss's own trophies from your inventory (a server setting; it can be free), the
+altar's hover text then reads "Heroic fight: the challenge is set" for everyone, and when the boss appears the server
+shows "The challenge is accepted". A first kill can never be heroic, because nobody has the trophy yet. The challenge
+stays on the altar until a boss takes it up, across server restarts.
+
+The older way still works: drop the boss's own trophy on the ground within 15 m of the boss before anyone hurts it; the
+server takes the whole stack that was dropped. A trophy on an item stand does not count.
 
 - the boss hits 20% harder;
 - waves and the cap are multiplied again by 1.25 (about 1.6 in all);
@@ -100,7 +104,7 @@ is followed by id once a second. When a rule fires it creates the adds as bare o
 them to the player whose game is simulating the boss; that game brings them to life like anything else that streams in.
 Idols are made the same way. Wave announcements use the vanilla centre-screen message.
 
-The client part does three things, all on the player's own game: it scales the damage a player takes from a boss in a
+The client part does four things, all on the player's own game: it adds the Shift + Use challenge to boss altars; it scales the damage a player takes from a boss in a
 fight (the server announces which bosses, and by how much) or from an add (the add carries its number); it reports
 kills exactly to the server; and it shortens the fireside wait after a death. Wild creatures, tames, structures and the
 settings of other mods are never touched.

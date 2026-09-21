@@ -56,6 +56,8 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<bool> WorldEncountersEnabled;
 	internal static ConfigEntry<string> WorldEncounterRules;
 	internal static ConfigEntry<bool> HeroicEnabled;
+	internal static ConfigEntry<bool> HeroicCostsTrophy;
+	internal static ConfigEntry<float> HeroicAltarRadius;
 	internal static ConfigEntry<float> HeroicTrophyRadius;
 	internal static ConfigEntry<float> HeroicBossDamage;
 	internal static ConfigEntry<float> HeroicMoreAdds;
@@ -161,7 +163,9 @@ public class RaidBossPlugin : BaseUnityPlugin
 			"              normal loot.\n" +
 			"  cooldown    seconds before the same location can answer again (real time while the server runs).", false);
 
-		HeroicEnabled = config("5 - Heroic fights", "Enabled", true, "A harder version of a boss fight that the players choose, and the only one that pays idols. To ask for it, drop the boss's OWN trophy on the ground by the altar before summoning (or by the boss before anyone hurts it). The server takes the trophy - the whole stack that was dropped, so drop one - and the fight is heroic. A first kill can never be heroic, because nobody has the trophy yet. A trophy on an item stand does not count.", false);
+		HeroicEnabled = config("5 - Heroic fights", "Enabled", true, "A harder version of a boss fight that the players choose, and the only one that pays idols. To ask for it, hold Shift and press Use on the boss's altar before summoning; the altar's hover text shows that the challenge is set. (The older way still works: drop the boss's own trophy on the ground within 'Trophy within (m)' of the boss before anyone hurts it.) From the server.", true);
+		HeroicCostsTrophy = config("5 - Heroic fights", "The challenge costs a trophy", true, "On = Shift + Use takes one of the boss's OWN trophies from your inventory, so a first kill can never be heroic and heroic is never the free default. Off = the challenge is free. From the server.", true);
+		HeroicAltarRadius = config("5 - Heroic fights", "Altar within (m)", 80f, new ConfigDescription("How far from the altar a boss may appear and still pick up the altar's challenge.", new AcceptableValueRange<float>(10f, 150f)), false);
 		HeroicTrophyRadius = config("5 - Heroic fights", "Trophy within (m)", 15f, new ConfigDescription("How close to the boss the dropped trophy has to lie.", new AcceptableValueRange<float>(2f, 60f)), false);
 		HeroicBossDamage = config("5 - Heroic fights", "Boss damage (x)", 1.2f, new ConfigDescription("Multiplies 'Boss damage during a fight' for a heroic fight: 1.2 = the boss hits 20% harder.", new AcceptableValueRange<float>(1f, 3f)), false);
 		HeroicMoreAdds = config("5 - Heroic fights", "More adds (x)", 1.25f, new ConfigDescription("Multiplies the wave sizes and the living-adds cap again, on top of 'More adds' (1.3 x 1.25 = about 1.6).", new AcceptableValueRange<float>(1f, 3f)), false);

@@ -53,7 +53,80 @@ internal static class ClientSide
 		}
 	}
 
-	// ---- 3. A shorter fireside wait for Rested after a death.
+	// ---- 3. Asking for a heroic fight at the altar: Shift + Use.
+	//
+	// Every boss altar is an OfferingBowl, and Interact is called for it with alt = true when Shift is held - for the
+	// offer-an-item altars too, where vanilla's own Interact does nothing. The challenge is stored ON THE ALTAR (a bool
+	// on its ZDO, written by this client after claiming the object), so it survives a server restart, every player sees
+	// it in the hover text, and the server reads it when the boss appears (Director.TakeAltarChallenge) and clears it.
+	// By default it costs one of the boss's own trophies from the player's inventory, which is what makes a first kill
+	// impossible to do heroically and keeps heroic from being the free default.
+	internal static readonly int AltarKey = "raidboss_heroic".GetStableHashCode();
+
+	static ItemDrop.ItemData.SharedData TrophyOf(OfferingBowl altar)
+	{
+		CharacterDrop drops = altar.m_bossPrefab != null ? altar.m_bossPrefab.GetComponent<CharacterDrop>() : null;
+		if (drops == null) return null;
+		foreach (CharacterDrop.Drop d in drops.m_drops)
+			if (d.m_prefab != null && d.m_prefab.name.StartsWith("Trophy", System.StringComparison.Ordinal))
+				return d.m_prefab.GetComponent<ItemDrop>()?.m_itemData.m_shared;
+		return null;
+	}
+
+	static bool Armed(OfferingBowl altar) => altar.m_nview != null && altar.m_nview.IsValid() && altar.m_nview.GetZDO().GetBool(AltarKey);
+
+	[HarmonyPatch(typeof(OfferingBowl), nameof(OfferingBowl.Interact))]
+	static class AltarInteractPatch
+	{
+		static bool Prefix(OfferingBowl __instance, Humanoid user, bool hold, bool alt, ref bool __result)
+		{
+			if (!alt || hold || !RaidBossPlugin.IsOn || !RaidBossPlugin.HeroicEnabled.Value) return true;
+			__result = false;
+			if (__instance.m_nview == null || !__instance.m_nview.IsValid() || user == null) return false;
+			if (Armed(__instance))
+			{
+				user.Message(MessageHud.MessageType.Center, "The challenge is already set");
+				return false;
+			}
+			if (RaidBossPlugin.HeroicCostsTrophy.Value)
+			{
+				ItemDrop.ItemData.SharedData trophy = TrophyOf(__instance);
+				if (trophy != null)
+				{
+					if (user.GetInventory().CountItems(trophy.m_name) < 1)
+					{
+						user.Message(MessageHud.MessageType.Center, "$msg_donthaveany " + trophy.m_name);
+						return false;
+					}
+					user.GetInventory().RemoveItem(trophy.m_name, 1);
+				}
+			}
+			__instance.m_nview.ClaimOwnership();
+			__instance.m_nview.GetZDO().Set(AltarKey, true);
+			user.Message(MessageHud.MessageType.Center, "The challenge is set");
+			__result = true;
+			return false;
+		}
+	}
+
+	[HarmonyPatch(typeof(OfferingBowl), nameof(OfferingBowl.GetHoverText))]
+	static class AltarHoverPatch
+	{
+		static void Postfix(OfferingBowl __instance, ref string __result)
+		{
+			if (!RaidBossPlugin.IsOn || !RaidBossPlugin.HeroicEnabled.Value || string.IsNullOrEmpty(__result)) return;
+			string line;
+			if (Armed(__instance)) line = "<color=orange>Heroic fight: the challenge is set</color>";
+			else
+			{
+				ItemDrop.ItemData.SharedData trophy = RaidBossPlugin.HeroicCostsTrophy.Value ? TrophyOf(__instance) : null;
+				line = "[<color=yellow><b>$KEY_AltPlace + $KEY_Use</b></color>] Heroic fight" + (trophy != null ? " (1 " + trophy.m_name + ")" : "");
+			}
+			__result += "\n" + Localization.instance.Localize(line);
+		}
+	}
+
+	// ---- 4. A shorter fireside wait for Rested after a death.
 	//
 	// By a fire, under shelter and unnoticed, the player has the "Resting" status: an SE_Cozy that counts m_time up from
 	// zero and, past m_delay, adds Rested. Anything that breaks the conditions removes Resting and the count starts
