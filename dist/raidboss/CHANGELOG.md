@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.14
+
+- Fire strikes (and fire chases) come down as one of Yagluth's own meteors, falling over the last 0.6 s and touching
+  down on the very frame the ring fills and the damage lands. The meteor is a body only: it cannot hurt, burn or collide.
+- Strike impact effects play on impact: built-in delays in them are squeezed (the frost nova had 1.2 s).
+
 ## 0.1.13
 
 - New `chase` action: strikes that follow a player - a ring at their feet every 0.9 s for 5 s, so they have to keep

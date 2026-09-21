@@ -125,7 +125,7 @@ Waves are only part of a fight. A script rule can also do things, and several ar
   meter (0.5). A living caster within 35 m raises it again 25 s after it falls. Hits on a ward do not feed the break
   meter. Heroic Yagluth: his shamans make him immune until they are dead (no break when it falls); a shaman joins the fight every 40 s.
 - **Ground strikes** (`strike lightning r3.5 d2 dmg20 x2`). A coloured ring fills on the ground under a player for the
-  warning time, then fire, frost, lightning or poison lands there: dodge-roll through it or step out. It cannot be
+  warning time, then fire, frost, lightning or poison lands there (fire as a falling meteor that touches down as the ring fills): dodge-roll through it or step out. It cannot be
   blocked.
 - **Chase** (`chase fire r3 d1.2 dmg90 every0.9 for5`). Strikes that follow one player: a ring at their feet every 0.9 s
   for 5 s, each landing when it fills (1.2 s). Stand still and you are hit; keep moving and each lands where you were.

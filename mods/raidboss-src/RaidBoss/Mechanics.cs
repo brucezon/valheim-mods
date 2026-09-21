@@ -407,6 +407,38 @@ internal static class Mechanics
 		PlayEffect(tellFx, pos);
 	}
 
+	// A game projectile as a body only: its flight, network sync, fire-starting and colliders removed, so it cannot hurt,
+	// burn or collide - it is moved by hand.
+	static GameObject MakeLocalBody(string prefab, Vector3 pos)
+	{
+		GameObject go = MakeLocal(prefab, pos);
+		if (go == null) return null;
+		foreach (Projectile c in go.GetComponentsInChildren<Projectile>(true)) UnityEngine.Object.DestroyImmediate(c);
+		foreach (ZSyncTransform c in go.GetComponentsInChildren<ZSyncTransform>(true)) UnityEngine.Object.DestroyImmediate(c);
+		foreach (CinderSpawner c in go.GetComponentsInChildren<CinderSpawner>(true)) UnityEngine.Object.DestroyImmediate(c);
+		foreach (Collider c in go.GetComponentsInChildren<Collider>(true)) UnityEngine.Object.DestroyImmediate(c);
+		foreach (Rigidbody c in go.GetComponentsInChildren<Rigidbody>(true)) UnityEngine.Object.DestroyImmediate(c);
+		UnityEngine.Object.Destroy(go, 10f);
+		return go;
+	}
+
+	// An impact effect with its particles' built-in start delays squeezed to at most a tenth of a second.
+	static void PlayImpact(string prefabName, Vector3 pos)
+	{
+		if (string.IsNullOrEmpty(prefabName)) return;
+		foreach (string name in prefabName.Split('+'))
+		{
+			GameObject made = MakeLocal(name.Trim(), pos);
+			if (made == null) continue;
+			foreach (ParticleSystem ps in made.GetComponentsInChildren<ParticleSystem>(true))
+			{
+				ParticleSystem.MainModule main = ps.main;
+				if (main.startDelay.constantMax > 0.1f) { ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear); main.startDelay = Mathf.Min(0.1f, main.startDelay.constantMax * 0.08f); ps.Play(true); }
+			}
+			UnityEngine.Object.Destroy(made, 12f);
+		}
+	}
+
 	static Material ringMaterial;
 
 	static Material RingMaterial()
@@ -476,17 +508,48 @@ internal static class Mechanics
 			}
 		}
 
+		// Fire comes down as one of Yagluth's own meteors: it starts falling so that it touches the ground on the very frame
+		// the ring fills and the damage lands, never before.
+		GameObject falling;
+		bool fell;
+		Vector3 fallFrom;
+		float fallStart, fallTime;
+
 		void Update()
 		{
 			time += Time.deltaTime;
-			if (time < Delay) { Draw(inner, Mathf.Max(0.05f, Radius * time / Delay)); return; }
+			if (time < Delay)
+			{
+				Draw(inner, Mathf.Max(0.05f, Radius * time / Delay));
+				Fall();
+				return;
+			}
+			if (falling != null) Destroy(falling);
 			Land();
 			Destroy(gameObject);
 		}
 
+		void Fall()
+		{
+			if (!fell && Element == "fire")
+			{
+				fallTime = Mathf.Min(0.6f, Delay * 0.8f);
+				if (time < Delay - fallTime) return;
+				fell = true;
+				Vector2 side = UnityEngine.Random.insideUnitCircle.normalized * 12f;
+				fallFrom = transform.position + new Vector3(side.x, 26f, side.y);
+				fallStart = time;
+				falling = MakeLocalBody("projectile_meteor", fallFrom);
+				if (falling != null) falling.transform.rotation = Quaternion.LookRotation(transform.position - fallFrom);
+			}
+			if (falling == null) return;
+			float k = Mathf.Clamp01((time - fallStart) / Mathf.Max(0.01f, Delay - fallStart));
+			falling.transform.position = Vector3.Lerp(fallFrom, transform.position, k);
+		}
+
 		void Land()
 		{
-			PlayEffect(HitFx, transform.position);
+			PlayImpact(HitFx, transform.position);
 			Player p = Player.m_localPlayer;
 			if (p == null || p.IsDead() || Damage <= 0f) return;
 			Vector3 d = p.transform.position - transform.position;

@@ -22,7 +22,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.13";
+	public const string Version = "0.1.14";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
