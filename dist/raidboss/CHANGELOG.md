@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.11
+
+- Yagluth's waves are Fuling packs, as in their villages: 80% three plus one per player, a pack with the shamans
+  (and archers from two players), an escort for the champion, and a bigger final wave.
+
 ## 0.1.10
 
 - Idols fall properly: they could settle on the boss's body and be left hanging in the air once it was gone. They

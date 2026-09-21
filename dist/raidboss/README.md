@@ -53,10 +53,10 @@ Mechanics).
 
 | Boss health | Wave | Solo | Four players |
 |---|---|---|---|
-| 80% | The last of his people answer: one Fuling per player | 1 | 4 |
-| 60% | Shamans draw upon their king: shamans, each with a Fuling from two players | 1 | 2 + 2 |
-| 40% | A champion of the fallen cities: a Berserker, plus a one-star Berserker from four players | 1 | 1 + 1* |
-| 20% | They will not bend or break: a Fuling, two one-star Fulings per two players, an archer from three | 1 | 1 + 4* + 1 |
+| 80% | The last of his people answer: a Fuling pack, three plus one per player | 4 | 7 |
+| 60% | Shamans draw upon their king: shamans with a Fuling pack and archers | 1 + 2 | 2 + 4 + 2 |
+| 40% | A champion of the fallen cities: a Berserker with a Fuling escort, a one-star Berserker too from four players | 1 + 2 | 1 + 1* + 4 |
+| 20% | They will not bend or break: a Fuling pack, two one-star Fulings per two players, an archer from three | 3 | 5 + 4* + 1 |
 | below 20% | Fulings every 20 s from two players, up to the cap | none | 3 |
 
 These are the counts as written. `More adds (x)` (1.3) then multiplies every count and the cap and rounds down: 4

@@ -160,15 +160,15 @@ public class RaidBossPlugin : BaseUnityPlugin
 		"every 30s below 25%: Draugr 1+0 @2+, Draugr 1+0 @3+, Draugr 1+0 @4+";
 
 	const string GoblinKingDefault =
-		"80% \"The last of his people answer\": Goblin 0+1 | " +
-		"60% \"Shamans draw upon their king\": GoblinShaman 0.5+0.5, Goblin 0+0.5 | " +
-		"normal 40% \"A champion of the fallen cities\": GoblinBrute 1+0, GoblinBrute* 0+0.25 | " +
-		"heroic 40% \"A champion of the fallen cities\": GoblinBrute:Ironhide* 1+0 @1, GoblinBrute:Ironhide** 1+0 @2+, GoblinBrute:Ironhide 0+0.25 | " +
+		"80% \"The last of his people answer\": Goblin 3+1 | " +
+		"60% \"Shamans draw upon their king\": GoblinShaman 0.5+0.5, Goblin 2+0.5, GoblinArcher 0+0.5 | " +
+		"normal 40% \"A champion of the fallen cities\": GoblinBrute 1+0, GoblinBrute* 0+0.25, Goblin 2+0.5 | " +
+		"heroic 40% \"A champion of the fallen cities\": GoblinBrute:Ironhide* 1+0 @1, GoblinBrute:Ironhide** 1+0 @2+, GoblinBrute:Ironhide 0+0.25, Goblin 2+0.5 | " +
 		"heroic every 25s below 60%: strike fire r4 d2.5 dmg120 x2 | " +
 		"heroic every 45s below 80%: boss cycle Emberborn Stormcalled 20 | " +
 		"heroic 100%: shield immune refresh25 range35 by:GoblinShaman | " +
 		"heroic every 40s: GoblinShaman 1+0 | " +
-		"20% \"They will not bend or break\": Goblin 1+0, Goblin* 0+0.5, Goblin* 0+0.5, GoblinArcher 0+0.34 | " +
+		"20% \"They will not bend or break\": Goblin 3+0.5, Goblin* 0+0.5, Goblin* 0+0.5, GoblinArcher 0+0.34 | " +
 		"every 20s below 20%: Goblin 1+0 @2+, Goblin 1+0 @3+, Goblin 1+0 @4+";
 
 	float tick;
