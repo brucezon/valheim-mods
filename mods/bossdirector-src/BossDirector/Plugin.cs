@@ -15,7 +15,7 @@ public class BossDirectorPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.BossDirector";
 	public const string Name = "BossDirector";
-	public const string Version = "0.4.0";
+	public const string Version = "0.4.1";
 
 	internal static ManualLogSource Log;
 	internal static BossDirectorPlugin Instance;
@@ -50,6 +50,8 @@ public class BossDirectorPlugin : BaseUnityPlugin
 		"SPAWNS   comma separated  Prefab base+perPlayer   count = base + perPlayer x players, rounded down.\n" +
 		"         Hatchling 1+1 = 2 solo, 5 with four. Fenring 0.5+0.5 = 1,1,2,2. StoneGolem 0+0.25 = only with 4 or more.\n" +
 		"         Wolf* is a one-star wolf, Wolf** two stars.\n" +
+		"         Add @1-2, @3+ or @4 after an entry to use it only for that many players, so one creature can REPLACE another:\n" +
+		"         GoblinBrute 1+0 @1-2, GoblinBrute* 1+0 @3+  sends a plain one to one or two players and a one-star instead from three.\n" +
 		"Empty = this boss is left alone. Changes apply within a few seconds, also mid-fight (waves already passed do not fire late).";
 
 	const string DragonDefault =
@@ -107,14 +109,15 @@ public class BossDirectorPlugin : BaseUnityPlugin
 		AddHealth = Config.Bind("2 - Scaling", "Add health (x)", 1f, new ConfigDescription("Adds arrive with this share of their health, so they die sooner. 1 = full health. Needs nothing on the players' side; the only visible sign is a health bar that starts part empty.", new AcceptableValueRange<float>(0.1f, 1f)));
 		MoreAdds = Config.Bind("2 - Scaling", "More adds while their damage is scaled (x)", 1.3f, new ConfigDescription("Used exactly while boss fight mode (section 5) is on, because that is when every player takes reduced damage from adds: every wave count and the living-adds cap are multiplied by this and rounded down, so at 1.3 a wave of 4 becomes 5, 5 becomes 6, 8 becomes 10, and 1 to 3 stay as they are. 1 = never more adds. No BruceQoL on the server, or boss fight mode off: the scripts run exactly as written.", new AcceptableValueRange<float>(1f, 4f)));
 		WorldEncountersEnabled = Config.Bind("6 - World encounters", "Enabled", true, "Encounters away from bosses: kill enough of something at a known place and the place answers.");
-		WorldEncounterRules = Config.Bind("6 - World encounters", "Encounters", "GoblinCamp2 80m: 10 Goblin,GoblinArcher,GoblinShaman in 600s -> GoblinBrute 1+0, cooldown 1800s",
+		WorldEncounterRules = Config.Bind("6 - World encounters", "Encounters", "GoblinCamp2 80m: 10 Goblin,GoblinArcher,GoblinShaman in 600s -> GoblinBrute 1+0 @1-2, GoblinBrute* 1+0 @3+, cooldown 1800s",
 			"Rules separated by | . A rule is   Location 80m: 10 PrefabA,PrefabB in 600s -> Prefab 1+0, cooldown 1800s\n" +
 			"  Location    the world location's prefab name (GoblinCamp2 = a Fuling village). The log says how many exist in this world,\n" +
 			"              and suggests similar names when there are none.\n" +
 			"  80m         a kill counts when it happens within this distance of the location, with a player within 80 m of the kill.\n" +
 			"  10 ... in 600s   this many of the listed creatures must vanish inside this many seconds. The server sees a creature's\n" +
 			"              object disappear; it cannot tell a kill from a despawn, which is accurate enough for a camp being cleared.\n" +
-			"  -> ...      what arrives, same format as boss waves: Prefab base+perPlayer, * = one star. It appears 14-24 m from the\n" +
+			"  -> ...      what arrives, same format as boss waves: Prefab base+perPlayer, * = one star, @1-2 or @3+ = only for that many\n" +
+			"              players (counted within 80 m of the last kill). It appears 14-24 m from the\n" +
 			"              last kill, hunting, with its normal loot. No message is shown.\n" +
 			"  cooldown    seconds before the same location can answer again (real time while the server runs).");
 		ForcePlayers = Config.Bind("4 - Debug", "Pretend this many players", 0, "0 = count real players. Anything else sizes every wave as if that many were fighting, so one person can see a four-player fight. Someone still has to be in range.");

@@ -24,10 +24,23 @@ internal sealed class Encounter
 		public int Level = 1;
 		public float Base;
 		public float PerPlayer;
+		// Optional "@1-2" / "@3+" / "@2": this entry only exists for that many players. It is what lets one creature
+		// REPLACE another as the group grows (GoblinBrute 1+0 @1-2, GoblinBrute* 1+0 @3+), which base+perPlayer cannot say.
+		public int MinPlayers = 1;
+		public int MaxPlayers = int.MaxValue;
+
+		// The count as written, before any "more adds" multiplier.
+		public int PlainCount(int players)
+		{
+			if (players < MinPlayers || players > MaxPlayers) return 0;
+			return Math.Max(0, (int)Math.Floor(Base + PerPlayer * players + 0.001f));
+		}
+
+		public string Suffix => MinPlayers <= 1 && MaxPlayers == int.MaxValue ? "" : MaxPlayers == int.MaxValue ? $" @{MinPlayers}+" : MinPlayers == MaxPlayers ? $" @{MinPlayers}" : $" @{MinPlayers}-{MaxPlayers}";
 
 		public int Count(int players)
 		{
-			int plain = Math.Max(0, (int)Math.Floor(Base + PerPlayer * players + 0.001f));
+			int plain = PlainCount(players);
 			// Multiplied and rounded down: at 1.3, 4 -> 5, 5 -> 6, 8 -> 10, and 1 to 3 are unchanged. Applied after the plain count so a single
 			// heavy add never doubles.
 			return Math.Max(0, (int)Math.Floor(plain * CountMultiplier + 0.001f));
@@ -52,7 +65,7 @@ internal sealed class Encounter
 	static readonly Regex ThresholdRx = new Regex(@"^(\d+(?:\.\d+)?)\s*%$", RegexOptions.Compiled);
 	static readonly Regex EveryRx = new Regex(@"^every\s+(\d+(?:\.\d+)?)\s*s?((?:\s+(?:below|above)\s+\d+(?:\.\d+)?\s*%)*)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 	static readonly Regex BandRx = new Regex(@"(below|above)\s+(\d+(?:\.\d+)?)\s*%", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-	static readonly Regex SpawnRx = new Regex(@"^([^\s*]+)(\*{0,2})\s+(\d+(?:\.\d+)?)(?:\s*\+\s*(\d+(?:\.\d+)?))?$", RegexOptions.Compiled);
+	static readonly Regex SpawnRx = new Regex(@"^([^\s*]+)(\*{0,2})\s+(\d+(?:\.\d+)?)(?:\s*\+\s*(\d+(?:\.\d+)?))?(?:\s*@\s*(\d+)\s*(?:(\+)|-\s*(\d+))?)?$", RegexOptions.Compiled);
 
 	static float F(string s) => float.Parse(s, CultureInfo.InvariantCulture);
 
@@ -69,6 +82,13 @@ internal sealed class Encounter
 			Base = F(sm.Groups[3].Value),
 			PerPlayer = sm.Groups[4].Success ? F(sm.Groups[4].Value) : 0f,
 		};
+		if (sm.Groups[5].Success)
+		{
+			spawn.MinPlayers = Math.Max(1, int.Parse(sm.Groups[5].Value, CultureInfo.InvariantCulture));
+			spawn.MaxPlayers = sm.Groups[6].Success ? int.MaxValue
+				: sm.Groups[7].Success ? Math.Max(spawn.MinPlayers, int.Parse(sm.Groups[7].Value, CultureInfo.InvariantCulture))
+				: spawn.MinPlayers;
+		}
 		return true;
 	}
 
@@ -113,15 +133,8 @@ internal sealed class Encounter
 			{
 				string sp = rawSpawn.Trim();
 				if (sp.Length == 0) continue;
-				Match sm = SpawnRx.Match(sp);
-				if (!sm.Success) { enc.Errors.Add($"spawn '{sp}' is not 'Prefab[*] base+perPlayer'"); continue; }
-				rule.Spawns.Add(new Spawn
-				{
-					Prefab = sm.Groups[1].Value,
-					Level = 1 + sm.Groups[2].Value.Length,
-					Base = F(sm.Groups[3].Value),
-					PerPlayer = sm.Groups[4].Success ? F(sm.Groups[4].Value) : 0f,
-				});
+				if (!TryParseSpawn(sp, out Spawn parsed)) { enc.Errors.Add($"spawn '{sp}' is not 'Prefab[*] base+perPlayer [@players]'"); continue; }
+				rule.Spawns.Add(parsed);
 			}
 			if (rule.Spawns.Count == 0) { enc.Errors.Add($"rule '{trigger}' spawns nothing"); continue; }
 			enc.Rules.Add(rule);
@@ -135,7 +148,7 @@ internal sealed class Encounter
 		foreach (Rule r in Rules)
 		{
 			var sp = new List<string>();
-			foreach (Spawn s in r.Spawns) sp.Add($"{s.Count(players)}x {s.Prefab}{new string('*', s.Level - 1)}");
+			foreach (Spawn s in r.Spawns) sp.Add($"{s.Count(players)}x {s.Prefab}{new string('*', s.Level - 1)}{s.Suffix}");
 			string when = r.Repeating ? $"every {r.Interval:0}s [{r.Above * 100:0}-{r.Below * 100:0}%)" : $"{r.Threshold * 100:0}%";
 			parts.Add($"{when}: {string.Join(" + ", sp)}");
 		}

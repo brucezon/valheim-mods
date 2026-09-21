@@ -147,7 +147,7 @@ internal static class WorldEncounters
 			int players = Math.Max(1, Director.CountPlayers(p.At, 80f, out long nearest));
 			foreach (Encounter.Spawn spawn in p.Def.Spawns)
 			{
-				int count = Math.Max(0, (int)Math.Floor(spawn.Base + spawn.PerPlayer * players + 0.001f));
+				int count = spawn.PlainCount(players);
 				for (int i = 0; i < count; i++)
 					Director.SpawnCreature(spawn.Prefab, spawn.Level, p.At, 14f, 24f, nearest, Tag, $"{p.Def.Location} at {p.Site:0}");
 			}

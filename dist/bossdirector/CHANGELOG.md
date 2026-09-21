@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.1
+
+- **Player ranges on spawn entries:** add `@1-2`, `@3+` or `@4` after an entry and it only exists for that many
+  players. This lets one creature REPLACE another as the group grows, which `base+perPlayer` alone cannot say. Works
+  in boss waves and world encounters alike.
+- The Fuling village now sends a plain Berserker to one or two players and a one-star Berserker instead from three:
+  `GoblinBrute 1+0 @1-2, GoblinBrute* 1+0 @3+`. Players are counted within 80 m of the last kill.
+
 ## 0.4.0
 
 - **World encounters: the mod now works away from bosses too.** Kill enough of something at a known place and the

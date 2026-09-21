@@ -86,7 +86,8 @@ Rules are separated by `|`. A rule is `TRIGGER "optional message": SPAWNS`.
 - `every 45s`, optionally `below 50%` and/or `above 25%`, repeats while the boss is hurt and inside that band.
   Repeating rules stop while the living-adds cap is reached; threshold waves always arrive in full.
 - Spawns are comma separated: `Prefab base+perPlayer`. Count = base + perPlayer x players, rounded down.
-  `Hatchling 1+1` is 2 solo and 5 with four.   with four or more. `Wolf*` is a one-star wolf, `Wolf**` two stars.
+  `Hatchling 1+1` is 2 solo and 5 with four.   with four or more. `Wolf*` is a one-star wolf, `Wolf**` two stars. Add `@1-2`, `@3+` or `@4` after an entry to use it
+  only for that many players, so one creature can replace another as the group grows.
 
 Mistakes in a line are reported in the server log at startup and the rest of the line still runs. At startup the log
 also prints every scripted fight worked out for one and for four players.
@@ -122,12 +123,12 @@ Away from bosses: kill enough of something at a known place and the place answer
 
 | Place | Trigger | What arrives |
 |---|---|---|
-| Fuling village (`GoblinCamp2`) | 10 Fulings, archers or shamans killed within 10 minutes, within 80 m of the village | one Fuling Berserker, hunting; then that village is quiet for 30 minutes |
+| Fuling village (`GoblinCamp2`) | 10 Fulings, archers or shamans killed within 10 minutes, within 80 m of the village | one Fuling Berserker, hunting (a one-star Berserker instead when three or more players are there); then that village is quiet for 30 minutes |
 
 Section **6 - World encounters**: `Enabled` (On) and `Encounters`, rules separated by `|`:
 
 ```
-GoblinCamp2 80m: 10 Goblin,GoblinArcher,GoblinShaman in 600s -> GoblinBrute 1+0, cooldown 1800s
+GoblinCamp2 80m: 10 Goblin,GoblinArcher,GoblinShaman in 600s -> GoblinBrute 1+0 @1-2, GoblinBrute* 1+0 @3+, cooldown 1800s
 ```
 
 `Location radius: kills victims in seconds -> spawns, cooldown seconds`. Spawns use the boss-wave format
