@@ -232,7 +232,7 @@ internal static class Mechanics
 			if (view == null || !view.IsValid() || !view.IsOwner()) return;
 			ZDO zdo = view.GetZDO();
 			bool broken = Broken(zdo);
-			if (!broken && zdo.GetFloat(BrkMaxKey, 0f) > 0f && hit.GetAttacker() is Player && Game.instance != null)
+			if (!broken && zdo.GetFloat(BrkMaxKey, 0f) > 0f && Shield.Pool(zdo) <= 0f && hit.GetAttacker() is Player && Game.instance != null)
 			{
 				// Plain weapon stagger counts for little; damage of a type the boss is weak to (its own weaknesses, or a
 				// trait's) counts in full. Worked out before resistances, so it measures what was swung, not what landed.
@@ -242,7 +242,7 @@ internal static class Mechanics
 				if (weakShare > 0f) fill += WeakDamage(__instance.GetDamageModifiers(), hit.m_damage) * weakShare;
 				AddMeter(zdo, fill * scale, __instance);
 			}
-			if (!broken && Shield.Absorb(__instance, zdo, hit, share => AddMeter(zdo, share * zdo.GetFloat(BrkMaxKey, 0f), __instance))) return;
+			if ((!broken || Shield.IsImmune(zdo)) && Shield.Absorb(__instance, zdo, hit, share => AddMeter(zdo, share * zdo.GetFloat(BrkMaxKey, 0f), __instance))) return;
 			float mult = zdo.GetFloat(TakenKey, 1f);
 			if (mult <= 0f) mult = 1f;
 			Mode mode = Modes.Get(zdo);
@@ -337,7 +337,7 @@ internal static class Mechanics
 				string label = zdo.GetString(LabelKey, "");
 				Shield.UpdateBubble(c, zdo);
 				float ward = Shield.Pool(zdo), wardMax = Shield.Max(zdo);
-				if (ward > 0f && wardMax > 0f) label = (label.Length > 0 ? label + " - " : "") + RaidBossPlugin.WardLabel.Value + " (" + Mathf.CeilToInt(ward / wardMax * 100f) + "%)";
+				if (ward > 0f && wardMax > 0f) label = (label.Length > 0 ? label + " - " : "") + RaidBossPlugin.WardLabel.Value + (Shield.IsImmune(zdo) ? "" : " (" + Mathf.CeilToInt(ward / wardMax * 100f) + "%)");
 				string modeName = Modes.Get(zdo)?.Name ?? "";
 				if (modeName.Length > 0) label = label.Length > 0 ? label + " - " + modeName : modeName;
 				if (Broken(zdo)) extra += "\n<size=70%><color=#ffd24a>Broken</color></size>";

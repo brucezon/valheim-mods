@@ -5,7 +5,8 @@ using UnityEngine;
 
 namespace RaidBoss;
 
-// A boss's ward, raised by its casters (the "shield" rule action; Director.TickShield decides when). It works like the
+// A boss's ward, raised by its casters (the "shield" rule action; Director.TickShield decides when). An immune ward
+// (Yagluth's) cannot be worn down at all: it holds until its casters are dead. It works like the
 // Fuling shaman's own shield, only sized for a boss: it swallows every hit whole while it holds, and each hit's damage
 // wears it down; when the damage passes what it can take, it breaks. The shaman's bubble shows it, tinted so it reads
 // as the boss's and not a shaman's.
@@ -28,6 +29,9 @@ internal static class Shield
 
 	internal static float Pool(ZDO zdo) => zdo == null ? 0f : zdo.GetFloat(PoolKey, 0f);
 	internal static float Max(ZDO zdo) => zdo == null ? 0f : zdo.GetFloat(MaxKey, 0f);
+	// An immune ward: nothing it swallows wears it down (the server takes it away when its casters are dead).
+	internal const float Immune = 1e9f;
+	internal static bool IsImmune(ZDO zdo) => Max(zdo) >= Immune * 0.5f;
 
 	// On the boss's owner, before the game works the hit out: a held ward takes the whole hit. Returns true if it did.
 	internal static bool Absorb(Character boss, ZDO zdo, HitData hit, Action<float> feedMeter)
@@ -36,7 +40,7 @@ internal static class Shield
 		if (pool <= 0f) return false;
 		HitData.DamageTypes d = hit.m_damage;
 		float damage = d.m_blunt + d.m_slash + d.m_pierce + d.m_fire + d.m_frost + d.m_lightning + d.m_poison + d.m_spirit;
-		pool -= damage;
+		if (!IsImmune(zdo)) pool -= damage;
 		hit.ApplyModifier(0f);
 		Mechanics.PlayEffect(HitFx, hit.m_point);
 		if (pool <= 0f)

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.7
+
+- Heroic Yagluth's ward makes him immune: no damage wears it down. It falls only when the last shaman is dead, and
+  then he is broken. The `shield` action takes `immune` for this; hits on any ward no longer feed the break meter.
+
 ## 0.1.6
 
 - New `shield` action: a ward the boss's casters keep up, working like the Fuling shaman's shield sized for a boss

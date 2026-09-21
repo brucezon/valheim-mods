@@ -45,6 +45,7 @@ internal static class Director
 		public bool GuardApplied;
 		public float[] ShieldArgs;        // pool (share of max health), refresh (s), range (m), feed (share of the meter)
 		public string ShieldBy = "";     // the adds that raise it
+		public bool ShieldImmune;          // "immune": no damage wears it down; it falls only when its casters are dead, and the boss breaks
 		public float ShieldTimer;
 		public int TrophyHash;
 		public string TrophyName;
@@ -538,10 +539,11 @@ internal static class Director
 				string first = act.Args.Length > 0 ? act.Args[0] : "";
 				switch (act.Verb)
 				{
-					case "shield":   // shield pool0.05 refresh25 range35 feed0.5 by:GoblinShaman - a ward its casters raise and keep up
+					case "shield":   // shield [immune | pool0.05 feed0.5] refresh25 range35 by:GoblinShaman - a ward its casters raise and keep up
 						fight.ShieldArgs = new[] { Mathf.Clamp(Arg(act.Args, "pool", 0.05f), 0.001f, 2f), Mathf.Clamp(Arg(act.Args, "refresh", 25f), 1f, 600f), Mathf.Clamp(Arg(act.Args, "range", 35f), 2f, 200f), Mathf.Clamp(Arg(act.Args, "feed", 0.5f), 0f, 1f) };
 						fight.ShieldBy = "GoblinShaman";
 						foreach (string a in act.Args) if (a.StartsWith("by:", StringComparison.OrdinalIgnoreCase)) fight.ShieldBy = a.Substring(3);
+						fight.ShieldImmune = Array.Exists(act.Args, a => a.Equals("immune", StringComparison.OrdinalIgnoreCase));
 						fight.ShieldTimer = fight.ShieldArgs[1];   // the first living caster raises it at once
 						break;
 					case "guard":    // guard taken0.3 broken3 melee0.5 size0.2: hard to hurt until broken, very easy while broken
@@ -630,8 +632,17 @@ internal static class Director
 			fight.ShieldTimer = 0f;
 			if (alive == 0)
 			{
-				Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("set_f", Shield.PoolName, "", 0f));
-				RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: the last {fight.ShieldBy} is dead, the ward fades");
+				if (fight.ShieldImmune)
+				{
+					// the mechanic is done: the ward falls and the boss is broken
+					Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("set_f", Shield.PoolName, "", 0f), new Net.Op("break"));
+					RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: the last {fight.ShieldBy} is dead - the ward falls and the boss is broken");
+				}
+				else
+				{
+					Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("set_f", Shield.PoolName, "", 0f));
+					RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: the last {fight.ShieldBy} is dead, the ward fades");
+				}
 			}
 			return;
 		}
@@ -640,10 +651,10 @@ internal static class Director
 		fight.ShieldTimer = 0f;
 		int level = Mathf.Max(1, boss.GetInt(ZDOVars.s_level, 1));
 		float maxHealth = boss.GetFloat(ZDOVars.s_maxHealth, (BossBaseHealth.TryGetValue(boss.GetPrefab(), out float b) ? b : 1000f) * level);
-		float full = Mathf.Max(1f, fight.ShieldArgs[0] * maxHealth);
+		float full = fight.ShieldImmune ? Shield.Immune : Mathf.Max(1f, fight.ShieldArgs[0] * maxHealth);
 		Net.SendOps(boss.GetOwner(), fight.BossId,
 			new Net.Op("set_f", Shield.MaxName, "", full), new Net.Op("set_f", Shield.FeedName, "", fight.ShieldArgs[3]), new Net.Op("set_f", Shield.PoolName, "", full));
-		RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: warded by {near} {fight.ShieldBy} - takes {full:0} damage to break");
+		RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: warded by {near} {fight.ShieldBy} - {(fight.ShieldImmune ? "immune until they are dead" : $"takes {full:0} damage to break")}");
 	}
 
 	static void TickMechanics(Fight fight, ZDO boss)

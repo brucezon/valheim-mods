@@ -22,7 +22,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.6";
+	public const string Version = "0.1.7";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
@@ -165,7 +165,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		"heroic 40% \"A champion of the fallen cities\": GoblinBrute:Ironhide* 1+0 @1, GoblinBrute:Ironhide** 1+0 @2+, GoblinBrute:Ironhide 0+0.25 | " +
 		"heroic every 25s below 60%: strike fire r4 d2.5 dmg120 x2 | " +
 		"heroic every 45s below 80%: boss cycle Emberborn Stormcalled 20 | " +
-		"heroic 100%: shield pool0.05 refresh25 range35 feed0.5 by:GoblinShaman | " +
+		"heroic 100%: shield immune refresh25 range35 by:GoblinShaman | " +
 		"heroic every 40s: GoblinShaman 1+0 | " +
 		"20% \"They will not bend or break\": Goblin 1+0, Goblin* 0+0.5, Goblin* 0+0.5, GoblinArcher 0+0.34 | " +
 		"every 20s below 20%: Goblin 1+0 @2+, Goblin 1+0 @3+, Goblin 1+0 @4+";
