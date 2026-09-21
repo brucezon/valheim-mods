@@ -22,7 +22,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.7";
+	public const string Version = "0.1.8";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
@@ -90,6 +90,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<string> StrikeFx;
 	internal static ConfigEntry<string> WardLabel;
 	internal static ConfigEntry<string> WardColour;
+	internal static ConfigEntry<bool> WardBubble;
 	internal static ConfigEntry<string> HuntOrder;
 	internal static ConfigEntry<HuntBoss> HuntBossChoice;
 	internal static ConfigEntry<bool> HuntHeroic;
@@ -255,7 +256,8 @@ public class RaidBossPlugin : BaseUnityPlugin
 		Traits = config("8 - Mechanics", "Traits", "Ironhide = resist pierce, resist slash | Brittle = weak blunt | Stonebound = resist blunt | Rimebound = infuse frost 0.3, resist frost, weak fire | Emberborn = infuse fire 0.3, resist fire, weak frost | Stormcalled = infuse lightning 0.3, resist lightning | Blighted = infuse poison 0.3, resist poison | Frenzied = frenzy 1.5 | Fleet = swift 1.25 | Renewing = mend 0.5 | Wrathful = frenzy 1.5, swift 1.15", "Named sets of changes to a creature, separated by | . Give one to an add in a script with Prefab:Trait (GoblinBrute:Ironhide 1+0) - its name gains the trait as a prefix - or to the boss with the action 'boss Trait', 'boss Trait 20' (for 20 seconds) or 'boss cycle TraitA TraitB 30' (the next one each time the rule fires), so a boss can shift between them during a fight; 'boss none' clears it. The boss shows its trait under its name. Words: resist, veryresist, slightresist, immune, weak, veryweak, slightweak, then blunt, slash, pierce, fire, frost, lightning, poison or spirit (they replace the creature's own value for that damage type; the game colours the damage numbers as always, yellow weak, grey resistant); infuse ELEMENT 0.3 = its hits on players carry 30% extra damage of that element; frenzy 1.5 = its attacks come round 1.5x as fast; swift 1.25 = movement speed; mend 0.5 = heals 0.5% of max health a second; hardened 0.7 = takes 70% damage.", false);
 		StrikeFx = config("8 - Mechanics", "Strike effects", "fire: > fx_goblinking_meteor_hit | frost: > fx_iceshard_hit+fx_fenring_icenova | lightning: > fx_eikthyr_stomp+fx_chainlightning_hit", "Vanilla effects of a ground strike, by element: TELL > IMPACT, several joined with +. The warning ring is always drawn and is the warning; a TELL plays when it appears, so keep it subtle (or empty) - anything that looks like an impact reads as the strike landing early. Played by each player's own game, the IMPACT exactly when the ring fills.", false);
 		WardLabel = config("8 - Mechanics", "Ward label", "Warded", "Shown under the boss's name while a ward is up. Pushed to the players.", true);
-		WardColour = config("8 - Mechanics", "Ward colour", "#ff7a1f", "Colour of a boss's ward bubble (the Fuling shaman's bubble, recoloured so it reads as the boss's). HTML colour. Pushed to the players.", true);
+		WardColour = config("8 - Mechanics", "Ward colour", "#9fd8ff", "Colour of the ward's status under the boss's name (and of its bubble, if shown). HTML colour. Pushed to the players.", true);
+		WardBubble = config("8 - Mechanics", "Ward bubble", false, "On = a warded boss also wears the Fuling shaman's bubble, in the ward colour. Off (default) = the status under its name only. Pushed to the players.", true);
 
 		HuntOrder = config("9 - Debug", "Start a hunt", "", "A boss's add waves in the open world, with no boss: write the boss's prefab name, optionally 'heroic', optionally a player's name (default: the first player connected), and save - e.g. 'GoblinKing heroic Anthony'. The waves arrive around that player one after another: the next when the last is dead, or after 'Hunt, next wave after (s)'; the trickles run in between. It ends after the last wave. 'stop' ends one early. The server clears this line once it has read it.", false);
 		HuntBossChoice = config("9 - Debug", "Hunt: waves of", HuntBoss.Yagluth, new ConfigDescription("Whose waves the hunt button sends.", null, new ConfigurationManagerAttributes { Order = 3 }), false);

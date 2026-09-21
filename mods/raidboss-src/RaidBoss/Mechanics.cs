@@ -337,7 +337,7 @@ internal static class Mechanics
 				string label = zdo.GetString(LabelKey, "");
 				Shield.UpdateBubble(c, zdo);
 				float ward = Shield.Pool(zdo), wardMax = Shield.Max(zdo);
-				if (ward > 0f && wardMax > 0f) label = (label.Length > 0 ? label + " - " : "") + RaidBossPlugin.WardLabel.Value + (Shield.IsImmune(zdo) ? "" : " (" + Mathf.CeilToInt(ward / wardMax * 100f) + "%)");
+				if (ward > 0f && wardMax > 0f) label = (label.Length > 0 ? label + " - " : "") + "<color=" + RaidBossPlugin.WardColour.Value + ">" + RaidBossPlugin.WardLabel.Value + (Shield.IsImmune(zdo) ? "" : " (" + Mathf.CeilToInt(ward / wardMax * 100f) + "%)") + "</color>";
 				string modeName = Modes.Get(zdo)?.Name ?? "";
 				if (modeName.Length > 0) label = label.Length > 0 ? label + " - " + modeName : modeName;
 				if (Broken(zdo)) extra += "\n<size=70%><color=#ffd24a>Broken</color></size>";

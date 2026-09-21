@@ -60,6 +60,12 @@ internal static class Shield
 
 	internal static void UpdateBubble(Character boss, ZDO zdo)
 	{
+		// Off by default: on a boss the size of Yagluth the bubble is too much; the status under the name says it.
+		if (!RaidBossPlugin.WardBubble.Value)
+		{
+			if (bubbles.TryGetValue(boss, out GameObject old)) { if (old != null) UnityEngine.Object.Destroy(old); bubbles.Remove(boss); }
+			return;
+		}
 		bool held = Pool(zdo) > 0f;
 		bubbles.TryGetValue(boss, out GameObject bubble);
 		if (held && bubble == null)

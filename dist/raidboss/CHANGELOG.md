@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8
+
+- The ward falling no longer breaks the boss: with a shaman every 40 s, one shaman was one break.
+- The ward shows as a light-blue "Warded" under the boss's name; the shaman's bubble is off by default (`Ward bubble`).
+
 ## 0.1.7
 
 - Heroic Yagluth's ward makes him immune: no damage wears it down. It falls only when the last shaman is dead, and

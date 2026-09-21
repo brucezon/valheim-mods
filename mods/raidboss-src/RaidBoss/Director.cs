@@ -45,7 +45,7 @@ internal static class Director
 		public bool GuardApplied;
 		public float[] ShieldArgs;        // pool (share of max health), refresh (s), range (m), feed (share of the meter)
 		public string ShieldBy = "";     // the adds that raise it
-		public bool ShieldImmune;          // "immune": no damage wears it down; it falls only when its casters are dead, and the boss breaks
+		public bool ShieldImmune;          // "immune": no damage wears it down; it falls only when its casters are dead
 		public float ShieldTimer;
 		public int TrophyHash;
 		public string TrophyName;
@@ -632,17 +632,9 @@ internal static class Director
 			fight.ShieldTimer = 0f;
 			if (alive == 0)
 			{
-				if (fight.ShieldImmune)
-				{
-					// the mechanic is done: the ward falls and the boss is broken
-					Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("set_f", Shield.PoolName, "", 0f), new Net.Op("break"));
-					RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: the last {fight.ShieldBy} is dead - the ward falls and the boss is broken");
-				}
-				else
-				{
-					Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("set_f", Shield.PoolName, "", 0f));
-					RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: the last {fight.ShieldBy} is dead, the ward fades");
-				}
+				// No break for it: with a shaman every 40 s, one shaman would be one break.
+				Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("set_f", Shield.PoolName, "", 0f));
+				RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: the last {fight.ShieldBy} is dead, the ward falls");
 			}
 			return;
 		}

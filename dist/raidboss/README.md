@@ -116,11 +116,11 @@ Waves are only part of a fight. A script rule can also do things, and several ar
   then everyone turns on it for the break. "Guarded" shows under its name. Needs the break meter; with breaks off it is
   skipped.
 - **Shield** (`shield immune refresh25 range35 by:GoblinShaman`). A ward the boss's casters raise and keep up, shown
-  as the Fuling shaman's bubble, recoloured (`Ward colour`), with "Warded" under the boss's name. While it holds it
-  swallows every hit whole. `immune`: nothing wears it down - it falls only when the last caster is dead, and then the
-  boss is broken. Without `immune` it breaks after `pool` (a share of the boss's health, 0.05) and pays `feed` of a break
+  as "Warded" under the boss's name in the ward colour (light blue; `Ward bubble` also puts the Fuling shaman's bubble
+  on it). While it holds it swallows every hit whole. `immune`: nothing wears it down - it falls only when the last
+  caster is dead. Without `immune` it breaks after `pool` (a share of the boss's health, 0.05) and pays `feed` of a break
   meter (0.5). A living caster within 35 m raises it again 25 s after it falls. Hits on a ward do not feed the break
-  meter. Heroic Yagluth: his shamans make him immune until they are dead; a shaman joins the fight every 40 s.
+  meter. Heroic Yagluth: his shamans make him immune until they are dead (no break when it falls); a shaman joins the fight every 40 s.
 - **Ground strikes** (`strike lightning r3.5 d2 dmg20 x2`). A coloured ring fills on the ground under a player for the
   warning time, then fire, frost, lightning or poison lands there: dodge-roll through it or step out. It cannot be
   blocked.
