@@ -534,6 +534,7 @@ internal static class Mechanics
 	// Called every frame from the plugin; does its work once a second.
 	internal static void ClientTick(float dt)
 	{
+		Auras.Tick(dt);
 		weatherTimer += dt;
 		if (weatherTimer < 1f) return;
 		weatherTimer = 0f;

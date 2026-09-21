@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.12
+
+- Trait auras: a creature whose trait carries an element wears the game's own aura for it (flames, sparks, frost,
+  smoke), toned down and, on a big boss, spread over the body instead of scaled up - in the manner of CLLC's infusions.
+  `Trait aura brightness (%)` (60) and `Trait aura size (x)` (1) are each player's own.
+- A boss taking a trait says so: `Trait messages` ("Yagluth burns", "Yagluth calls the storm").
+
 ## 0.1.11
 
 - Waves rebuilt for every scripted boss: the biggest packs come early, the last wave is a starred elite with a small

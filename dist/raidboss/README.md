@@ -144,6 +144,9 @@ Waves are only part of a fight. A script rule can also do things, and several ar
   | Renewing | heals 0.5% of its max health a second |
   | Wrathful | Frenzied, and a little faster |
 
+  A trait that carries an element also puts the game's own aura for it on the creature - flames for Emberborn, sparks
+  for Stormcalled, frost for Rimebound, smoke for Blighted - toned down (`Trait aura brightness (%)`, 60) and, on a big
+  boss, spread over its body rather than made bigger. A boss taking a trait says so (`Trait messages`: "Yagluth burns").
   An add's trait is a prefix on its name; a boss's is shown under its name. A boss can shift between traits during a
   fight, and one given for a number of seconds lapses by itself. While a creature is staggered - or a boss is
   broken - its trait's resistances are off, so a stagger on an Ironhide Berserker pays out in full. Resistances show in the game's own damage colours:

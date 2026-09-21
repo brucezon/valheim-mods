@@ -592,6 +592,13 @@ internal static class Director
 						string mode = pick.Equals("none", StringComparison.OrdinalIgnoreCase) ? "" : RaidBossPlugin.TraitMode(pick);
 						if (mode.Length == 0 && !pick.Equals("none", StringComparison.OrdinalIgnoreCase)) { RaidBossPlugin.Log.LogWarning($"{fight.Prefab}: trait '{pick}' is not in the Traits setting"); break; }
 						Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("set_s", Modes.ModeName, mode), new Net.Op("set_until", Modes.UntilName, "", seconds));
+						string said = mode.Length > 0 ? RaidBossPlugin.TraitMessage(pick) : "";
+						if (said.Length > 0)
+						{
+							GameObject bossPrefab = ZNetScene.instance.GetPrefab(fight.Prefab);
+							string bossName = bossPrefab != null && bossPrefab.GetComponent<Character>() != null ? bossPrefab.GetComponent<Character>().m_name : fight.Prefab;
+							Message(bossPos, said.Replace("{boss}", bossName));
+						}
 						break;
 					case "strike":   // strike frost r4 d2 dmg90 x2: telegraphed ground strikes under random engaged players
 						var targets = new List<Vector3>();

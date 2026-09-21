@@ -22,7 +22,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.11";
+	public const string Version = "0.1.12";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
@@ -92,6 +92,9 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<string> WardLabel;
 	internal static ConfigEntry<string> WardColour;
 	internal static ConfigEntry<bool> WardBubble;
+	internal static ConfigEntry<float> AuraBrightness;
+	internal static ConfigEntry<float> AuraSize;
+	internal static ConfigEntry<string> TraitMessages;
 	internal static ConfigEntry<string> HuntOrder;
 	internal static ConfigEntry<HuntBoss> HuntBossChoice;
 	internal static ConfigEntry<bool> HuntHeroic;
@@ -260,6 +263,9 @@ public class RaidBossPlugin : BaseUnityPlugin
 		WardLabel = config("8 - Mechanics", "Ward label", "Warded", "Shown under the boss's name while a ward is up. Pushed to the players.", true);
 		WardColour = config("8 - Mechanics", "Ward colour", "#9fd8ff", "Colour of the ward's status under the boss's name (and of its bubble, if shown). HTML colour. Pushed to the players.", true);
 		WardBubble = config("8 - Mechanics", "Visual ward bubble", false, "Only the look of a ward: on = a warded boss also wears the Fuling shaman's bubble, in the ward colour. Off (default) = the status under its name only. The ward itself works either way. Pushed to the players.", true);
+		TraitMessages = config("8 - Mechanics", "Trait messages", "Emberborn = {boss} burns | Stormcalled = {boss} calls the storm | Rimebound = {boss} turns to frost | Blighted = {boss} festers | Frenzied = {boss} is frenzied | Wrathful = {boss} is wrathful | Renewing = {boss} mends", "Centre-screen line when a BOSS takes a trait (not an add), by trait, separated by | . {boss} is the boss's name. A trait not listed says nothing.", false);
+		AuraBrightness = config("8 - Mechanics", "Trait aura brightness (%)", 60f, new ConfigDescription("A creature whose trait carries an element (Emberborn, Stormcalled, Rimebound, Blighted...) wears the game's own aura for it - flames, sparks, frost, smoke. How bright, as a share of the game's own. 0 = no aura. Your own game only.", new AcceptableValueRange<float>(0f, 100f)), false);
+		AuraSize = config("8 - Mechanics", "Trait aura size (x)", 1f, new ConfigDescription("Size of the aura's flames and sparks. On a big boss they are spread over its body rather than made bigger. Your own game only.", new AcceptableValueRange<float>(0.25f, 3f)), false);
 
 		HuntOrder = config("9 - Debug", "Start a hunt", "", "A boss's add waves in the open world, with no boss: write the boss's prefab name, optionally 'heroic', optionally a player's name (default: the first player connected), and save - e.g. 'GoblinKing heroic Anthony'. The waves arrive around that player one after another: the next when the last is dead, or after 'Hunt, next wave after (s)'; the trickles run in between. It ends after the last wave. 'stop' ends one early. The server clears this line once it has read it.", false);
 		HuntBossChoice = config("9 - Debug", "Hunt: waves of", HuntBoss.Yagluth, new ConfigDescription("Whose waves the hunt button sends.", null, new ConfigurationManagerAttributes { Order = 3 }), false);
@@ -283,6 +289,17 @@ public class RaidBossPlugin : BaseUnityPlugin
 
 	// "Ironhide = resist pierce, resist slash | Brittle = weak blunt" -> the resistances of one trait in the game's own
 	// words ("pierce=Resistant,slash=Resistant"), which is what travels on a creature's ZDO. Empty = no such trait.
+	// "Emberborn = {boss} burns | ...": the line said when a boss takes this trait, or empty.
+	internal static string TraitMessage(string trait)
+	{
+		foreach (string entry in (TraitMessages.Value ?? "").Split('|'))
+		{
+			int eq = entry.IndexOf('=');
+			if (eq > 0 && entry.Substring(0, eq).Trim().Equals((trait ?? "").Trim(), StringComparison.OrdinalIgnoreCase)) return entry.Substring(eq + 1).Trim();
+		}
+		return "";
+	}
+
 	// The whole mode string of one trait (Modes.cs): "name=Frostbound;res=frost=Resistant,fire=Weak;infuse=frost:0.3".
 	internal static string TraitMode(string trait)
 	{
