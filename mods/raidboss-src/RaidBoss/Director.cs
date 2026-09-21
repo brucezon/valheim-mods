@@ -47,6 +47,10 @@ internal static class Director
 		public string ShieldBy = "";     // the adds that raise it
 		public bool ShieldImmune;          // "immune": no damage wears it down; it falls only when its casters are dead
 		public float ShieldTimer;
+		// Wave spacing: the last threshold wave, and when it came (fight time). The next waits while it is mostly alive.
+		public readonly List<ZDOID> PrevWave = new List<ZDOID>();
+		public float Clock, PrevWaveAt;
+		public readonly HashSet<int> HeldSaid = new HashSet<int>();
 		public int TrophyHash;
 		public string TrophyName;
 		public int MaxPlayers;          // most real players seen in range at once; decides the idols
@@ -420,6 +424,7 @@ internal static class Director
 		fight.LastFraction = fraction;
 		ReportAdoption(fight, dt);
 
+		fight.Clock += dt;
 		bool hurt = fraction < 0.999f;
 		for (int i = 0; i < fight.Script.Rules.Count; i++)
 		{
@@ -429,10 +434,23 @@ internal static class Director
 			if (!rule.Repeating)
 			{
 				if (fight.Fired[i] || fraction > rule.Threshold) continue;
+				// A group that bursts the boss through two thresholds would otherwise face both waves at once: a wave with adds
+				// waits while more than a third of the last one is still alive, for at most "Next wave waits up to" seconds.
+				if (rule.Spawns.Count > 0 && WaveHeld(fight))
+				{
+					if (fight.HeldSaid.Add(i)) { RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: the {rule.Threshold * 100f:0}% wave waits - the last one is still up"); }
+					continue;
+				}
 				fight.Fired[i] = true;
 				RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: {rule.Threshold * 100f:0}% wave at {fraction * 100f:0.0}% health, {players} player(s)");
 				int before = fight.Adds.Count;
 				SpawnRule(fight, boss, rule, players, int.MaxValue);
+				if (fight.Adds.Count > before)
+				{
+					fight.PrevWave.Clear();
+					for (int k = before; k < fight.Adds.Count; k++) fight.PrevWave.Add(fight.Adds[k].Id);
+					fight.PrevWaveAt = fight.Clock;
+				}
 				AfterRule(fight, boss, rule, before);
 				continue;
 			}
@@ -702,6 +720,18 @@ internal static class Director
 			if (ops.Count > 0) Net.SendOps(boss.GetOwner(), fight.BossId, ops.ToArray());
 			RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: a wave of {wave.Ids.Count} is cleared{(wave.Ward ? ", the ward falls" : "")}{(wave.BreakAfter ? ", the boss breaks" : "")}");
 		}
+	}
+
+	static bool WaveHeld(Fight fight)
+	{
+		if (fight.PrevWave.Count == 0 || fight.Clock - fight.PrevWaveAt >= RaidBossPlugin.WaveSpacing.Value) return false;
+		int alive = 0;
+		foreach (ZDOID id in fight.PrevWave)
+		{
+			ZDO zdo = ZDOMan.instance.GetZDO(id);
+			if (zdo != null && zdo.IsValid() && zdo.GetBool(AddTag)) alive++;
+		}
+		return alive * 3 > fight.PrevWave.Count;
 	}
 
 	static void SpawnRule(Fight fight, ZDO boss, Encounter.Rule rule, int players, int room)

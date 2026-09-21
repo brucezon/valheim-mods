@@ -22,7 +22,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.10";
+	public const string Version = "0.1.11";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
@@ -52,6 +52,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<float> AddDamage;
 	internal static ConfigEntry<float> AddHealth;
 	internal static ConfigEntry<float> MoreAdds;
+	internal static ConfigEntry<float> WaveSpacing;
 	internal static ConfigEntry<float> BossDamage;
 	internal static ConfigEntry<int> ForcePlayers;
 	internal static ConfigEntry<bool> WorldEncountersEnabled;
@@ -129,9 +130,9 @@ public class RaidBossPlugin : BaseUnityPlugin
 
 	const string DragonDefault =
 		"every 45s above 25%: Hatchling 1+0 @2+, Hatchling 1+0 @3+, Hatchling 1+0 @4+ | " +
-		"75% \"Moder calls her brood\": Hatchling 0+1.34, Wolf 0.5+0.25 | " +
-		"50% \"The pack answers her call\": Wolf 0+1.34, Wolf* 0+0.34 | " +
-		"25% \"Her last guard descends\": StoneGolem 1+0, Hatchling 0+0.34, Hatchling 0+0.34 | " +
+		"75% \"Moder calls her brood\": Hatchling 1+1, Wolf 0+0.5 | " +
+		"50% \"The pack answers her call\": Wolf 1+0.5, Wolf* 0+0.25 | " +
+		"25% \"Her last guard descends\": StoneGolem 1+0, Hatchling 0+0.5 | " +
 		"every 25s below 25%: Hatchling 1+0 @2+, Hatchling 1+0 @3+, Hatchling 1+0 @4+ | " +
 		"heroic every 30s: Wolf 1+0 @2+ | " +
 		"heroic every 20s below 75%: strike frost r4 d2.5 dmg150 x2";
@@ -146,29 +147,29 @@ public class RaidBossPlugin : BaseUnityPlugin
 	// Moder's: the Elder keeps a slow trickle, Bonemass has none until the end because his own throw is one.
 	const string ElderDefault =
 		"every 50s above 25%: Greydwarf 1+0 @2+, Greydwarf 1+0 @3+, Greydwarf 1+0 @4+ | " +
-		"75% \"The forest stirs\": Greydwarf 0+1.34 | " +
-		"50% \"Shamans tend their king\": Greydwarf_Shaman 0.5+0.5, Greydwarf 1+0 | " +
-		"25% \"The wrath of the forest\": Greydwarf_Elite 1+0, Troll 0+0.34 | " +
+		"75% \"The forest stirs\": Greydwarf 2+1 | " +
+		"50% \"Shamans tend their king\": Greydwarf_Shaman 0.5+0.5, Greydwarf 1+0.5 | " +
+		"25% \"The wrath of the forest\": Greydwarf_Elite* 1+0, Greydwarf 0+0.5, Troll 1+0 @3+ | " +
 		"every 30s below 25%: Greydwarf 1+0 @2+, Greydwarf 1+0 @3+, Greydwarf 1+0 @4+";
 
 	const string BonemassDefault =
-		"75% \"The dead rise from the mire\": Draugr 0+1.34 | " +
-		"50% \"Archers take aim from the murk\": Draugr_Ranged 0.5+0.5, Draugr* 0+0.34 | " +
-		"normal 25% \"A champion of the drowned\": Draugr_Elite 1+0, Wraith 0+0.34 | " +
+		"75% \"The dead rise from the mire\": Draugr 2+1 | " +
+		"50% \"Archers take aim from the murk\": Draugr_Ranged 1+0.5, Draugr 0+1 | " +
+		"normal 25% \"A champion of the drowned\": Draugr_Elite* 1+0, Draugr 0+0.5, Wraith 0+0.34 | " +
 		"heroic 100%: guard taken0.3 broken3 melee0.5 size0.2 | " +
-		"heroic 25% \"A champion of the drowned\": Draugr_Elite* 1+0, Wraith 0+0.34, ward 0.5 break | " +
+		"heroic 25% \"A champion of the drowned\": Draugr_Elite* 1+0 @1, Draugr_Elite** 1+0 @2+, Draugr* 0+0.5, Wraith 0+0.34, ward 0.5 break | " +
 		"every 30s below 25%: Draugr 1+0 @2+, Draugr 1+0 @3+, Draugr 1+0 @4+";
 
 	const string GoblinKingDefault =
-		"80% \"The last of his people answer\": Goblin 3+1 | " +
-		"60% \"Shamans draw upon their king\": GoblinShaman 0.5+0.5, Goblin 2+0.5, GoblinArcher 0+0.5 | " +
-		"normal 40% \"A champion of the fallen cities\": GoblinBrute 1+0, GoblinBrute* 0+0.25, Goblin 2+0.5 | " +
-		"heroic 40% \"A champion of the fallen cities\": GoblinBrute:Ironhide* 1+0 @1, GoblinBrute:Ironhide** 1+0 @2+, GoblinBrute:Ironhide 0+0.25, Goblin 2+0.5 | " +
+		"80% \"The last of his people answer\": Goblin 4+1 | " +
+		"60% \"Shamans draw upon their king\": GoblinShaman 0.5+0.5, Goblin 2+1, GoblinArcher 0+0.5 | " +
+		"normal 40% \"A champion of the fallen cities\": GoblinBrute 1+0, GoblinBrute* 0+0.25, Goblin 1+0.5 | " +
+		"heroic 40% \"A champion of the fallen cities\": GoblinBrute:Ironhide* 1+0 @1, GoblinBrute:Ironhide** 1+0 @2+, GoblinBrute:Ironhide 0+0.25, Goblin 1+0.5 | " +
 		"heroic every 25s below 60%: strike fire r4 d2.5 dmg120 x2 | " +
 		"heroic every 45s below 80%: boss cycle Emberborn Stormcalled 20 | " +
 		"heroic 100%: shield immune refresh25 range35 by:GoblinShaman | " +
 		"heroic every 40s: GoblinShaman 1+0 | " +
-		"20% \"They will not bend or break\": Goblin 3+0.5, Goblin* 0+0.5, Goblin* 0+0.5, GoblinArcher 0+0.34 | " +
+		"20% \"They will not bend or break\": Goblin* 1+0.5, Goblin 0+0.5, GoblinArcher 0+0.34 | " +
 		"every 20s below 20%: Goblin 1+0 @2+, Goblin 1+0 @3+, Goblin 1+0 @4+";
 
 	float tick;
@@ -204,7 +205,8 @@ public class RaidBossPlugin : BaseUnityPlugin
 		RingMax = config("2 - Scaling", "Spawn ring, outer (m)", 20f, "See above.", false);
 		AddDamage = config("2 - Scaling", "Add damage (x)", 0.9f, new ConfigDescription("Damage the adds deal to players, as a share of what that creature normally deals. 1 = normal. It is written on each add when the server creates it and applied on the player's own game; bosses and wild creatures are not affected. It multiplies with any other mod's enemy-damage setting.", new AcceptableValueRange<float>(0.05f, 3f)), false);
 		AddHealth = config("2 - Scaling", "Add health (x)", 1f, new ConfigDescription("Adds arrive with this share of their health, so they die sooner. 1 = full health. The only visible sign is a health bar that starts part empty.", new AcceptableValueRange<float>(0.1f, 1f)), false);
-		MoreAdds = config("2 - Scaling", "More adds (x)", 1.3f, new ConfigDescription("Every wave count and the living-adds cap are multiplied by this and rounded down, so at 1.3 a wave of 4 becomes 5, 5 becomes 6, 8 becomes 10, and 1 to 3 stay as they are. 1 = the scripts exactly as written.", new AcceptableValueRange<float>(1f, 4f)), false);
+		MoreAdds = config("2 - Scaling", "More adds (x)", 1f, new ConfigDescription("Every wave count and the living-adds cap are multiplied by this and rounded down (at 1.3 a wave of 4 becomes 5, 5 becomes 6, 8 becomes 10; 1 to 3 stay as they are). 1 (default) = the scripts exactly as written.", new AcceptableValueRange<float>(1f, 4f)), false);
+		WaveSpacing = config("2 - Scaling", "Next wave waits up to (s)", 30f, new ConfigDescription("A threshold wave waits while more than a third of the previous one is still alive, for at most this long - so a group that bursts the boss through two thresholds meets them one after another, not together. 0 = never wait.", new AcceptableValueRange<float>(0f, 300f)), false);
 		BossDamage = config("2 - Scaling", "Boss damage during a fight (x)", 1f, new ConfigDescription("Damage a boss deals to players while its fight is on, as a share of normal. 1 = normal. The server tells every player's game, which applies it. It multiplies with any other mod's enemy-damage setting.", new AcceptableValueRange<float>(0.05f, 5f)), false);
 
 		WorldEncountersEnabled = config("4 - World encounters", "Enabled", true, "Encounters away from bosses: kill enough of something at a known place and the place answers. No message is shown.", false);
@@ -227,7 +229,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		HeroicBossDamage = config("5 - Heroic fights", "Boss damage (x)", 1.2f, new ConfigDescription("Multiplies 'Boss damage during a fight' for a heroic fight: 1.2 = the boss hits 20% harder.", new AcceptableValueRange<float>(1f, 3f)), false);
 		HeroicBossDamageByBoss = config("5 - Heroic fights", "Boss damage by boss", "", "Bosses that use their own number instead of 'Boss damage (x)', as Prefab=number pairs separated by commas, for example GoblinKing=1.35. Empty = every boss uses the number above.", false);
 		HeroicBossHealth = config("5 - Heroic fights", "Boss health (x)", 1.4f, new ConfigDescription("A heroic boss has this much more health, on top of whatever it spawned with - another mod's boss health multiplies with this one. Raised when the challenge is taken up, at full health. 1 = unchanged.", new AcceptableValueRange<float>(1f, 5f)), false);
-		HeroicMoreAdds = config("5 - Heroic fights", "More adds (x)", 1.25f, new ConfigDescription("Multiplies the wave sizes and the living-adds cap again, on top of 'More adds' (1.3 x 1.25 = about 1.6).", new AcceptableValueRange<float>(1f, 3f)), false);
+		HeroicMoreAdds = config("5 - Heroic fights", "More adds (x)", 1.25f, new ConfigDescription("Multiplies the wave sizes and the living-adds cap again, on top of 'More adds' (with 'More adds' at 1, heroic waves are 1.25 times the script).", new AcceptableValueRange<float>(1f, 3f)), false);
 		HeroicGuaranteedStar = config("5 - Heroic fights", "Every wave carries a star", true, "On = in a heroic fight every threshold wave has a starred add. Where the script already stars something in that wave, one of those adds gains a star (a one-star becomes a two-star) and the rest arrive as written. Where it stars nothing, the first add of the wave arrives one-star - for a wave that is a single heavy creature, that is the heavy creature. Trickles are not affected.", false);
 		HeroicStarChance = config("5 - Heroic fights", "Extra star chance for plain adds", 0f, new ConfigDescription("On top of the guaranteed star: chance that any other add written without a star arrives with one, trickles included. 0 = none.", new AcceptableValueRange<float>(0f, 1f)), false);
 		HeroicMessage = config("5 - Heroic fights", "Message", "The challenge is accepted", "Centre-screen message when the trophy is taken. Empty = none.", false);

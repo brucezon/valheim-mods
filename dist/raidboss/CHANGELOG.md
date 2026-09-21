@@ -2,8 +2,12 @@
 
 ## 0.1.11
 
-- Yagluth's waves are Fuling packs, as in their villages: 80% three plus one per player, a pack with the shamans
-  (and archers from two players), an escort for the champion, and a bigger final wave.
+- Waves rebuilt for every scripted boss: the biggest packs come early, the last wave is a starred elite with a small
+  escort. Yagluth's waves are Fuling packs, as in their villages. Moder's wolf wave is at most three wolves and a
+  one-star at four players.
+- `More adds (x)` defaults to 1: the scripts are the counts that spawn (the old 1.3 is folded into them).
+- Wave spacing: a threshold wave waits while more than a third of the previous one is still alive, for up to
+  `Next wave waits up to (s)` (30), so bursting the boss through two thresholds no longer brings both waves at once.
 
 ## 0.1.10
 

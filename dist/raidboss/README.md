@@ -19,23 +19,25 @@ nothing that scales with the group. With RaidBoss:
 20 s in a normal fight, and two at a time every 12 s in a heroic one, each after a warning ring on the ground (see
 Mechanics).
 
+The biggest waves come early; the last one is a starred elite with a small escort, when the players are most worn down.
+
 **The Elder** (`gd_king`)
 
 | Boss health | Wave | Solo | Four players |
 |---|---|---|---|
 | hurt, above 25% | greydwarves every 50 s from two players, up to the living-adds cap | none | 3 |
-| 75% | The forest stirs: greydwarves | 1 | 5 |
-| 50% | Shamans tend their king: shamans, plus one greydwarf | 1 + 1 | 2 + 1 |
-| 25% | The wrath of the forest: a greydwarf brute, plus a troll from three players | 1 | 1 + troll |
+| 75% | The forest stirs: greydwarves | 3 | 6 |
+| 50% | Shamans tend their king: shamans with greydwarves | 1 + 1 | 2 + 3 |
+| 25% | The wrath of the forest: a one-star greydwarf brute with an escort, a troll from three players | 1* | 1* + 2 + troll |
 | below 25% | greydwarves every 30 s from two players, up to the cap | none | 3 |
 
 **Bonemass** (`Bonemass`)
 
 | Boss health | Wave | Solo | Four players |
 |---|---|---|---|
-| 75% | The dead rise from the mire: draugr | 1 | 5 |
-| 50% | Archers take aim from the murk: draugr archers, plus a one-star draugr from three players | 1 | 2 + 1* |
-| 25% | A champion of the drowned: a draugr elite, plus a wraith from three players | 1 | 1 + wraith |
+| 75% | The dead rise from the mire: draugr | 3 | 6 |
+| 50% | Archers take aim from the murk: draugr archers with draugr | 1 + 1 | 3 + 4 |
+| 25% | A champion of the drowned: a one-star draugr elite with an escort, a wraith from three players | 1* | 1* + 2 + wraith |
 | below 25% | draugr every 30 s from two players, up to the cap | none | 3 |
 
 **Moder** (`Dragon`)
@@ -43,9 +45,9 @@ Mechanics).
 | Boss health | Wave | Solo | Four players |
 |---|---|---|---|
 | hurt, above 25% | drakes every 45 s from two players, up to the living-adds cap | none | 3 |
-| 75% | Moder calls her brood: drakes, plus a wolf from two players | 1 | 5 + 1 |
-| 50% | The pack answers her call: wolves, plus a one-star wolf from three players | 1 | 5 + 1* |
-| 25% | Her last guard descends: a Stone Golem, plus two drakes from three players | 1 | 1 + 2 |
+| 75% | Moder calls her brood: drakes, wolves from two players | 2 | 5 + 2 |
+| 50% | The pack answers her call: wolves, a one-star wolf from four players | 1 | 3 + 1* |
+| 25% | Her last guard descends: a Stone Golem, drakes from two players | 1 | 1 + 2 |
 | below 25% | drakes every 25 s from two players, up to the cap | none | 3 |
 | heroic only, while hurt | a wolf every 30 s from two players, up to the cap | none | 1 |
 
@@ -53,15 +55,16 @@ Mechanics).
 
 | Boss health | Wave | Solo | Four players |
 |---|---|---|---|
-| 80% | The last of his people answer: a Fuling pack, three plus one per player | 4 | 7 |
-| 60% | Shamans draw upon their king: shamans with a Fuling pack and archers | 1 + 2 | 2 + 4 + 2 |
-| 40% | A champion of the fallen cities: a Berserker with a Fuling escort, a one-star Berserker too from four players | 1 + 2 | 1 + 1* + 4 |
-| 20% | They will not bend or break: a Fuling pack, two one-star Fulings per two players, an archer from three | 3 | 5 + 4* + 1 |
+| 80% | The last of his people answer: a Fuling pack | 5 | 8 |
+| 60% | Shamans draw upon their king: shamans with a Fuling pack, archers from two players | 1 + 3 | 2 + 6 + 2 |
+| 40% | A champion of the fallen cities: a Berserker with an escort, a one-star Berserker too from four players | 1 + 1 | 1 + 1* + 3 |
+| 20% | They will not bend or break: one-star Fulings with an escort, an archer from three players | 1* | 3* + 2 + 1 |
 | below 20% | Fulings every 20 s from two players, up to the cap | none | 3 |
 
-These are the counts as written. `More adds (x)` (1.3) then multiplies every count and the cap and rounds down: 4
-becomes 5, 5 becomes 6, 8 becomes 10, and 1 to 3 stay as they are. Every other boss has an empty script and is left
-exactly as vanilla; any boss can be given one.
+These are the counts that spawn: `More adds (x)` is 1, so the scripts are taken as written (above 1, every count and
+the cap are multiplied and rounded down). A threshold wave waits while more than a third of the previous one is still
+alive, for up to `Next wave waits up to (s)` (30), so a group that bursts the boss through two thresholds meets the
+waves one after another. Every other boss has an empty script and is left exactly as vanilla; any boss can be given one.
 
 The repeating trickles send one add for every player beyond the first, up to three: none solo, 1 for two players, 2
 for three, 3 for four or more.
@@ -83,7 +86,7 @@ The older way still works: drop the boss's own trophy on the ground within 15 m 
 server takes the whole stack that was dropped. A trophy on an item stand does not count.
 
 - the boss hits 20% harder and has 40% more health (`Boss health (x)`, on top of whatever it spawned with);
-- waves and the cap are multiplied again by 1.25 (about 1.6 in all);
+- waves and the cap are multiplied by 1.25;
 - every threshold wave carries a star: where the script already stars an add in that wave, one of them gains a star (a
   one-star becomes a two-star); where it stars nothing, the first add of the wave arrives one-star, and for a wave that
   is a single heavy creature that is the heavy creature. Trickles are not starred;
