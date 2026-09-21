@@ -264,8 +264,11 @@ internal static class Mechanics
 		static void Postfix(Character __instance, ref HitData.DamageModifiers __result)
 		{
 			if (__instance.IsPlayer() || __instance.m_nview == null || !__instance.m_nview.IsValid()) return;
+			// A staggered creature (or a broken boss) has its guard down: a trait's resistances do not apply then, so the
+			// stagger pays out in full. Its weaknesses still do.
+			bool open = __instance.IsStaggering() || Broken(__instance.m_nview.GetZDO());
 			Mode mode = Modes.Get(__instance.m_nview.GetZDO());
-			if (mode != null) Overlay(ref __result, mode.Res);
+			if (mode != null) Overlay(ref __result, mode.Res, open);
 			string text = __instance.m_nview.GetZDO().GetString(ResKey, "");
 			if (text.Length == 0) return;
 			if (!parsedRes.TryGetValue(text, out List<KeyValuePair<HitData.DamageType, HitData.DamageModifier>> list))
@@ -279,13 +282,15 @@ internal static class Mechanics
 						list.Add(new KeyValuePair<HitData.DamageType, HitData.DamageModifier>(type, mod));
 				}
 			}
-			Overlay(ref __result, list);
+			Overlay(ref __result, list, open);
 		}
 	}
 
-	static void Overlay(ref HitData.DamageModifiers mods, List<KeyValuePair<HitData.DamageType, HitData.DamageModifier>> list)
+	static void Overlay(ref HitData.DamageModifiers mods, List<KeyValuePair<HitData.DamageType, HitData.DamageModifier>> list, bool open)
 	{
 		foreach (KeyValuePair<HitData.DamageType, HitData.DamageModifier> kv in list)
+		{
+			if (open && !IsWeak(kv.Value) && kv.Value != HitData.DamageModifier.Normal) continue;
 			switch (kv.Key)
 			{
 				case HitData.DamageType.Blunt: mods.m_blunt = kv.Value; break;
@@ -297,6 +302,7 @@ internal static class Mechanics
 				case HitData.DamageType.Poison: mods.m_poison = kv.Value; break;
 				case HitData.DamageType.Spirit: mods.m_spirit = kv.Value; break;
 			}
+		}
 	}
 
 	// ---- names and the boss bar

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+
+- A staggered creature, or a broken boss, has its guard down: a trait's resistances (Ironhide's pierce and slash, and
+  the rest) do not apply while it is staggered, so the stagger pays out in full. Weaknesses still apply.
+
 ## 0.1.4
 
 - Hunts: a boss's add waves in the open world, around a player, with no boss - started from the server's config

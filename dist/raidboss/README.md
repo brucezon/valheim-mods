@@ -136,7 +136,8 @@ Waves are only part of a fight. A script rule can also do things, and several ar
   | Wrathful | Frenzied, and a little faster |
 
   An add's trait is a prefix on its name; a boss's is shown under its name. A boss can shift between traits during a
-  fight, and one given for a number of seconds lapses by itself. Resistances show in the game's own damage colours:
+  fight, and one given for a number of seconds lapses by itself. While a creature is staggered - or a boss is
+  broken - its trait's resistances are off, so a stagger on an Ironhide Berserker pays out in full. Resistances show in the game's own damage colours:
   yellow for a weakness, grey for a resistance.
 - `heal 5` (5% of max health), `break` (break now), `weather SnowStorm 60`, `status Wet`, `effect fx_name`.
 

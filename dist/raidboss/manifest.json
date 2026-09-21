@@ -1,6 +1,6 @@
 {
     "name":  "RaidBoss",
-    "version_number":  "0.1.4",
+    "version_number":  "0.1.5",
     "website_url":  "",
     "description":  "Boss fights for groups: add waves scaled by players, heroic re-fights that pay idols, places that answer a raid, quicker recovery after a death. Server AND clients.",
     "dependencies":  [
