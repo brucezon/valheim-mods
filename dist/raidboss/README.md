@@ -92,8 +92,8 @@ server takes the whole stack that was dropped. A trophy on an item stand does no
   is a single heavy creature that is the heavy creature. Trickles are not starred;
 - a wave can be written separately for heroic fights (see Writing a fight). Yagluth's 40% wave is: a one-star Berserker
   solo, a two-star Berserker from two players, and a plain one beside it from four;
-- extra rules: frost strikes under Moder, a ward on Bonemass's champion wave, Ironhide Berserkers, fire strikes and
-  shifting traits at Yagluth's (see Mechanics);
+- extra rules: frost strikes under Moder, a ward on Bonemass's champion wave, Ironhide Berserkers, fire strikes, then below 30% fire
+  chases, and shifting traits at Yagluth's (see Mechanics);
 - **the kill drops idols: players minus one.** None solo, 1 for two players, 2 for three, 3 for four, counted as the most
   players in range at once during the fight. Each is randomly a Battle or a Protection idol of the boss's tier: Wooden
   for Eikthyr, Bronze for the Elder, Iron for Bonemass, Silver for Moder, Black Metal for Yagluth, and so on up.
@@ -127,6 +127,9 @@ Waves are only part of a fight. A script rule can also do things, and several ar
 - **Ground strikes** (`strike lightning r3.5 d2 dmg20 x2`). A coloured ring fills on the ground under a player for the
   warning time, then fire, frost, lightning or poison lands there: dodge-roll through it or step out. It cannot be
   blocked.
+- **Chase** (`chase fire r3 d1.2 dmg90 every0.9 for5`). Strikes that follow one player: a ring at their feet every 0.9 s
+  for 5 s, each landing when it fills (1.2 s). Stand still and you are hit; keep moving and each lands where you were.
+  Dodgeable, not blockable. `x2` chases two players.
 - **Traits** (`GoblinBrute:Ironhide 1+0` on an add, `boss Emberborn`, `boss Frenzied 12` or
   `boss cycle Emberborn Stormcalled 20` on the boss). Named sets of changes, defined in the `Traits` setting:
 
@@ -155,7 +158,7 @@ Waves are only part of a fight. A script rule can also do things, and several ar
 
 The default scripts use them in heroic fights: frost strikes under Moder, Bonemass guarded from the start and
 warded at his champion wave, Ironhide
-Berserkers and fire strikes at Yagluth's, who shifts between Emberborn and Stormcalled. Eikthyr has lightning strikes in
+Berserkers, fire strikes and fire chases at Yagluth's, who shifts between Emberborn and Stormcalled. Eikthyr has lightning strikes in
 both kinds of fight.
 
 ## Who they go after

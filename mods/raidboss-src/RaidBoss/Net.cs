@@ -27,6 +27,7 @@ internal static class Net
 	const string KillRpc = "RaidBoss_Kill";
 	const string CreatureRpc = "RaidBoss_Creature";
 	const string StrikeRpc = "RaidBoss_Strike";
+	const string ChaseRpc = "RaidBoss_Chase";
 	const string FxRpc = "RaidBoss_Fx";
 	const string StatusRpc = "RaidBoss_Status";
 	const string EnvRpc = "RaidBoss_Env";
@@ -60,6 +61,7 @@ internal static class Net
 		ZRoutedRpc.instance.Register<ZPackage>(KillRpc, RPC_Kill);
 		ZRoutedRpc.instance.Register<ZPackage>(CreatureRpc, RPC_Creature);
 		ZRoutedRpc.instance.Register<ZPackage>(StrikeRpc, RPC_Strike);
+		ZRoutedRpc.instance.Register<ZPackage>(ChaseRpc, RPC_Chase);
 		ZRoutedRpc.instance.Register<ZPackage>(FxRpc, RPC_Fx);
 		ZRoutedRpc.instance.Register<ZPackage>(StatusRpc, RPC_Status);
 		ZRoutedRpc.instance.Register<ZPackage>(EnvRpc, RPC_Env);
@@ -201,6 +203,21 @@ internal static class Net
 		var pkg = new ZPackage();
 		pkg.Write(pos); pkg.Write(radius); pkg.Write(delay); pkg.Write(element ?? ""); pkg.Write(damage); pkg.Write(attacker); pkg.Write(tellFx ?? ""); pkg.Write(hitFx ?? "");
 		ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, StrikeRpc, pkg);
+	}
+
+	// A chase: strikes that follow one player (by player id) for a while. Every game draws them; each judges its own player.
+	internal static void SendChase(long playerId, string element, float radius, float delay, float damage, float every, float seconds, ZDOID attacker, string hitFx)
+	{
+		if (ZRoutedRpc.instance == null) return;
+		var pkg = new ZPackage();
+		pkg.Write(playerId); pkg.Write(element ?? ""); pkg.Write(radius); pkg.Write(delay); pkg.Write(damage); pkg.Write(every); pkg.Write(seconds); pkg.Write(attacker); pkg.Write(hitFx ?? "");
+		ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, ChaseRpc, pkg);
+	}
+
+	static void RPC_Chase(long sender, ZPackage pkg)
+	{
+		if (!FromServer(sender)) return;
+		Mechanics.Chase(pkg.ReadLong(), pkg.ReadString(), pkg.ReadSingle(), pkg.ReadSingle(), pkg.ReadSingle(), pkg.ReadSingle(), pkg.ReadSingle(), pkg.ReadZDOID(), pkg.ReadString());
 	}
 
 	static void RPC_Strike(long sender, ZPackage pkg)

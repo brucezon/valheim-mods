@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.13
+
+- New `chase` action: strikes that follow a player - a ring at their feet every 0.9 s for 5 s, so they have to keep
+  moving. Heroic Yagluth, below 30%: a fire chase every 30 s (his fire strikes run from 60% to 30%).
+- Minimum version 0.1.13: a chase is drawn and judged by each player's own game.
+
 ## 0.1.12
 
 - Trait auras: a creature whose trait carries an element wears the game's own aura for it (flames, sparks, frost,

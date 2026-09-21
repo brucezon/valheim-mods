@@ -616,6 +616,24 @@ internal static class Director
 							Net.SendStrike(at, Arg(act.Args, "r", 4f), delay, first, Arg(act.Args, "dmg", 60f), fight.BossId, tell, hit);
 						}
 						break;
+					case "chase":    // chase fire r3 d1.2 dmg90 every0.9 for5 x1: strikes that follow a random engaged player
+						var hunted = new List<long>();
+						foreach (PlayerPos p in Players)
+						{
+							if (Flat(p.Pos, bossPos) > RaidBossPlugin.Range.Value) continue;
+							ZDO pz = p.Character.IsNone() ? null : ZDOMan.instance.GetZDO(p.Character);
+							long pid = pz != null ? pz.GetLong(ZDOVars.s_playerID, 0L) : 0L;
+							if (pid != 0L) hunted.Add(pid);
+						}
+						int chases = Mathf.Clamp(Mathf.RoundToInt(Arg(act.Args, "x", 1f)), 1, 6);
+						RaidBossPlugin.StrikeEffects(first, out string _, out string chaseFx);
+						for (int i = 0; i < chases && hunted.Count > 0; i++)
+						{
+							int pickAt = UnityEngine.Random.Range(0, hunted.Count);
+							Net.SendChase(hunted[pickAt], first, Arg(act.Args, "r", 3f), Arg(act.Args, "d", 1.2f), Arg(act.Args, "dmg", 60f), Arg(act.Args, "every", 0.9f), Arg(act.Args, "for", 5f), fight.BossId, chaseFx);
+							hunted.RemoveAt(pickAt);
+						}
+						break;
 					case "break":
 						Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("break", "", "", Arg(act.Args, "", 0f)));
 						break;

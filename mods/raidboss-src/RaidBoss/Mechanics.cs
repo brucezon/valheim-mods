@@ -359,6 +359,39 @@ internal static class Mechanics
 
 	// ---- ground strikes
 
+	// ---- a chase: a strike at the hunted player's feet every so often, each with its own warning ring, for a few seconds.
+	// Standing still gets you hit; keep moving and each lands where you were.
+	internal static void Chase(long playerId, string element, float radius, float delay, float damage, float every, float seconds, ZDOID attacker, string hitFx)
+	{
+		if (ZNet.instance == null || ZNet.instance.IsDedicated() || !RaidBossPlugin.IsOn) return;
+		var go = new GameObject("RaidBoss_Chase");
+		ChaseRunner runner = go.AddComponent<ChaseRunner>();
+		runner.PlayerId = playerId; runner.Element = element; runner.Radius = radius; runner.Delay = delay; runner.Damage = damage;
+		runner.Every = Mathf.Clamp(every, 0.3f, 10f); runner.Seconds = Mathf.Clamp(seconds, 0.5f, 30f); runner.Attacker = attacker; runner.HitFx = hitFx;
+	}
+
+	sealed class ChaseRunner : MonoBehaviour
+	{
+		public long PlayerId;
+		public string Element, HitFx;
+		public float Radius, Delay, Damage, Every, Seconds;
+		public ZDOID Attacker;
+		float age, next;
+
+		void Update()
+		{
+			age += Time.deltaTime;
+			if (age > Seconds) { Destroy(gameObject); return; }
+			next -= Time.deltaTime;
+			if (next > 0f) return;
+			next = Every;
+			Player target = null;
+			foreach (Player p in Player.GetAllPlayers()) if (p != null && !p.IsDead() && p.GetPlayerID() == PlayerId) { target = p; break; }
+			if (target == null) { Destroy(gameObject); return; }
+			Strike(target.transform.position, Radius, Delay, Element, Damage, Attacker, "", HitFx);
+		}
+	}
+
 	internal static void Strike(Vector3 pos, float radius, float delay, string element, float damage, ZDOID attacker, string tellFx, string hitFx)
 	{
 		if (ZNet.instance == null || ZNet.instance.IsDedicated() || !RaidBossPlugin.IsOn) return;
