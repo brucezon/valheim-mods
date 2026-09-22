@@ -219,18 +219,21 @@ idol whose upgrade cannot fail. A second source of idols next to heroic fights, 
   the Mistlands, and so on; the Meadows and Black Forest are empty by default, being starter ground). And they stop again
   once the world is `Phase out, bosses ahead` (2) bosses past that biome: with Yagluth dead there are no more Swamp
   warbands, so nobody is sent hunting behind themselves; a warband already standing is left to be fought. The server picks a site of that biome, on dry level ground, `Distance from players, at
-  least (m)` (400) from every player and away from anything a player built, announces it to everyone ("A warband
-  gathers in the Black Forest") and pins it. Nothing stands there until a player comes within `Pack appears within (m)`
-  (120): then the miniboss and its escort are spawned, the raid music and circle play at the site, and the miniboss
+  least (m)` (400) from every player and away from anything a player built, and pins it on everyone's map with a
+  countdown under the pin: "Warband: Swamp (2h 58m)". That pin is the whole announcement - no centre-screen text
+  (the four `Message` settings are empty by default; fill one in for a message). Nothing stands there until a player
+  comes within `Pack appears within (m)` (120): then the miniboss and its escort are spawned, the raid music and
+  circle play at the site, and the miniboss
   fights with a script of its own - waves at health thresholds, a guard, traits, anything a boss script can do - and
   wears the boss bar with the break meter. A parry taunts it like a boss.
 - **The reward.** `Idols on the kill` (1) drop where the miniboss dies, of the biome's tier (Swamp pays tier 2,
   Mountain 3, Plains 4, Mistlands 5; a Meadows or Black Forest entry would pay 0 and 1). They are warband idols: quality 2 so they never merge
   with ordinary ones, and marked so that refining with one always succeeds and only that idol is spent. `Warband
   idols cannot fail` off makes them ordinary idols.
-- **It moves on.** A warband nobody has come to is gone after `Moves on after (min)` (180, real time; a triggered one
-  after twice that), "The Black Forest warband has moved on", and the biome waits `Next one after (min)` (90) for its
-  next one - the same wait after a kill.
+- **It moves on, and there are breathers.** A warband nobody has come to is gone after `Moves on after (min)` (180,
+  real time; a triggered one after twice that), and the biome waits `Next one after (min)` (90) for its next one - the
+  same wait after a kill. Across all biomes, `At most, at once` (1) warbands stand at a time, and after any of them ends
+  nothing new comes anywhere for `Gap between warbands (min)` (30), so it is not always a hunt. Biomes take turns.
 - **Written like a boss script**, one entry per biome in **11 - Warbands**: the miniboss, then its script.
 
 ```
@@ -241,7 +244,7 @@ Plains = GoblinBrute*** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1, GoblinA
   pays (unset = the biome's boss tier); the script's 100% rules are the escort standing with it when the pack
   appears, and the rest fires as its health falls. Empty = no warband in that biome. Ashlands and the Deep North are
   empty by default.
-- **Admins:** in the server's config, `Start a warband` = `Plains Anthony` places the Plains warband 150-300 m from
+- **Admins:** in the server's config, `Start a warband` = `Plains Anthony` places the Plains warband 150-300 m (or up to 600 m) from
   that player (the first connected if no name) - for testing; `stop` ends every warband.
 
 ## Recovery
@@ -315,7 +318,8 @@ by the server alone.
 - **9 - Debug:** `Pretend this many players` (0).
 - **11 - Warbands:** `Enabled`, one script per biome, the distances, `Pack appears within (m)` (120), `Moves on after
   (min)` (180), `Next one after (min)` (90), `Miniboss damage (x)` (1), `Idols on the kill` (1), `Warband idols cannot
-  fail` (on), the four messages, `Map pin`, `Start a warband`.
+  fail` (on), `At most, at once` (1), `Gap between warbands (min)` (30), the four messages (empty), `Map pin`,
+  `Start a warband`.
 
 ## Known limits
 

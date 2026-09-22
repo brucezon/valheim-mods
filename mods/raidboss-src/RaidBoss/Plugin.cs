@@ -120,6 +120,8 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<bool> WarbandsEnabled;
 	internal static ConfigEntry<float> WarbandMinDistance, WarbandMaxDistance, WarbandTrigger, WarbandLifetime, WarbandCooldown, WarbandBossDamage;
 	internal static ConfigEntry<int> WarbandIdols;
+	internal static ConfigEntry<int> WarbandMaxActive;
+	internal static ConfigEntry<float> WarbandGap;
 	internal static ConfigEntry<bool> WarbandSureIdols;
 	internal static ConfigEntry<string> WarbandMessage, WarbandFightMessage, WarbandClearedMessage, WarbandGoneMessage, WarbandPinText, WarbandOrder;
 	internal static ConfigEntry<string> WarbandUnlocks;
@@ -332,13 +334,15 @@ public class RaidBossPlugin : BaseUnityPlugin
 		WarbandTrigger = config("11 - Warbands", "Pack appears within (m)", 120f, new ConfigDescription("The pack is spawned when a player comes this close to the site.", new AcceptableValueRange<float>(40f, 300f)), true);
 		WarbandLifetime = config("11 - Warbands", "Moves on after (min)", 180f, new ConfigDescription("A warband nobody has come to is gone after this long (real time), and a triggered one after twice that. 0 = never.", new AcceptableValueRange<float>(0f, 1440f)), true);
 		WarbandCooldown = config("11 - Warbands", "Next one after (min)", 90f, new ConfigDescription("How long a biome waits for its next warband after one was cleared or moved on.", new AcceptableValueRange<float>(0f, 1440f)), true);
+		WarbandMaxActive = config("11 - Warbands", "At most, at once", 1, new ConfigDescription("How many warbands can stand at the same time, across all biomes.", new AcceptableValueRange<int>(1, 8)), true);
+		WarbandGap = config("11 - Warbands", "Gap between warbands (min)", 30f, new ConfigDescription("After any warband ends (cleared or moved on), no new one anywhere for this long: a breather, so it is not always a hunt.", new AcceptableValueRange<float>(0f, 720f)), true);
 		WarbandBossDamage = config("11 - Warbands", "Miniboss damage (x)", 1f, new ConfigDescription("What the miniboss's hits on players are multiplied by (on top of its stars).", new AcceptableValueRange<float>(0.2f, 5f)), true);
 		WarbandIdols = config("11 - Warbands", "Idols on the kill", 1, new ConfigDescription("Idols dropped where the miniboss dies.", new AcceptableValueRange<int>(0, 5)), true);
 		WarbandSureIdols = config("11 - Warbands", "Warband idols cannot fail", true, "On: the idols a warband pays are warband idols - an upgrade made with one always succeeds. Off: ordinary idols.", true);
-		WarbandMessage = config("11 - Warbands", "Message, new warband", "A warband gathers in the {biome}", "Centre-screen message to everyone when a warband appears; {biome} is the biome's name. Empty = none.", true);
-		WarbandFightMessage = config("11 - Warbands", "Message, at the site", "The warband attacks", "Centre-screen message when players reach a triggered warband (with the raid music and circle). Empty = none.", true);
-		WarbandClearedMessage = config("11 - Warbands", "Message, cleared", "The {biome} warband is broken", "Centre-screen message to everyone when the miniboss dies. Empty = none.", true);
-		WarbandGoneMessage = config("11 - Warbands", "Message, moved on", "The {biome} warband has moved on", "Centre-screen message to everyone when a warband is gone unfought. Empty = none.", true);
+		WarbandMessage = config("11 - Warbands", "Message, new warband", "","Centre-screen message to everyone when a warband appears, e.g. 'A warband gathers in the {biome}'. Empty (default) = none: the map pin with its countdown is the announcement.", true);
+		WarbandFightMessage = config("11 - Warbands", "Message, at the site", "", "Centre-screen message when players reach a triggered warband (with the raid music and circle). Empty = none.", true);
+		WarbandClearedMessage = config("11 - Warbands", "Message, cleared", "", "Centre-screen message to everyone when the miniboss dies. Empty = none.", true);
+		WarbandGoneMessage = config("11 - Warbands", "Message, moved on", "", "Centre-screen message to everyone when a warband is gone unfought. Empty = none.", true);
 		WarbandPinText = config("11 - Warbands", "Map pin", "Warband: {biome}", "The name on the map pin.", true);
 		WarbandOrder = config("11 - Warbands", "Start a warband", "", "Admin: write a biome and optionally a player's name ('Plains Anthony') and save: that biome's warband is placed 150-300 m from that player (the first connected if none is named), replacing the biome's current one. 'stop' ends every warband.", true);
 
@@ -480,6 +484,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 			return;
 		}
 		Mechanics.ClientTick(Time.deltaTime);
+		Warbands.ClientTick(Time.deltaTime);
 		// Everything below is the director, and the director runs on the server only.
 		if (!ZNet.instance.IsServer()) return;
 		Net.Register();

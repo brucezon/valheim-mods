@@ -7,7 +7,9 @@
   comes within 120 m, with the raid music and circle. The miniboss fights with a boss script of its own (escort waves
   at thresholds, a guard by default) and wears the boss bar. Killing it pays a warband idol of the biome's tier: an
   idol whose upgrade cannot fail. A warband nobody comes to moves on after three hours; a biome waits 90 minutes for
-  its next one. Section 11 - Warbands; `Start a warband` for admins.
+  its next one; at most one stands at a time and there is a 30-minute breather after any of them ends. The pin
+  carries a countdown ("Warband: Swamp (2h 58m)") and is the only announcement: no centre-screen messages unless a
+  server fills the `Message` settings in. Section 11 - Warbands; `Start a warband` for admins.
 - A biome's warbands start once the boss before it is dead (`Unlocked by`: the Elder opens the Swamp, Bonemass the
   Mountain, Moder the Plains, Yagluth the Mistlands); the Meadows and Black Forest ship empty. They stop again once the world is
   two bosses past the biome (`Phase out, bosses ahead`): with Yagluth dead, no more Swamp warbands.

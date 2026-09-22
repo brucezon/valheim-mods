@@ -85,6 +85,7 @@ internal static class Net
 			pkg.Write(p.Id);
 			pkg.Write(p.Pos);
 			pkg.Write(p.Text ?? "");
+			pkg.Write(p.EndsIn);
 		}
 		ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, PinRpc, pkg);
 	}
@@ -95,7 +96,7 @@ internal static class Net
 		var list = new List<Warbands.Pin>();
 		int count = pkg.ReadInt();
 		for (int i = 0; i < count && i < 32; i++)
-			list.Add(new Warbands.Pin { Id = pkg.ReadInt(), Pos = pkg.ReadVector3(), Text = pkg.ReadString() });
+			list.Add(new Warbands.Pin { Id = pkg.ReadInt(), Pos = pkg.ReadVector3(), Text = pkg.ReadString(), EndsIn = pkg.ReadSingle() });
 		Warbands.ApplyPins(list);
 	}
 

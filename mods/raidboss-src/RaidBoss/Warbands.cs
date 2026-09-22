@@ -54,6 +54,9 @@ internal static class Warbands
 	static readonly List<Def> defs = new List<Def>();
 	static readonly Dictionary<Heightmap.Biome, Band> bands = new Dictionary<Heightmap.Biome, Band>();
 	static readonly Dictionary<Heightmap.Biome, float> readyAt = new Dictionary<Heightmap.Biome, float>();
+	static readonly Dictionary<Heightmap.Biome, float> lastEnd = new Dictionary<Heightmap.Biome, float>();
+	static float globalReadyAt;
+	static float LastEnd(Def d) => lastEnd.TryGetValue(d.Biome, out float t) ? t : -1f;
 	static readonly Dictionary<Heightmap.Biome, float> nextSearch = new Dictionary<Heightmap.Biome, float>();
 	static readonly List<ZDO> scan = new List<ZDO>();
 	static string parsedFrom;
@@ -172,17 +175,25 @@ internal static class Warbands
 			try { Order(order); } catch (Exception e) { RaidBossPlugin.Log.LogWarning("warband order: " + e.Message); }
 		}
 
-		foreach (Def def in defs)
+		// Spacing: at most "At most, at once" warbands standing, and a gap after any of them ends before the next one
+		// anywhere. Biomes take turns: the one whose last warband is longest ago goes first.
+		if (bands.Count < Mathf.Max(1, RaidBossPlugin.WarbandMaxActive.Value) && clock >= globalReadyAt && (Director.PlayerCount > 0 || DebugAnchor != null))
 		{
-			if (bands.ContainsKey(def.Biome)) continue;
-			if (readyAt.TryGetValue(def.Biome, out float ready) && clock < ready) continue;
-			if (nextSearch.TryGetValue(def.Biome, out float next) && clock < next) continue;
-			nextSearch[def.Biome] = clock + 60f;
-			if (!Unlocked(def)) continue;                                      // its boss is not dead yet
-			if (PhasedOut(def)) continue;                                      // the world is past it
-			if (Director.PlayerCount == 0 && DebugAnchor == null) continue;   // an empty server has nobody to hunt
-			if (FindSite(def, null, RaidBossPlugin.WarbandMinDistance.Value, RaidBossPlugin.WarbandMaxDistance.Value, out Vector3 site))
-				Begin(def, site);
+			var eligible = new List<Def>();
+			foreach (Def def in defs)
+			{
+				if (bands.ContainsKey(def.Biome)) continue;
+				if (readyAt.TryGetValue(def.Biome, out float ready) && clock < ready) continue;
+				if (nextSearch.TryGetValue(def.Biome, out float next) && clock < next) continue;
+				if (!Unlocked(def) || PhasedOut(def)) continue;   // its boss is not dead yet, or the world is past it
+				eligible.Add(def);
+			}
+			eligible.Sort((a, b) => LastEnd(a).CompareTo(LastEnd(b)));
+			foreach (Def def in eligible)
+			{
+				nextSearch[def.Biome] = clock + 60f;
+				if (FindSite(def, null, RaidBossPlugin.WarbandMinDistance.Value, RaidBossPlugin.WarbandMaxDistance.Value, out Vector3 site)) { Begin(def, site); break; }
+			}
 		}
 
 		foreach (Band b in new List<Band>(bands.Values))
@@ -246,7 +257,7 @@ internal static class Warbands
 		string who = words.Length > 1 ? string.Join(" ", words, 1, words.Length - 1) : "";
 		Vector3? anchor = Director.PlayerPosition(who);
 		if (anchor == null) { Log(who.Length > 0 ? $"no player called '{who}'" : "nobody is connected"); return; }
-		if (!FindSite(def, anchor, 150f, 300f, out Vector3 site)) { Log($"no {def.BiomeName} ground within 300 m of {(who.Length > 0 ? who : "the first player")}"); return; }
+		if (!FindSite(def, anchor, 150f, 300f, out Vector3 site) && !FindSite(def, anchor, 300f, 600f, out site)) { Log($"no {def.BiomeName} ground within 600 m of {(who.Length > 0 ? who : "the first player")}"); return; }
 		readyAt.Remove(biome);
 		if (!Unlocked(def)) Log($"{def.BiomeName} is not unlocked yet ({UnlockKey(def)} is not set) - placed by order anyway");
 		else if (PhasedOut(def)) Log($"{def.BiomeName} is phased out (the world's kill level is {KillLevel()}) - placed by order anyway");
@@ -320,7 +331,7 @@ internal static class Warbands
 		if (wg == null || ZoneSystem.instance == null) return false;
 		Vector3 from = anchor ?? DebugAnchor ?? Director.RandomPlayerPosition();
 		float water = ZoneSystem.instance.m_waterLevel;
-		for (int attempt = 0; attempt < 60; attempt++)
+		for (int attempt = 0; attempt < 100; attempt++)
 		{
 			float angle = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
 			float dist = UnityEngine.Random.Range(minDist, Mathf.Max(minDist, maxDist));
@@ -433,6 +444,8 @@ internal static class Warbands
 			}
 		}
 		readyAt[b.Def.Biome] = clock + RaidBossPlugin.WarbandCooldown.Value * 60f;
+		lastEnd[b.Def.Biome] = clock;
+		globalReadyAt = Mathf.Max(globalReadyAt, clock + RaidBossPlugin.WarbandGap.Value * 60f);
 		Log($"{b.Def.BiomeName} warband over: {why}. Next one in {RaidBossPlugin.WarbandCooldown.Value:0} min.");
 		if (expired)
 		{
@@ -451,17 +464,28 @@ internal static class Warbands
 
 	// ---- map pins: the server's list, mirrored on every player's map
 
-	internal struct Pin { public int Id; public Vector3 Pos; public string Text; }
+	internal struct Pin { public int Id; public Vector3 Pos; public string Text; public float EndsIn; }   // EndsIn: seconds until it moves on, -1 = never
+
+	static float EndsIn(Band b)
+	{
+		float lifetime = RaidBossPlugin.WarbandLifetime.Value * 60f;
+		if (lifetime <= 0f) return -1f;
+		return Mathf.Max(0f, (b.Spawned ? lifetime * 2f : lifetime) - b.Age);
+	}
 
 	static List<Pin> PinList()
 	{
 		var list = new List<Pin>();
 		foreach (Band b in bands.Values)
-			list.Add(new Pin { Id = b.Id, Pos = b.Site, Text = Fill(RaidBossPlugin.WarbandPinText.Value, b.Def) });
+			list.Add(new Pin { Id = b.Id, Pos = b.Site, Text = Fill(RaidBossPlugin.WarbandPinText.Value, b.Def), EndsIn = EndsIn(b) });
 		return list;
 	}
 
-	static readonly Dictionary<int, Minimap.PinData> shown = new Dictionary<int, Minimap.PinData>();
+	// Each player's game: the pins, and the countdown under each one on the big map. The pin's name is its label plus
+	// the time left, ticked down locally between the server's updates.
+	sealed class Shown { public Minimap.PinData Pin; public string Text; public float EndsAt; }
+	static readonly Dictionary<int, Shown> shown = new Dictionary<int, Shown>();
+	static float nameTimer;
 
 	internal static void ApplyPins(List<Pin> list)
 	{
@@ -470,21 +494,48 @@ internal static class Warbands
 		foreach (Pin p in list)
 		{
 			keep.Add(p.Id);
-			if (shown.TryGetValue(p.Id, out Minimap.PinData old))
+			float endsAt = p.EndsIn >= 0f ? Time.time + p.EndsIn : -1f;
+			if (shown.TryGetValue(p.Id, out Shown s))
 			{
-				bool alive = Minimap.instance.m_pins.Contains(old);
-				if (alive && old.m_name == p.Text && Utils.DistanceXZ(old.m_pos, p.Pos) < 1f) continue;
-				if (alive) Minimap.instance.RemovePin(old);
+				bool alive = Minimap.instance.m_pins.Contains(s.Pin);
+				if (alive && s.Text == p.Text && Utils.DistanceXZ(s.Pin.m_pos, p.Pos) < 1f) { s.EndsAt = endsAt; continue; }
+				if (alive) Minimap.instance.RemovePin(s.Pin);
 				shown.Remove(p.Id);
 			}
-			shown[p.Id] = Minimap.instance.AddPin(p.Pos, Minimap.PinType.Boss, p.Text, false, false);
+			var made = new Shown { Text = p.Text, EndsAt = endsAt };
+			made.Pin = Minimap.instance.AddPin(p.Pos, Minimap.PinType.Boss, Label(made), false, false);
+			shown[p.Id] = made;
 		}
 		var gone = new List<int>();
-		foreach (KeyValuePair<int, Minimap.PinData> kv in shown) if (!keep.Contains(kv.Key)) gone.Add(kv.Key);
+		foreach (KeyValuePair<int, Shown> kv in shown) if (!keep.Contains(kv.Key)) gone.Add(kv.Key);
 		foreach (int id in gone)
 		{
-			if (Minimap.instance.m_pins.Contains(shown[id])) Minimap.instance.RemovePin(shown[id]);
+			if (Minimap.instance.m_pins.Contains(shown[id].Pin)) Minimap.instance.RemovePin(shown[id].Pin);
 			shown.Remove(id);
+		}
+	}
+
+	static string Label(Shown s)
+	{
+		if (s.EndsAt < 0f) return s.Text;
+		float left = Mathf.Max(0f, s.EndsAt - Time.time);
+		int h = (int)(left / 3600f), m = (int)(left / 60f) % 60, sec = (int)left % 60;
+		return s.Text + (h > 0 ? $" ({h}h {m:00}m)" : $" ({m}:{sec:00})");
+	}
+
+	internal static void ClientTick(float dt)
+	{
+		if (shown.Count == 0 || Minimap.instance == null) return;
+		nameTimer += dt;
+		if (nameTimer < 1f) return;
+		nameTimer = 0f;
+		foreach (Shown s in shown.Values)
+		{
+			string label = Label(s);
+			if (s.Pin.m_name == label) continue;
+			s.Pin.m_name = label;
+			// the name object is made when the map first draws the pin, and set once; refreshed here
+			if (s.Pin.m_NamePinData != null && s.Pin.m_NamePinData.PinNameText != null) s.Pin.m_NamePinData.PinNameText.text = label;
 		}
 	}
 
