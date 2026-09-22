@@ -35,6 +35,7 @@ internal static class Net
 	const string EventRpc = "RaidBoss_Event";
 	const string HuntRpc = "RaidBoss_Hunt";
 	const string PinRpc = "RaidBoss_Pin";
+	const string WarbandRpc = "RaidBoss_Warband";
 	internal static readonly int HealthKey = "raidboss_hp".GetStableHashCode();
 
 	// Server side: filled by the director every tick.
@@ -71,6 +72,7 @@ internal static class Net
 		ZRoutedRpc.instance.Register<ZPackage>(EventRpc, RPC_Event);
 		ZRoutedRpc.instance.Register<ZPackage>(HuntRpc, RPC_Hunt);
 		ZRoutedRpc.instance.Register<ZPackage>(PinRpc, RPC_Pin);
+		ZRoutedRpc.instance.Register<ZPackage>(WarbandRpc, RPC_Warband);
 	}
 
 	// ---- server -> everyone: the warband pins on the map (the whole list, every 20 s and on any change)
@@ -323,6 +325,35 @@ internal static class Net
 		var pkg = new ZPackage();
 		pkg.Write(boss ?? ""); pkg.Write(heroic); pkg.Write(stop);
 		ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), HuntRpc, pkg);
+	}
+
+	// A warband button in the config menu: the server places that biome's warband near (or right beside) whoever
+	// clicked, or ends every warband. Admins only, as the hunt buttons.
+	internal static void RequestWarband(string biome, bool here, bool stop)
+	{
+		if (ZRoutedRpc.instance == null) return;
+		var pkg = new ZPackage();
+		pkg.Write(biome ?? ""); pkg.Write(here); pkg.Write(stop);
+		ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), WarbandRpc, pkg);
+	}
+
+	static void RPC_Warband(long sender, ZPackage pkg)
+	{
+		if (ZNet.instance == null || !ZNet.instance.IsServer()) return;
+		string biome = pkg.ReadString();
+		bool here = pkg.ReadBool(), stop = pkg.ReadBool();
+		ZNetPeer peer = ZNet.instance.GetPeer(sender);
+		string name = peer != null ? peer.m_playerName : (Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerName() : "");
+		if (peer != null && ZNet.instance.IsDedicated() && !ZNet.instance.ListContainsId(ZNet.instance.m_adminList, peer.m_socket.GetHostName()))
+		{
+			RaidBossPlugin.Log.LogInfo($"warband: {name} is not an admin; refused");
+			ZRoutedRpc.instance.InvokeRoutedRPC(sender, "ShowMessage", (int)MessageHud.MessageType.Center, "Only an admin can start a warband");
+			return;
+		}
+		string said;
+		try { said = Warbands.Order(stop ? "stop" : $"{biome} {(here ? "here " : "")}{name}"); }
+		catch (System.Exception e) { said = "failed: " + e.Message; RaidBossPlugin.Log.LogWarning("warband (button): " + e); }
+		ZRoutedRpc.instance.InvokeRoutedRPC(sender, "ShowMessage", (int)MessageHud.MessageType.TopLeft, "Warband: " + said);
 	}
 
 	static void RPC_Hunt(long sender, ZPackage pkg)

@@ -241,27 +241,47 @@ internal static class Warbands
 		else if (b.EventOn && current != null && current.m_name == EventName) current.m_pos = b.Site;
 	}
 
-	static void Order(string order)
+	// "<biome> [here] [player]" or "stop", from the config line or the F1 buttons. "here": right beside the player, no
+	// site checks, so the pack triggers at once - for trying a warband out.
+	internal static string Order(string order)
 	{
-		string[] words = order.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+		string said = DoOrder(order);
+		Log(said);
+		return said;
+	}
+
+	static string DoOrder(string order)
+	{
+		var words = new List<string>(order.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+		if (words.Count == 0) return "empty order";
 		if (words[0].Equals("stop", StringComparison.OrdinalIgnoreCase))
 		{
+			int n = bands.Count;
 			foreach (Band b in new List<Band>(bands.Values)) End(b, "stopped by order", false);
-			Log("all warbands stopped");
-			return;
+			return n == 0 ? "no warband is standing" : $"stopped {n} warband(s)";
 		}
-		if (!ParseBiome(words[0], out Heightmap.Biome biome)) { Log($"'{words[0]}' is not a biome"); return; }
+		if (!ParseBiome(words[0], out Heightmap.Biome biome)) return $"'{words[0]}' is not a biome";
 		Def def = defs.Find(d => d.Biome == biome);
-		if (def == null) { Log($"no warband entry for {NameOf(biome)}"); return; }
-		if (bands.TryGetValue(biome, out Band old)) End(old, "replaced by order", false);
-		string who = words.Length > 1 ? string.Join(" ", words, 1, words.Length - 1) : "";
+		if (def == null) return $"no warband entry for {NameOf(biome)}";
+		bool here = words.Count > 1 && words[1].Equals("here", StringComparison.OrdinalIgnoreCase);
+		if (here) words.RemoveAt(1);
+		string who = words.Count > 1 ? string.Join(" ", words.GetRange(1, words.Count - 1)) : "";
 		Vector3? anchor = Director.PlayerPosition(who);
-		if (anchor == null) { Log(who.Length > 0 ? $"no player called '{who}'" : "nobody is connected"); return; }
-		if (!FindSite(def, anchor, 150f, 300f, out Vector3 site) && !FindSite(def, anchor, 300f, 600f, out site)) { Log($"no {def.BiomeName} ground within 600 m of {(who.Length > 0 ? who : "the first player")}"); return; }
+		if (anchor == null) return who.Length > 0 ? $"no player called '{who}'" : "nobody is connected";
+		Vector3 site;
+		if (here)
+		{
+			Vector2 off = UnityEngine.Random.insideUnitCircle.normalized * UnityEngine.Random.Range(25f, 40f);
+			site = new Vector3(anchor.Value.x + off.x, 0f, anchor.Value.z + off.y);
+			site.y = Mathf.Max(WorldGenerator.instance.GetHeight(site.x, site.z), ZoneSystem.instance.m_waterLevel + 0.5f);
+		}
+		else if (!FindSite(def, anchor, 150f, 300f, out site) && !FindSite(def, anchor, 300f, 600f, out site))
+			return $"no {def.BiomeName} ground within 600 m of {(who.Length > 0 ? who : "the first player")}";
+		if (bands.TryGetValue(biome, out Band old)) End(old, "replaced by order", false);
 		readyAt.Remove(biome);
-		if (!Unlocked(def)) Log($"{def.BiomeName} is not unlocked yet ({UnlockKey(def)} is not set) - placed by order anyway");
-		else if (PhasedOut(def)) Log($"{def.BiomeName} is phased out (the world's kill level is {KillLevel()}) - placed by order anyway");
+		string note = !Unlocked(def) ? $" ({def.BiomeName} is not unlocked yet - placed anyway)" : PhasedOut(def) ? $" ({def.BiomeName} is phased out - placed anyway)" : "";
 		Begin(def, site);
+		return $"{def.BiomeName} warband placed {(here ? "beside" : $"{Utils.DistanceXZ(site, anchor.Value):0} m from")} {(who.Length > 0 ? who : "the first player")}{note}";
 	}
 
 	// ---- unlocks: a biome's warbands start once the boss before it is dead (the game's own "defeated_..." key)

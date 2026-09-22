@@ -248,8 +248,11 @@ Plains = GoblinBrute*** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1, GoblinA
   pays (unset = the biome's boss tier); the script's 100% rules are the escort standing with it when the pack
   appears, and the rest fires as its health falls. Empty = no warband in that biome. Ashlands and the Deep North are
   empty by default.
-- **Admins:** in the server's config, `Start a warband` = `Plains Anthony` places the Plains warband 150-300 m (or up to 600 m) from
-  that player (the first connected if no name) - for testing; `stop` ends every warband.
+- **Admins, for testing:** in the in-game config menu (F1, RaidBoss, 9 - Debug) choose `Warband: biome` and press
+  **Start near me** (150-300 m away, a proper site, walk to it), **Start on me** (right beside you, no site checks: the
+  pack comes up at once) or **Stop all**. Or in the server's config, `Start a warband` = `Plains Anthony` (near) or
+  `Plains here Anthony` (beside) for that player, the first connected if no name; `stop` ends every warband. Unlocks
+  and phase-out are ignored either way.
 
 ## Recovery
 
@@ -319,7 +322,7 @@ by the server alone.
   never rush`. Pushed from the server.
 - **8 - Mechanics:** the break meter (`Break meter size` 0.4 of the boss's max health, drain, parry and cleared-wave
   shares, melee and weakness shares, `Break length (s)` 8, `Break damage taken (x)` 2, growth 1.5, `Break meter in heroic fights` on), `Traits`, `Strike effects`, `Ward label`.
-- **9 - Debug:** `Pretend this many players` (0).
+- **9 - Debug:** `Pretend this many players` (0), the hunt buttons, `Warband: biome` and the warband buttons.
 - **11 - Warbands:** `Enabled`, one script per biome, the distances, `Pack appears within (m)` (120), `Moves on after
   (min)` (180), `Next one after (min)` (90), `Miniboss damage (x)` (1), `Idols on the kill` (1), `Warband kills pay
   heroic idols` (off), `At most, at once` (1), `Gap between warbands (min)` (30), the four messages (empty), `Map pin`,

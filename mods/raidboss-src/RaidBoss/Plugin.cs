@@ -119,6 +119,20 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<string> HuntEndMessage;
 	internal static ConfigEntry<float> HuntWaveGap;
 
+	internal enum WarbandBiome { Swamp, Mountain, Plains, Mistlands, Meadows, BlackForest, Ashlands, DeepNorth }
+	internal static ConfigEntry<WarbandBiome> WarbandBiomeChoice;
+	internal static ConfigEntry<bool> WarbandButtons;
+
+	// Three buttons: the click goes to the server, which places the warband around whoever clicked.
+	static void DrawWarbandButtons(ConfigEntryBase entry)
+	{
+		GUILayout.BeginHorizontal();
+		if (GUILayout.Button("Start near me", GUILayout.ExpandWidth(true))) Net.RequestWarband(WarbandBiomeChoice.Value.ToString(), false, false);
+		if (GUILayout.Button("Start on me", GUILayout.ExpandWidth(true))) Net.RequestWarband(WarbandBiomeChoice.Value.ToString(), true, false);
+		if (GUILayout.Button("Stop all", GUILayout.ExpandWidth(true))) Net.RequestWarband("", false, true);
+		GUILayout.EndHorizontal();
+	}
+
 	// 11 - Warbands (Warbands.cs)
 	internal static ConfigEntry<bool> WarbandsEnabled;
 	internal static ConfigEntry<float> WarbandMinDistance, WarbandMaxDistance, WarbandTrigger, WarbandLifetime, WarbandCooldown, WarbandBossDamage;
@@ -314,6 +328,8 @@ public class RaidBossPlugin : BaseUnityPlugin
 		HuntBossChoice = config("9 - Debug", "Hunt: waves of", HuntBoss.Yagluth, new ConfigDescription("Whose waves the hunt button sends.", null, new ConfigurationManagerAttributes { Order = 3 }), false);
 		HuntHeroic = config("9 - Debug", "Hunt: heroic", false, new ConfigDescription("Send the heroic waves.", null, new ConfigurationManagerAttributes { Order = 2 }), false);
 		HuntButtons = config("9 - Debug", "Hunt", false, new ConfigDescription("Start a hunt on yourself with the waves chosen above, or stop the one running. For admins (on a dedicated server, the server's admin list).", null, new ConfigurationManagerAttributes { CustomDrawer = DrawHuntButtons, HideDefaultButton = true, Order = 1 }), false);
+		WarbandBiomeChoice = config("9 - Debug", "Warband: biome", WarbandBiome.Swamp, new ConfigDescription("Which biome's warband the warband buttons place.", null, new ConfigurationManagerAttributes { Order = -1 }), false);
+		WarbandButtons = config("9 - Debug", "Warband", false, new ConfigDescription("Place the chosen biome's warband near you (150-300 m, a proper site) or right beside you (the pack comes up at once), or end every warband. Unlocks and phase-out are ignored. For admins.", null, new ConfigurationManagerAttributes { CustomDrawer = DrawWarbandButtons, HideDefaultButton = true, Order = -2 }), false);
 		HuntWaveGap = config("9 - Debug", "Hunt, next wave after (s)", 90f, new ConfigDescription("The longest a hunt waits for a wave to be killed before sending the next.", new AcceptableValueRange<float>(10f, 600f)), false);
 		HuntMessage = config("9 - Debug", "Hunt message", "You are being hunted", "Centre-screen message when a hunt starts. Empty = none.", true);
 		HuntEndMessage = config("9 - Debug", "Hunt over message", "The hunt is over", "Centre-screen message when a hunt's last wave is dead. Empty = none.", true);
