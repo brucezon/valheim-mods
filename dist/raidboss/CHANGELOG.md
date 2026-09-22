@@ -16,10 +16,10 @@
 - A third star: a `***` creature (level 4) gets the two-star look one size bigger and ★★★ in its name, on top of the
   game's own level formula (four times the health, two and a half times the damage). The warband minibosses are
   three-star.
-- Warband idols, off by default for both heroic kills and warband kills (`Heroic kills pay warband idols`, `Warband
-  kills pay warband idols`): a marked idol that is certain up to level 6 and above that may break the item by a chance
+- Heroic idols, off by default for both heroic kills and warband kills (`Heroic kills pay heroic idols`, `Warband
+  kills pay heroic idols`): a marked idol that is certain up to level 6 and above that may break the item by a chance
   per level (20% at 7, 35% from 8) but never drops it a level. Only that idol is spent.
-- Minimum version 0.2.0: the map pins and warband idols are new for every player's game.
+- Minimum version 0.2.0: the map pins and heroic idols are new for every player's game.
 
 ## 0.1.19
 

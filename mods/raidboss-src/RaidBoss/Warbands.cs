@@ -7,8 +7,8 @@ using UnityEngine;
 namespace RaidBoss;
 
 // Warbands: a pack of a biome's creatures around a starred miniboss, camped at a spot in the open world that is marked
-// on everyone's map. Travel there, break the pack, kill the miniboss, and it pays a warband idol: an idol whose upgrade
-// cannot fail. A reason to cross the world, and a second source of idols next to heroic boss fights.
+// on everyone's map. Travel there, break the pack, kill the miniboss, and it pays an idol (a heroic idol - certain up
+// to a level - if the server says so). A reason to cross the world, and a second source of idols next to heroic fights.
 //
 // One warband per biome at a time. The server picks a site (that biome, on dry level ground, hundreds of metres from
 // every player and away from anything a player built), announces it and pins it. Nothing stands there until a player
@@ -555,7 +555,7 @@ internal static class Warbands
 
 	internal static bool IsSure(ItemDrop.ItemData item) => item != null && item.m_customData != null && item.m_customData.ContainsKey(SureKey);
 
-	// A warband idol says what it is.
+	// A heroic idol says what it is.
 	[HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip), typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int), typeof(bool))]
 	static class TooltipPatch
 	{
@@ -563,11 +563,11 @@ internal static class Warbands
 		{
 			if (!IsSure(item)) return;
 			int upTo = RaidBossPlugin.SureIdolUpTo.Value;
-			__result += $"\n\n<color=#ffd24a>Warband idol: an upgrade to level {upTo} or below cannot fail. Above that, {BreakChance(upTo + 1) * 100f:0}% may break the item; the rest succeeds.</color>";
+			__result += $"\n\n<color=#ffd24a>Heroic idol: an upgrade to level {upTo} or below cannot fail. Above that, {BreakChance(upTo + 1) * 100f:0}% may break the item; the rest succeeds.</color>";
 		}
 	}
 
-	// The warband idol's odds above the sure level: "7=0.2, 8=0.35" - a level not listed takes the nearest listed
+	// The heroic idol's odds above the sure level: "7=0.2, 8=0.35" - a level not listed takes the nearest listed
 	// one below it (or the lowest listed).
 	internal static float BreakChance(int level)
 	{
@@ -585,9 +585,9 @@ internal static class Warbands
 		return lowest >= 0f ? lowest : 0.35f;
 	}
 
-	// Refining with a warband idol: the game rolls against the idol's own numbers, so for this one attempt they are the
-	// warband idol's - certain up to the sure level, above it a break chance by level and no drop to a lower level. The
-	// warband idol is taken here, and the recipe's own idol cost is waived for the attempt, so exactly one idol goes:
+	// Refining with a heroic idol: the game rolls against the idol's own numbers, so for this one attempt they are the
+	// heroic idol's - certain up to the sure level, above it a break chance by level and no drop to a lower level. The
+	// heroic idol is taken here, and the recipe's own idol cost is waived for the attempt, so exactly one idol goes:
 	// the warband one.
 	[HarmonyPatch(typeof(InventoryGui), "DoCrafting")]
 	static class SureCraftPatch

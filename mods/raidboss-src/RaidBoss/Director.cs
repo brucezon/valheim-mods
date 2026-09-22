@@ -326,7 +326,7 @@ internal static class Director
 	}
 
 	// An item lying in the world is its own prefab with an ItemDrop on it; a bare ZDO of that prefab is a stack of one.
-	// "sure": a warband idol - quality 2 so it never merges into a stack of ordinary ones, and marked in its custom data,
+	// "sure": a heroic idol - quality 2 so it never merges into a stack of ordinary ones, and marked in its custom data,
 	// which the player's game reads when refining (Warbands.SureCraftPatch).
 	internal static bool SpawnItem(string prefabName, Vector3 at, long owner, bool sure = false)
 	{
