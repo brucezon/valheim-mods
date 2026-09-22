@@ -234,7 +234,15 @@ of idols next to heroic fights, and a reason to cross the world.
 - **The reward.** `Idols on the kill` (1) drop where the miniboss dies, of the biome's tier (Swamp pays tier 2,
   Mountain 3, Plains 4, Mistlands 5; a Meadows or Black Forest entry would pay 0 and 1). Ordinary idols, which can
   break. `Warband kills pay heroic idols` (off) makes them heroic idols instead - see Heroic fights and idols.
-- **It moves on, and there are breathers.** A warband nobody has come to is gone after `Moves on after (min)` (180,
+- **Deadly, but a parry is the answer.** The minibosses are three-star and carry an element (the Swamp's Draugr Elite
+  is Blighted, the Mountain's Fenring Rimebound, the Plains Berserker Emberborn, the Mistlands Seeker Soldier
+  Stormcalled): infused hits, a resistance, a weakness, the aura and the name under the bar. They hit for 2.5x, which
+  would break any parry on its own, so a **timed** block against a starred RaidBoss spawn is judged as if the creature
+  were unstarred (`Parry compensation for starred spawns`, 1 = fully): the parry holds when it would hold against the
+  plain creature, and staggers it. A held block gets no such help and takes the full hit, so a tank has a role, but must
+  parry. While the miniboss is staggered its guard is down: hits land in full, at the game's double damage for a
+  staggered enemy. The parry also feeds its break meter, and a break lifts the guard for longer.
+- **It moves on, and there are breathers.** A warband nobody has come to is gone after `Moves on after (min)` (120,
   real time; a triggered one after twice that), and the biome waits `Next one after (min)` (90) for its next one - the
   same wait after a kill. Across all biomes, `At most, at once` (1) warbands stand at a time, and after any of them ends
   nothing new comes anywhere for `Gap between warbands (min)` (30), so it is not always a hunt. Biomes take turns.
@@ -324,7 +332,7 @@ by the server alone.
   shares, melee and weakness shares, `Break length (s)` 8, `Break damage taken (x)` 2, growth 1.5, `Break meter in heroic fights` on), `Traits`, `Strike effects`, `Ward label`.
 - **9 - Debug:** `Pretend this many players` (0), the hunt buttons, `Warband: biome` and the warband buttons.
 - **11 - Warbands:** `Enabled`, one script per biome, the distances, `Pack appears within (m)` (120), `Moves on after
-  (min)` (180), `Next one after (min)` (90), `Miniboss damage (x)` (1), `Idols on the kill` (1), `Warband kills pay
+  (min)` (120), `Next one after (min)` (90), `Miniboss damage (x)` (1), `Idols on the kill` (1), `Warband kills pay
   heroic idols` (off), `At most, at once` (1), `Gap between warbands (min)` (30), the four messages (empty), `Map pin`,
   `Start a warband`.
 

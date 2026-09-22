@@ -62,6 +62,49 @@ internal static class Targeting
 		}
 	}
 
+	// ---- parry difficulty compensation for starred spawns, on the parrying player's own game
+	//
+	// In 1.0 a block is armour-style: what survives the block power feeds the player's stagger bar, and a parry fails
+	// when the bar overflows. A three-star miniboss hits for 2.5x, so a parry that would hold against the plain creature
+	// is broken by the stars alone. Here a TIMED block against a RaidBoss spawn is judged as if the creature were
+	// unstarred (and, for a warband miniboss, unmultiplied): the hit is divided before BlockAttack and multiplied back
+	// after, on the same HitData, so whatever leaks through - and every held block - still takes the full hit. The same
+	// trick BruceQoL's Combat-slider compensation uses; the two compose.
+	[HarmonyPatch(typeof(Humanoid), "BlockAttack")]
+	static class StarParryPatch
+	{
+		static readonly int WarbossKey = "raidboss_warboss".GetStableHashCode();
+		static readonly int AddTag = "raidboss_add".GetStableHashCode();
+
+		static void Prefix(Humanoid __instance, HitData hit, Character attacker, out float __state)
+		{
+			__state = 1f;
+			if (hit == null || attacker == null || attacker.IsPlayer() || __instance != Player.m_localPlayer || !RaidBossPlugin.IsOn) return;
+			float c = Mathf.Clamp01(RaidBossPlugin.StarParryCompensation.Value);
+			if (c <= 0f) return;
+			ZNetView theirs = attacker.m_nview;
+			if (theirs == null || !theirs.IsValid()) return;
+			ZDO zdo = theirs.GetZDO();
+			bool warboss = zdo.GetBool(WarbossKey);
+			if (!warboss && !zdo.GetBool(AddTag)) return;
+			ItemDrop.ItemData blocker = __instance.GetCurrentBlocker();
+			if (blocker == null) return;
+			bool timed = blocker.m_shared.m_timedBlockBonus > 1f && __instance.m_blockTimer != -1f && __instance.m_blockTimer < 0.25f;
+			if (!timed) return;
+			float factor = 1f + Mathf.Max(0, attacker.GetLevel() - 1) * 0.5f;   // the game's own level damage factor
+			if (warboss && Net.TryGetBossDamage(zdo.m_uid, out float mult) && mult > 0f) factor *= mult;
+			if (factor <= 1f) return;
+			factor = Mathf.Pow(factor, c);
+			hit.ApplyModifier(1f / factor);
+			__state = factor;
+		}
+
+		static void Postfix(HitData hit, float __state)
+		{
+			if (hit != null && __state != 1f) hit.ApplyModifier(__state);
+		}
+	}
+
 	// ---- the second opinion, on the creature's owner
 
 	[HarmonyPatch(typeof(BaseAI), "FindEnemy")]

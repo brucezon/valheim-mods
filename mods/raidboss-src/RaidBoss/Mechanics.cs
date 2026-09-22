@@ -254,9 +254,11 @@ internal static class Mechanics
 			Mode mode = Modes.Get(zdo);
 			if (mode != null) mult *= mode.Taken;
 			// Guarded: hard to hurt until the meter breaks it, and very easy while it is broken. Only with a meter, which ends it.
+			// A guarded creature that CAN be staggered (a warband miniboss; the game's bosses cannot) has its guard down
+			// while it is staggered: a landed parry pays out in full, at the game's own double damage for a staggered enemy.
 			float guard = zdo.GetFloat(BrkMaxKey, 0f) > 0f ? zdo.GetFloat(GuardKey, 0f) : 0f;
 			if (broken) mult *= Mathf.Max(1f, guard > 0f ? zdo.GetFloat(GuardBrokenKey, 3f) : zdo.GetFloat(BrkTakenKey, 2f));
-			else if (guard > 0f) mult *= Mathf.Clamp(guard, 0.01f, 1f);
+			else if (guard > 0f && !__instance.IsStaggering()) mult *= Mathf.Clamp(guard, 0.01f, 1f);
 			if (!Mathf.Approximately(mult, 1f)) hit.ApplyModifier(Mathf.Clamp(mult, 0.01f, 10f));
 		}
 	}

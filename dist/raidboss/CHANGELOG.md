@@ -6,7 +6,7 @@
   everyone's map. One per biome at a time, placed hundreds of metres from every player; the pack appears when someone
   comes within 120 m, with the raid music and circle. The miniboss fights with a boss script of its own (escort waves
   at thresholds, a guard by default) and wears the boss bar. Killing it pays an idol of the biome's tier. A warband
-  nobody comes to moves on after three hours; a biome waits 90 minutes for
+  nobody comes to moves on after two hours; a biome waits 90 minutes for
   its next one; at most one stands at a time and there is a 30-minute breather after any of them ends. The pin
   carries a countdown ("Warband: Swamp (2h 58m)") and is the only announcement: no centre-screen messages unless a
   server fills the `Message` settings in. Section 11 - Warbands. Admins: warband buttons in the config menu (9 -
@@ -14,6 +14,10 @@
 - A biome's warbands start once the boss before it is dead (`Unlocked by`: the Elder opens the Swamp, Bonemass the
   Mountain, Moder the Plains, Yagluth the Mistlands); the Meadows and Black Forest ship empty. They stop again once the world is
   two bosses past the biome (`Phase out, bosses ahead`): with Yagluth dead, no more Swamp warbands.
+- The minibosses carry an element (Blighted, Rimebound, Emberborn, Stormcalled). A timed block against a starred
+  RaidBoss spawn is judged as if it were unstarred (`Parry compensation for starred spawns`, 8 - Mechanics), so a
+  three-star's 2.5x hit can be parried; held blocks take the full hit. A guarded creature that can be staggered has
+  its guard down while staggered, so the parry pays out.
 - A third star: a `***` creature (level 4) gets the two-star look one size bigger and ★★★ in its name, on top of the
   game's own level formula (four times the health, two and a half times the damage). The warband minibosses are
   three-star.
