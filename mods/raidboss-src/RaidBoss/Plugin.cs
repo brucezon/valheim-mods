@@ -137,7 +137,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 
 	// 11 - Warbands (Warbands.cs)
 	internal static ConfigEntry<bool> WarbandsEnabled;
-	internal static ConfigEntry<float> WarbandMinDistance, WarbandMaxDistance, WarbandTrigger, WarbandLifetime, WarbandCooldown, WarbandBossDamage;
+	internal static ConfigEntry<float> WarbandMinDistance, WarbandMaxDistance, WarbandAwayFromBuilt, WarbandTrigger, WarbandLifetime, WarbandCooldown, WarbandBossDamage;
 	internal static ConfigEntry<int> WarbandIdols;
 	internal static ConfigEntry<int> WarbandMaxActive;
 	internal static ConfigEntry<float> WarbandGap;
@@ -357,8 +357,9 @@ public class RaidBossPlugin : BaseUnityPlugin
 		Band("Deep North", "");
 		WarbandPhaseOut = config("11 - Warbands", "Phase out, bosses ahead", 2, new ConfigDescription("A biome's warbands stop once the world has killed the boss this many biomes ahead of it: at 2, Swamp warbands stop when Yagluth is dead (Mountain ones when the Mistlands boss is), so nobody hunts warbands that are behind them. One already standing is left to be fought. 0 = never.", new AcceptableValueRange<int>(0, 7)), true);
 		WarbandUnlocks = config("11 - Warbands", "Unlocked by", "Black Forest=Eikthyr, Swamp=gd_king, Mountain=Bonemass, Plains=Dragon, Mistlands=GoblinKing, Ashlands=SeekerQueen, Deep North=FrozenKing_p3", "Biome=boss prefab: that biome's warbands start once that boss has been defeated in this world (the boss's own defeat key). A biome not listed is open from the start. 'Start a warband' ignores this.", true);
-		WarbandMinDistance = config("11 - Warbands", "Distance from players, at least (m)", 400f, new ConfigDescription("A new warband is placed at least this far from every player.", new AcceptableValueRange<float>(50f, 5000f)), true);
-		WarbandMaxDistance = config("11 - Warbands", "Distance from players, at most (m)", 1500f, new ConfigDescription("...and at most this far from the player it is placed around (a random one).", new AcceptableValueRange<float>(100f, 8000f)), true);
+		WarbandMinDistance = config("11 - Warbands", "Distance from players, at least (m)", 1500f, new ConfigDescription("A new warband is placed at least this far from every player: a trip, not a stroll.", new AcceptableValueRange<float>(50f, 5000f)), true);
+		WarbandMaxDistance = config("11 - Warbands", "Distance from players, at most (m)", 6000f, new ConfigDescription("...and at most this far from the player it is placed around (a random one). Far, on purpose: warbands are a reason to find new mountains and plains, not to farm the one by the base.", new AcceptableValueRange<float>(100f, 8000f)), true);
+		WarbandAwayFromBuilt = config("11 - Warbands", "Away from anything built (m)", 400f, new ConfigDescription("No warband within this distance of anything a player has built - ground nobody has settled. 0 = anywhere.", new AcceptableValueRange<float>(0f, 1000f)), true);
 		WarbandTrigger = config("11 - Warbands", "Pack appears within (m)", 120f, new ConfigDescription("The pack is spawned when a player comes this close to the site.", new AcceptableValueRange<float>(40f, 300f)), true);
 		WarbandLifetime = config("11 - Warbands", "Moves on after (min)", 120f, new ConfigDescription("A warband nobody has come to is gone after this long (real time), and a triggered one after twice that. 0 = never.", new AcceptableValueRange<float>(0f, 1440f)), true);
 		WarbandCooldown = config("11 - Warbands", "Next one after (min)", 90f, new ConfigDescription("How long a biome waits for its next warband after one was cleared or moved on.", new AcceptableValueRange<float>(0f, 1440f)), true);

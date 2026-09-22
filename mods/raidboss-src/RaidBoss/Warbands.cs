@@ -390,15 +390,21 @@ internal static class Warbands
 	}
 
 	// Anything a player built within two zones of the point (a creator id on the object).
+	// Anything a player built within "Away from anything built (m)" of the point (a creator id on the object): the
+	// server's proxy for "somewhere nobody has settled". Zones are 64 m; the scan covers enough of them for the radius.
 	static bool Built(Vector3 p)
 	{
+		float radius = Mathf.Clamp(RaidBossPlugin.WarbandAwayFromBuilt.Value, 0f, 1000f);
+		if (radius <= 0f) return false;
+		int zones = Mathf.Clamp(Mathf.CeilToInt(radius / 64f) + 1, 1, 17);
 		scan.Clear();
 		SimulationDistance synced = ZNet.instance.GetSyncedSimulationDistance();
-		ZDOMan.instance.FindSectorObjects(ZoneSystem.GetZone(p), new SimulationDistance(2, 0, synced.IsClassic), scan);
+		ZDOMan.instance.FindSectorObjects(ZoneSystem.GetZone(p), new SimulationDistance(zones, 0, synced.IsClassic), scan);
+		bool built = false;
 		foreach (ZDO zdo in scan)
-			if (zdo.GetLong(ZDOVars.s_creator, 0L) != 0L && Utils.DistanceXZ(zdo.GetPosition(), p) < 150f) { scan.Clear(); return true; }
+			if (zdo.GetLong(ZDOVars.s_creator, 0L) != 0L && Utils.DistanceXZ(zdo.GetPosition(), p) < radius) { built = true; break; }
 		scan.Clear();
-		return false;
+		return built;
 	}
 
 	static void Begin(Def def, Vector3 site)

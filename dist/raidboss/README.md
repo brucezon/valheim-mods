@@ -223,8 +223,10 @@ of idols next to heroic fights, and a reason to cross the world.
   defeated in this world (`Unlocked by`: the Elder opens the Swamp, Bonemass the Mountain, Moder the Plains, Yagluth
   the Mistlands, and so on; the Meadows and Black Forest are empty by default, being starter ground). And they stop again
   once the world is `Phase out, bosses ahead` (2) bosses past that biome: with Yagluth dead there are no more Swamp
-  warbands, so nobody is sent hunting behind themselves; a warband already standing is left to be fought. The server picks a site of that biome, on dry level ground, `Distance from players, at
-  least (m)` (400) from every player and away from anything a player built, and pins it on everyone's map with a
+  warbands, so nobody is sent hunting behind themselves; a warband already standing is left to be fought. The server picks a site of that biome, on dry level ground, between `Distance
+  from players, at least (m)` (1500) and `at most (m)` (6000) from a random online player - far on purpose, so a
+  warband is a reason to find new mountains and plains rather than farm the one by the base - at least the minimum
+  from every player, and `Away from anything built (m)` (400) from anything a player has built, and pins it on everyone's map with a
   countdown under the pin: "Warband: Swamp (2h 58m)". That pin is the whole announcement - no centre-screen text
   (the four `Message` settings are empty by default; fill one in for a message). Nothing stands there until a player
   comes within `Pack appears within (m)` (120): then the miniboss and its escort are spawned, the raid music and
@@ -335,7 +337,8 @@ by the server alone.
 - **8 - Mechanics:** the break meter (`Break meter size` 0.4 of the boss's max health, drain, parry and cleared-wave
   shares, melee and weakness shares, `Break length (s)` 8, `Break damage taken (x)` 2, growth 1.5, `Break meter in heroic fights` on), `Traits`, `Strike effects`, `Ward label`.
 - **9 - Debug:** `Pretend this many players` (0), the hunt buttons, `Warband: biome` and the warband buttons.
-- **11 - Warbands:** `Enabled`, one script per biome, the distances, `Pack appears within (m)` (120), `Moves on after
+- **11 - Warbands:** `Enabled`, one script per biome, `Distance from players, at least (m)` (1500) and `at most
+  (m)` (6000), `Away from anything built (m)` (400), `Pack appears within (m)` (120), `Moves on after
   (min)` (120), `Next one after (min)` (90), `Miniboss damage (x)` (1), `Minibosses have a break meter` (off),
   `Idols on the kill` (1), `Warband kills pay
   heroic idols` (off), `At most, at once` (1), `Gap between warbands (min)` (30), the four messages (empty), `Map pin`,

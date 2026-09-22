@@ -3,7 +3,8 @@
 ## 0.2.0
 
 - Warbands: a pack of a biome's creatures around a starred miniboss, camped at a spot in the open world and pinned on
-  everyone's map. One per biome at a time, placed hundreds of metres from every player; the pack appears when someone
+  everyone's map. One per biome at a time, placed 1.5 to 6 km from a random player and 400 m from anything built, so
+  it is a reason to explore rather than farm the biome by the base; the pack appears when someone
   comes within 120 m, with the raid music and circle. The miniboss fights with a boss script of its own (escort waves
   at thresholds) and wears the boss bar, but has no break meter: it staggers and takes a parry like the plain creature
   (`Minibosses have a break meter` turns it on). Killing it pays an idol of the biome's tier. A warband
