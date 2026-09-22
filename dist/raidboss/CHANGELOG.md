@@ -8,6 +8,11 @@
   at thresholds, a guard by default) and wears the boss bar. Killing it pays a warband idol of the biome's tier: an
   idol whose upgrade cannot fail. A warband nobody comes to moves on after three hours; a biome waits 90 minutes for
   its next one. Section 11 - Warbands; `Start a warband` for admins.
+- A biome's warbands start once the boss before it is dead (`Unlocked by`: the Elder opens the Swamp, Bonemass the
+  Mountain, Moder the Plains, Yagluth the Mistlands); the Meadows and Black Forest ship empty.
+- A third star: a `***` creature (level 4) gets the two-star look one size bigger and ★★★ in its name, on top of the
+  game's own level formula (four times the health, two and a half times the damage). The warband minibosses are
+  three-star.
 - Minimum version 0.2.0: the map pins and warband idols are new for every player's game.
 
 ## 0.1.19

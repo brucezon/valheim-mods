@@ -214,14 +214,16 @@ A pack of a biome's creatures around a starred miniboss, camped at a spot in the
 map: **Warband: Black Forest**. Travel there, break the pack, kill the miniboss, and it pays a **warband idol** - an
 idol whose upgrade cannot fail. A second source of idols next to heroic fights, and a reason to cross the world.
 
-- **One per biome at a time.** The server picks a site of that biome, on dry level ground, `Distance from players, at
+- **One per biome at a time, once its boss is dead.** A biome's warbands start when the boss before it has been
+  defeated in this world (`Unlocked by`: the Elder opens the Swamp, Bonemass the Mountain, Moder the Plains, Yagluth
+  the Mistlands, and so on; the Meadows and Black Forest are empty by default, being starter ground). The server picks a site of that biome, on dry level ground, `Distance from players, at
   least (m)` (400) from every player and away from anything a player built, announces it to everyone ("A warband
   gathers in the Black Forest") and pins it. Nothing stands there until a player comes within `Pack appears within (m)`
   (120): then the miniboss and its escort are spawned, the raid music and circle play at the site, and the miniboss
   fights with a script of its own - waves at health thresholds, a guard, traits, anything a boss script can do - and
   wears the boss bar with the break meter. A parry taunts it like a boss.
-- **The reward.** `Idols on the kill` (1) drop where the miniboss dies, of the biome's tier (Meadows pays tier 0,
-  Black Forest 1, Swamp 2, Mountain 3, Plains 4, Mistlands 5). They are warband idols: quality 2 so they never merge
+- **The reward.** `Idols on the kill` (1) drop where the miniboss dies, of the biome's tier (Swamp pays tier 2,
+  Mountain 3, Plains 4, Mistlands 5; a Meadows or Black Forest entry would pay 0 and 1). They are warband idols: quality 2 so they never merge
   with ordinary ones, and marked so that refining with one always succeeds and only that idol is spent. `Warband
   idols cannot fail` off makes them ordinary idols.
 - **It moves on.** A warband nobody has come to is gone after `Moves on after (min)` (180, real time; a triggered one
@@ -230,10 +232,10 @@ idol whose upgrade cannot fail. A second source of idols next to heroic fights, 
 - **Written like a boss script**, one entry per biome in **11 - Warbands**: the miniboss, then its script.
 
 ```
-Plains = GoblinBrute** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% "The shamans chant": GoblinShaman 1+0, Goblin* 1+1
+Plains = GoblinBrute*** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% "The shamans chant": GoblinShaman 1+0, Goblin* 1+1
 ```
 
-  `GoblinBrute**` is a two-star Berserker (the most the game allows) (`:Ironhide` after the name gives it a trait); `tier4` is the idol it
+  `GoblinBrute***` is a three-star Berserker - RaidBoss adds the third star the game lacks: four times the health, two and a half times the damage, the two-star look one size bigger, and ★★★ in its name (`:Ironhide` after the name gives it a trait); `tier4` is the idol it
   pays (unset = the biome's boss tier); the script's 100% rules are the escort standing with it when the pack
   appears, and the rest fires as its health falls. Empty = no warband in that biome. Ashlands and the Deep North are
   empty by default.

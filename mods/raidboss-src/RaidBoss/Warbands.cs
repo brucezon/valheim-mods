@@ -35,6 +35,8 @@ internal static class Warbands
 		public int Level = 1;
 		public int Tier = -1;
 		public string Script = "";
+		public string UnlockBoss = "";    // prefab of the boss whose death opens this biome's warbands ("" = open)
+		public string UnlockKeyCache;
 	}
 
 	sealed class Band
@@ -118,13 +120,15 @@ internal static class Warbands
 				if (colon > 0) { def.Trait = spec.Substring(colon + 1); spec = spec.Substring(0, colon); }
 				def.Prefab = spec;
 			}
-			def.Level = Mathf.Clamp(def.Level, 1, 3);
+			def.Level = Mathf.Clamp(def.Level, 1, Stars.Max);
+			def.UnlockBoss = UnlockBossFor(def.BiomeName);
 			if (string.IsNullOrEmpty(def.Prefab)) { RaidBossPlugin.Log.LogWarning($"warband {def.BiomeName}: no miniboss named"); continue; }
 			if (def.Tier < 0) def.Tier = DefaultTier(biome);
 			Encounter parsed = Encounter.Parse(def.Script);
 			foreach (string err in parsed.Errors) RaidBossPlugin.Log.LogWarning($"warband {def.BiomeName} script: {err}");
 			defs.Add(def);
-			Log($"{def.BiomeName}: {def.Prefab}{(def.Trait.Length > 0 ? ":" + def.Trait : "")}{new string('*', def.Level - 1)}, idol tier {def.Tier}, script for 1 player: {parsed.Describe(1)}");
+			Log($"{def.BiomeName}: {def.Prefab}{(def.Trait.Length > 0 ? ":" + def.Trait : "")}{new string('*', def.Level - 1)}, idol tier {def.Tier}, " +
+				$"{(def.UnlockBoss.Length == 0 ? "open from the start" : $"opens when {def.UnlockBoss} is defeated ({UnlockKey(def)}: {(Unlocked(def) ? "set" : "not yet")})")}, script for 1 player: {parsed.Describe(1)}");
 		}
 		// a biome that lost its entry loses its band
 		var gone = new List<Heightmap.Biome>();
@@ -173,6 +177,7 @@ internal static class Warbands
 			if (readyAt.TryGetValue(def.Biome, out float ready) && clock < ready) continue;
 			if (nextSearch.TryGetValue(def.Biome, out float next) && clock < next) continue;
 			nextSearch[def.Biome] = clock + 60f;
+			if (!Unlocked(def)) continue;                                      // its boss is not dead yet
 			if (Director.PlayerCount == 0 && DebugAnchor == null) continue;   // an empty server has nobody to hunt
 			if (FindSite(def, null, RaidBossPlugin.WarbandMinDistance.Value, RaidBossPlugin.WarbandMaxDistance.Value, out Vector3 site))
 				Begin(def, site);
@@ -240,7 +245,41 @@ internal static class Warbands
 		if (anchor == null) { Log(who.Length > 0 ? $"no player called '{who}'" : "nobody is connected"); return; }
 		if (!FindSite(def, anchor, 150f, 300f, out Vector3 site)) { Log($"no {def.BiomeName} ground within 300 m of {(who.Length > 0 ? who : "the first player")}"); return; }
 		readyAt.Remove(biome);
+		if (!Unlocked(def)) Log($"{def.BiomeName} is not unlocked yet ({UnlockKey(def)} is not set) - placed by order anyway");
 		Begin(def, site);
+	}
+
+	// ---- unlocks: a biome's warbands start once the boss before it is dead (the game's own "defeated_..." key)
+
+	static string UnlockBossFor(string biomeName)
+	{
+		foreach (string part in (RaidBossPlugin.WarbandUnlocks.Value ?? "").Split(','))
+		{
+			int eq = part.IndexOf('=');
+			if (eq <= 0) continue;
+			if (part.Substring(0, eq).Trim().Equals(biomeName, StringComparison.OrdinalIgnoreCase)) return part.Substring(eq + 1).Trim();
+		}
+		return "";
+	}
+
+	// The key that boss sets when it dies: read off its prefab, so it is right for any boss the game has.
+	static string UnlockKey(Def def)
+	{
+		if (def.UnlockBoss.Length == 0) return "";
+		if (def.UnlockKeyCache != null) return def.UnlockKeyCache;
+		string key = "";
+		GameObject prefab = ZNetScene.instance != null ? ZNetScene.instance.GetPrefab(def.UnlockBoss) : null;
+		Character c = prefab != null ? prefab.GetComponent<Character>() : null;
+		if (c != null && !string.IsNullOrEmpty(c.m_defeatSetGlobalKey)) key = c.m_defeatSetGlobalKey;
+		else key = "defeated_" + def.UnlockBoss.ToLowerInvariant();
+		def.UnlockKeyCache = key;
+		return key;
+	}
+
+	static bool Unlocked(Def def)
+	{
+		if (def.UnlockBoss.Length == 0) return true;
+		return ZoneSystem.instance != null && ZoneSystem.instance.GetGlobalKey(UnlockKey(def));
 	}
 
 	// A spot of the right biome: dry, fairly level, far enough from every player, away from anything built, and not on
@@ -260,7 +299,7 @@ internal static class Warbands
 			if (p.magnitude > 9500f) continue;
 			if (wg.GetBiome(p.x, p.z) != def.Biome) continue;
 			p.y = wg.GetHeight(p.x, p.z);
-			if (p.y < water + 2f) continue;
+			if (p.y < water + 0.5f) continue;   // swamps sit barely above the water; dry enough to stand on is enough
 			float h1 = wg.GetHeight(p.x + 8f, p.z), h2 = wg.GetHeight(p.x - 8f, p.z), h3 = wg.GetHeight(p.x, p.z + 8f), h4 = wg.GetHeight(p.x, p.z - 8f);
 			if (Mathf.Max(Mathf.Abs(h1 - h2), Mathf.Abs(h3 - h4)) > 6f) continue;
 			if (anchor == null && Director.NearestPlayerDistance(p) < minDist) continue;

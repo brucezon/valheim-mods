@@ -24,6 +24,7 @@
     <Compile Include="Modes.cs" />
     <Compile Include="Hunts.cs" />
     <Compile Include="Warbands.cs" />
+    <Compile Include="Stars.cs" />
     <Compile Include="Shield.cs" />
     <Compile Include="Auras.cs" />
     <Compile Include="ConfigurationManagerAttributes.cs" />

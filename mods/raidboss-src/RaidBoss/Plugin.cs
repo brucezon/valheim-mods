@@ -122,6 +122,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<int> WarbandIdols;
 	internal static ConfigEntry<bool> WarbandSureIdols;
 	internal static ConfigEntry<string> WarbandMessage, WarbandFightMessage, WarbandClearedMessage, WarbandGoneMessage, WarbandPinText, WarbandOrder;
+	internal static ConfigEntry<string> WarbandUnlocks;
 	static readonly List<KeyValuePair<string, ConfigEntry<string>>> WarbandBiomes = new List<KeyValuePair<string, ConfigEntry<string>>>();
 	internal static IEnumerable<KeyValuePair<string, string>> WarbandEntries()
 	{
@@ -133,7 +134,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 	}
 
 	const string WarbandHelp =
-		"A warband: the miniboss, then its boss script.   Boss[:Trait][*|**] [tierN] | <script as for a boss>\n" +
+		"A warband: the miniboss, then its boss script.   Boss[:Trait][*|**|***] [tierN] | <script as for a boss>\n" +
 		"The script's 100% rules fire the moment the pack is triggered: they are the escort standing with the miniboss.\n" +
 		"tierN = which idol it pays (Upgrader<N>...); unset = the biome's own boss tier. Empty = no warband in this biome.";
 
@@ -312,14 +313,18 @@ public class RaidBossPlugin : BaseUnityPlugin
 		WarbandsEnabled = config("11 - Warbands", "Enabled", true, "Warbands: a pack of a biome's creatures around a starred miniboss, camped at a spot marked on everyone's map. One per biome at a time; the pack appears when a player comes close. Killing the miniboss pays a warband idol.", true);
 		WarbandBiomes.Clear();
 		void Band(string biome, string value) => WarbandBiomes.Add(new KeyValuePair<string, ConfigEntry<string>>(biome, config("11 - Warbands", biome, value, WarbandHelp, true)));
-		Band("Meadows", "Greydwarf** tier0 | 100%: guard melee0.5 | 100%: Greyling 3+1, Neck 1+1 | 50% \"The pack closes in\": Greyling 2+1, Boar* 1+0");
-		Band("Black Forest", "Troll** tier1 | 100%: guard melee0.5 | 100%: Greydwarf 3+1, GreydwarfShaman 1+0 | 50% \"The brute roars\": Greydwarf_Elite* 1+0, Greydwarf 2+1");
-		Band("Swamp", "Draugr_Elite** tier2 | 100%: guard melee0.5 | 100%: Draugr 2+1, Draugr_Ranged 1+0 | 50% \"The dead rise\": Draugr* 1+1, Blob 1+0, Skeleton 2+0");
-		Band("Mountain", "Fenring** tier3 | 100%: guard melee0.5 | 100%: Wolf 2+1 | 50% \"The howl\": Wolf* 1+1, Ulv 2+0");
-		Band("Plains", "GoblinBrute** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% \"The shamans chant\": GoblinShaman 1+0, Goblin* 1+1");
-		Band("Mistlands", "SeekerBrute** tier5 | 100%: guard melee0.5 | 100%: Seeker 2+1 | 50% \"The nest stirs\": Seeker* 1+1, Tick 2+1");
+		// Meadows and the Black Forest are starter ground: empty by default. Examples that work there:
+		//   Meadows       Greydwarf*** tier0 | 100%: guard melee0.5 | 100%: Greyling 3+1, Neck 1+1 | 50% "The pack closes in": Greyling 2+1, Boar* 1+0
+		//   Black Forest  Troll** tier1 | 100%: guard melee0.5 | 100%: Greydwarf 3+1, GreydwarfShaman 1+0 | 50% "The brute roars": Greydwarf_Elite* 1+0, Greydwarf 2+1
+		Band("Meadows", "");
+		Band("Black Forest", "");
+		Band("Swamp", "Draugr_Elite*** tier2 | 100%: guard melee0.5 | 100%: Draugr 2+1, Draugr_Ranged 1+0 | 50% \"The dead rise\": Draugr* 1+1, Blob 1+0, Skeleton 2+0");
+		Band("Mountain", "Fenring*** tier3 | 100%: guard melee0.5 | 100%: Wolf 2+1 | 50% \"The howl\": Wolf* 1+1, Ulv 2+0");
+		Band("Plains", "GoblinBrute*** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% \"The shamans chant\": GoblinShaman 1+0, Goblin* 1+1");
+		Band("Mistlands", "SeekerBrute*** tier5 | 100%: guard melee0.5 | 100%: Seeker 2+1 | 50% \"The nest stirs\": Seeker* 1+1, Tick 2+1");
 		Band("Ashlands", "");
 		Band("Deep North", "");
+		WarbandUnlocks = config("11 - Warbands", "Unlocked by", "Black Forest=Eikthyr, Swamp=gd_king, Mountain=Bonemass, Plains=Dragon, Mistlands=GoblinKing, Ashlands=SeekerQueen, Deep North=FrozenKing_p3", "Biome=boss prefab: that biome's warbands start once that boss has been defeated in this world (the boss's own defeat key). A biome not listed is open from the start. 'Start a warband' ignores this.", true);
 		WarbandMinDistance = config("11 - Warbands", "Distance from players, at least (m)", 400f, new ConfigDescription("A new warband is placed at least this far from every player.", new AcceptableValueRange<float>(50f, 5000f)), true);
 		WarbandMaxDistance = config("11 - Warbands", "Distance from players, at most (m)", 1500f, new ConfigDescription("...and at most this far from the player it is placed around (a random one).", new AcceptableValueRange<float>(100f, 8000f)), true);
 		WarbandTrigger = config("11 - Warbands", "Pack appears within (m)", 120f, new ConfigDescription("The pack is spawned when a player comes this close to the site.", new AcceptableValueRange<float>(40f, 300f)), true);
