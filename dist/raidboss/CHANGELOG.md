@@ -16,7 +16,7 @@
   two bosses past the biome (`Phase out, bosses ahead`): with Yagluth dead, no more Swamp warbands.
 - The minibosses carry an element (Blighted, Rimebound, Emberborn, Stormcalled). A timed block against a starred
   RaidBoss spawn is judged as if it were unstarred (`Parry compensation for starred spawns`, 8 - Mechanics), so a
-  three-star's 2.5x hit can be parried; held blocks take the full hit. A guarded creature that can be staggered has
+  three-star's 2.5x hit can be parried and, when it holds, leaks only what the plain creature's would; a failed parry or a held block takes the full hit. A guarded creature that can be staggered has
   its guard down while staggered, so the parry pays out.
 - A third star: a `***` creature (level 4) gets the two-star look one size bigger and ★★★ in its name, on top of the
   game's own level formula (four times the health, two and a half times the damage). The warband minibosses are

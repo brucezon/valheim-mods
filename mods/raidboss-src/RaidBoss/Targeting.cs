@@ -99,9 +99,11 @@ internal static class Targeting
 			__state = factor;
 		}
 
-		static void Postfix(HitData hit, float __state)
+		// A parry that HELD keeps the plain creature's leak (the residual the armour-style block lets through, and the
+		// same share of an infusion): the stars only bite when the parry fails, when the whole hit is scaled back up.
+		static void Postfix(HitData hit, bool __result, float __state)
 		{
-			if (hit != null && __state != 1f) hit.ApplyModifier(__state);
+			if (hit != null && __state != 1f && !__result) hit.ApplyModifier(__state);
 		}
 	}
 

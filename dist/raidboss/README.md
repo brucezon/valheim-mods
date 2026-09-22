@@ -239,8 +239,9 @@ of idols next to heroic fights, and a reason to cross the world.
   Stormcalled): infused hits, a resistance, a weakness, the aura and the name under the bar. They hit for 2.5x, which
   would break any parry on its own, so a **timed** block against a starred RaidBoss spawn is judged as if the creature
   were unstarred (`Parry compensation for starred spawns`, 1 = fully): the parry holds when it would hold against the
-  plain creature, and staggers it. A held block gets no such help and takes the full hit, so a tank has a role, but must
-  parry. While the miniboss is staggered its guard is down: hits land in full, at the game's double damage for a
+  plain creature, lets through only what the plain creature's hit would (a little, and the same share of the
+  infusion), and staggers it. A parry that fails, or a held block, takes the whole three-star hit, so a tank has a
+  role, but must parry. While the miniboss is staggered its guard is down: hits land in full, at the game's double damage for a
   staggered enemy. The parry also feeds its break meter, and a break lifts the guard for longer.
 - **It moves on, and there are breathers.** A warband nobody has come to is gone after `Moves on after (min)` (120,
   real time; a triggered one after twice that), and the biome waits `Next one after (min)` (90) for its next one - the
