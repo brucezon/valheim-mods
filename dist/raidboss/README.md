@@ -283,6 +283,12 @@ by the server alone.
 - The server has no terrain, so heights come from the world generator, or from a nearby player standing a little higher
   (a flattened arena). An add can drop a metre or two on arrival.
 - Whether adds land well inside an indoor arena is untested; those bosses' scripts are empty by default.
+- **Arenas in the sky (RaidArena).** A boss standing more than `Arena: a floor this far above the ground (m)` (50) above
+  the world's ground is taken to be in a RaidArena arena, which the server cannot see: its adds are spawned at the
+  boss's height, `Arena: spawn adds this far above the floor (m)` (8) up, and the game that brings each one to life sets
+  it down on the arena's real floor (on an older RaidBoss it just drops; creatures take no fall damage). Hunts do the
+  same around a player up there. Strikes, chases, rain and the storm already find the floor by themselves, and a trophy
+  or a flagged altar within the usual distance on the map counts even 2,500 m below.
 - 0.1.0 has been tested headless on a dedicated server. The client part - targeting, the break meter, strikes,
   traits - has not yet been through a real fight.
 

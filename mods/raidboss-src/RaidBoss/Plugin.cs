@@ -22,7 +22,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.17";
+	public const string Version = "0.1.18";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
@@ -53,6 +53,8 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<float> AddHealth;
 	internal static ConfigEntry<float> MoreAdds;
 	internal static ConfigEntry<float> WaveSpacing;
+	internal static ConfigEntry<float> ArenaAbove;
+	internal static ConfigEntry<float> ArenaDrop;
 	internal static ConfigEntry<float> BossDamage;
 	internal static ConfigEntry<int> ForcePlayers;
 	internal static ConfigEntry<bool> WorldEncountersEnabled;
@@ -215,6 +217,8 @@ public class RaidBossPlugin : BaseUnityPlugin
 		AddHealth = config("2 - Scaling", "Add health (x)", 1f, new ConfigDescription("Adds arrive with this share of their health, so they die sooner. 1 = full health. The only visible sign is a health bar that starts part empty.", new AcceptableValueRange<float>(0.1f, 1f)), false);
 		MoreAdds = config("2 - Scaling", "More adds (x)", 1f, new ConfigDescription("Every wave count and the living-adds cap are multiplied by this and rounded down (at 1.3 a wave of 4 becomes 5, 5 becomes 6, 8 becomes 10; 1 to 3 stay as they are). 1 (default) = the scripts exactly as written.", new AcceptableValueRange<float>(1f, 4f)), false);
 		WaveSpacing = config("2 - Scaling", "Next wave waits up to (s)", 30f, new ConfigDescription("A threshold wave waits while more than a third of the previous one is still alive, for at most this long - so a group that bursts the boss through two thresholds meets them one after another, not together. 0 = never wait.", new AcceptableValueRange<float>(0f, 300f)), false);
+		ArenaAbove = config("2 - Scaling", "Arena: a floor this far above the ground (m)", 50f, new ConfigDescription("A boss (or a hunted player) standing this far above the world's ground is in an arena in the sky (RaidArena), which the server cannot see: adds are then spawned at that height instead of on the ground below, and the players' games set them down on the arena floor.", new AcceptableValueRange<float>(10f, 1000f)), false);
+		ArenaDrop = config("2 - Scaling", "Arena: spawn adds this far above the floor (m)", 8f, new ConfigDescription("An arena's ground rolls a few metres, and the server does not know where. Adds start this far above the boss's height and are set down on the real floor by the game that brings them to life (or simply drop - creatures take no fall damage).", new AcceptableValueRange<float>(0f, 40f)), false);
 		BossDamage = config("2 - Scaling", "Boss damage during a fight (x)", 1f, new ConfigDescription("Damage a boss deals to players while its fight is on, as a share of normal. 1 = normal. The server tells every player's game, which applies it. It multiplies with any other mod's enemy-damage setting.", new AcceptableValueRange<float>(0.05f, 5f)), false);
 
 		WorldEncountersEnabled = config("4 - World encounters", "Enabled", true, "Encounters away from bosses: kill enough of something at a known place and the place answers. No message is shown.", false);

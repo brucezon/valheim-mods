@@ -830,12 +830,13 @@ internal static class Director
 		long owner = boss.GetOwner();
 		Vector3 pos = bossPos;
 		bool placed = false;
+		bool arena = false;
 		for (int attempt = 0; attempt < 10 && !placed; attempt++)
 		{
 			float angle = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
 			float dist = UnityEngine.Random.Range(RaidBossPlugin.RingMin.Value, Mathf.Max(RaidBossPlugin.RingMin.Value, RaidBossPlugin.RingMax.Value));
 			pos = new Vector3(bossPos.x + Mathf.Cos(angle) * dist, 0f, bossPos.z + Mathf.Sin(angle) * dist);
-			pos.y = GroundHeight(pos);
+			pos.y = FloorHeight(pos, bossPos, out arena);
 			placed = pos.y > ZoneSystem.instance.m_waterLevel + 0.3f;
 		}
 		if (!placed) pos.y = Mathf.Max(pos.y, ZoneSystem.instance.m_waterLevel + 0.5f);
@@ -854,6 +855,7 @@ internal static class Director
 		zdo.SetRotation(facing.sqrMagnitude > 0.01f ? Quaternion.LookRotation(facing) : Quaternion.identity);
 		if (level > 1) zdo.Set(ZDOVars.s_level, level);
 		if (RaidBossPlugin.AddsHunt.Value) zdo.Set(ZDOVars.s_huntPlayer, true);
+		if (arena) zdo.Set(FloorKey, true);
 		zdo.Set(AddTag, true);
 		// The add carries its own damage multiplier; every player's game applies it to this creature's hits on players
 		// (ClientSide.cs). It is the only reduction: nothing else in this mod touches what an add deals.
@@ -877,12 +879,37 @@ internal static class Director
 		if (owner != 0L) zdo.SetOwner(owner);
 
 		fight.Adds.Add(new Add { Id = zdo.m_uid, Prefab = prefab.name });
-		RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: spawned {prefab.name}{new string('*', level - 1)} {zdo.m_uid} at {pos:0.0} ({Flat(pos, bossPos):0} m from the boss) owner {owner}");
+		RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: spawned {prefab.name}{new string('*', level - 1)} {zdo.m_uid} at {pos:0.0} ({Flat(pos, bossPos):0} m from the boss{(arena ? $", arena floor about {pos.y - RaidBossPlugin.ArenaDrop.Value - 0.5f:0} m up" : "")}) owner {owner}");
 		return true;
 	}
 
 	// The dedicated server has no terrain colliders. WorldGenerator's height is pure math but knows nothing about
 	// terrain a location or a player has flattened or raised, so where a player stands nearby and higher, trust that.
+	// Where the floor is under a spawn near some centre (a boss, a hunted player). Normally the generated ground, or a
+	// nearby player standing a little higher (a flattened arena). A centre far above the generated ground is standing in a
+	// RaidArena arena in the sky (a client-only mod; the server never hears of it): the floor is then the centre's own
+	// height - or a nearer player's, if they are about level - plus a drop, because the arena's ground rolls a few metres
+	// and the server cannot see it. The add is flagged and the game that brings it to life sets it down on the real floor
+	// (ClientSide.FloorPatch); a game without that just lets it drop, and creatures take no fall damage.
+	internal static readonly int FloorKey = "raidboss_floor".GetStableHashCode();
+
+	static float FloorHeight(Vector3 pos, Vector3 centre, out bool arena)
+	{
+		float gen = WorldGenerator.instance.GetHeight(pos.x, pos.z);
+		arena = centre.y - gen > RaidBossPlugin.ArenaAbove.Value;
+		if (!arena) return GroundHeight(pos);
+		float floor = centre.y;
+		float nearest = float.MaxValue;
+		foreach (PlayerPos p in Players)
+		{
+			float d = Flat(p.Pos, pos);
+			if (d >= nearest || d > 40f || Mathf.Abs(p.Pos.y - centre.y) > 15f) continue;
+			nearest = d;
+			floor = p.Pos.y;
+		}
+		return floor + RaidBossPlugin.ArenaDrop.Value;
+	}
+
 	static float GroundHeight(Vector3 pos)
 	{
 		float gen = WorldGenerator.instance.GetHeight(pos.x, pos.z);
@@ -966,12 +993,13 @@ internal static class Director
 		}
 		Vector3 pos = center;
 		bool placed = false;
+		bool arena = false;
 		for (int attempt = 0; attempt < 10 && !placed; attempt++)
 		{
 			float angle = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
 			float dist = UnityEngine.Random.Range(ringMin, Mathf.Max(ringMin, ringMax));
 			pos = new Vector3(center.x + Mathf.Cos(angle) * dist, 0f, center.z + Mathf.Sin(angle) * dist);
-			pos.y = GroundHeight(pos);
+			pos.y = FloorHeight(pos, center, out arena);
 			placed = pos.y > ZoneSystem.instance.m_waterLevel + 0.3f;
 		}
 		if (!placed) pos.y = Mathf.Max(pos.y, ZoneSystem.instance.m_waterLevel + 0.5f);
@@ -987,6 +1015,7 @@ internal static class Director
 		zdo.SetRotation(facing.sqrMagnitude > 0.01f ? Quaternion.LookRotation(facing) : Quaternion.identity);
 		if (level > 1) zdo.Set(ZDOVars.s_level, level);
 		if (RaidBossPlugin.AddsHunt.Value) zdo.Set(ZDOVars.s_huntPlayer, true);
+		if (arena) zdo.Set(FloorKey, true);
 		zdo.Set(tag, true);
 		if (owner != 0L) zdo.SetOwner(owner);
 		RaidBossPlugin.Log.LogInfo($"{why}: spawned {prefab.name}{new string('*', level - 1)} {zdo.m_uid} at {pos:0.0} ({Flat(pos, center):0} m away) owner {owner}");

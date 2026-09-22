@@ -191,4 +191,30 @@ internal static class ClientSide
 			if (view != null && view.IsValid() && view.IsOwner() && !body.isKinematic && body.IsSleeping()) body.WakeUp();
 		}
 	}
+	// ---- 6. Adds spawned in an arena in the sky land on its floor.
+	//
+	// RaidArena's arenas float far above the world, and the server, which cannot see them, spawns a fight's adds a few
+	// metres above the arena's height and flags them (Director.FloorHeight). The game that brings such an add to life
+	// finds the real floor under it - the game's own ray, which sees the arena's ground - and sets it down there, so it
+	// does not start inside a rise or fall through a dip. If there is no floor within reach it is left to drop.
+	[HarmonyPatch(typeof(Character), "Awake")]
+	static class FloorPatch
+	{
+		static void Postfix(Character __instance)
+		{
+			if (__instance.IsPlayer() || !RaidBossPlugin.IsOn) return;
+			ZNetView view = __instance.m_nview;
+			if (view == null || !view.IsValid() || !view.IsOwner() || ZoneSystem.instance == null) return;
+			ZDO zdo = view.GetZDO();
+			if (!zdo.GetBool(Director.FloorKey)) return;
+			zdo.Set(Director.FloorKey, false);
+			Vector3 pos = __instance.transform.position;
+			if (!ZoneSystem.instance.GetSolidHeight(pos, out float floor) || floor > pos.y + 2f || pos.y - floor > 40f) return;
+			pos.y = floor + 0.3f;
+			__instance.transform.position = pos;
+			zdo.SetPosition(pos);
+			Rigidbody body = __instance.GetComponent<Rigidbody>();
+			if (body != null) body.linearVelocity = Vector3.zero;
+		}
+	}
 }

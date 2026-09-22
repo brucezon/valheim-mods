@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.18
+
+- Works with RaidArena's arenas in the sky: adds (and hunt waves) spawn at the boss's height when it stands far above
+  the world's ground, and the game that brings an add to life sets it down on the arena floor. Two settings under
+  2 - Scaling: `Arena: a floor this far above the ground (m)` (50), `Arena: spawn adds this far above the floor (m)` (8).
+
 ## 0.1.17
 
 - Yagluth's waves come at 90, 70, 50 and 30% (were 80, 60, 40 and 20), in both kinds of fight; heroic fire strikes
