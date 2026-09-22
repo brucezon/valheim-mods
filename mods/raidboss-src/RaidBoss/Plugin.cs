@@ -93,6 +93,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<float> BreakWeak;
 	internal static ConfigEntry<bool> BreakInHeroic;
 	internal static ConfigEntry<float> StarParryCompensation;
+	internal static ConfigEntry<float> StarParryLeak;
 	internal static ConfigEntry<string> Traits;
 	internal static ConfigEntry<string> StrikeFx;
 	internal static ConfigEntry<string> WardLabel;
@@ -141,6 +142,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<int> WarbandMaxActive;
 	internal static ConfigEntry<float> WarbandGap;
 	internal static ConfigEntry<bool> WarbandSureIdols;
+	internal static ConfigEntry<bool> WarbandBreakMeter;
 	internal static ConfigEntry<string> WarbandMessage, WarbandFightMessage, WarbandClearedMessage, WarbandGoneMessage, WarbandPinText, WarbandOrder;
 	internal static ConfigEntry<string> WarbandUnlocks;
 	internal static ConfigEntry<int> WarbandPhaseOut;
@@ -314,6 +316,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		BreakWeak = config("8 - Mechanics", "Break meter, weakness damage counts (x)", 1f, new ConfigDescription("Damage of a type the boss is weak to - its own weaknesses, or its current trait's - goes into the meter at this share, on top.", new AcceptableValueRange<float>(0f, 5f)), false);
 		BreakInHeroic = config("8 - Mechanics", "Break meter in heroic fights", true, "Off = heroic fights have no break meter and no breaks (a guard, which only a break ends, is then skipped too). Normal fights are unaffected.", false);
 		StarParryCompensation = config("8 - Mechanics", "Parry compensation for starred spawns", 1f, new ConfigDescription("A timed block against a creature RaidBoss spawned is judged as if it were unstarred - and a warband miniboss as if unmultiplied - so a three-star's 2.5x hit can still be parried when the plain creature's could. 1 = fully, 0 = off. Held blocks get no help and take the full hit. A parry that holds leaks only what the plain creature's would; a failed one takes the full hit.", new AcceptableValueRange<float>(0f, 1f)), true);
+		StarParryLeak = config("8 - Mechanics", "Starred parry, leak (x)", 2f, new ConfigDescription("What a parry that HOLDS against a starred spawn lets through, as a multiple of what the plain creature's hit would leak (1 = the same; the stars' own factor, e.g. 2.5 for three stars, is the most). Your armour still applies to it afterwards, so the real punishment is a parry that fails.", new AcceptableValueRange<float>(0.25f, 5f)), true);
 		BreakSeconds = config("8 - Mechanics", "Break length (s)", 8f, new ConfigDescription("How long a broken boss stays down.", new AcceptableValueRange<float>(1f, 60f)), false);
 		BreakTaken = config("8 - Mechanics", "Break damage taken (x)", 2f, new ConfigDescription("A broken boss takes this much more damage. Vanilla's own stagger bonus is x2.", new AcceptableValueRange<float>(1f, 5f)), false);
 		BreakGrowth = config("8 - Mechanics", "Break meter growth (x)", 1.5f, new ConfigDescription("After each break the meter needs this much more.", new AcceptableValueRange<float>(1f, 5f)), false);
@@ -341,14 +344,14 @@ public class RaidBossPlugin : BaseUnityPlugin
 		WarbandBiomes.Clear();
 		void Band(string biome, string value) => WarbandBiomes.Add(new KeyValuePair<string, ConfigEntry<string>>(biome, config("11 - Warbands", biome, value, WarbandHelp, true)));
 		// Meadows and the Black Forest are starter ground: empty by default. Examples that work there:
-		//   Meadows       Greydwarf*** tier0 | 100%: guard melee0.5 | 100%: Greyling 3+1, Neck 1+1 | 50% "The pack closes in": Greyling 2+1, Boar* 1+0
-		//   Black Forest  Troll** tier1 | 100%: guard melee0.5 | 100%: Greydwarf 3+1, GreydwarfShaman 1+0 | 50% "The brute roars": Greydwarf_Elite* 1+0, Greydwarf 2+1
+		//   Meadows       Greydwarf*** tier0 | 100%: Greyling 3+1, Neck 1+1 | 50% "The pack closes in": Greyling 2+1, Boar* 1+0
+		//   Black Forest  Troll** tier1 | 100%: Greydwarf 3+1, GreydwarfShaman 1+0 | 50% "The brute roars": Greydwarf_Elite* 1+0, Greydwarf 2+1
 		Band("Meadows", "");
 		Band("Black Forest", "");
-		Band("Swamp", "Draugr_Elite:Blighted*** tier2 | 100%: guard melee0.5 | 100%: Draugr 2+1, Draugr_Ranged 1+0 | 50% \"The dead rise\": Draugr* 1+1, Blob 1+0, Skeleton 2+0");
-		Band("Mountain", "Fenring:Rimebound*** tier3 | 100%: guard melee0.5 | 100%: Wolf 2+1 | 50% \"The howl\": Wolf* 1+1, Ulv 2+0");
-		Band("Plains", "GoblinBrute:Emberborn*** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% \"The shamans chant\": GoblinShaman 1+0, Goblin* 1+1");
-		Band("Mistlands", "SeekerBrute:Stormcalled*** tier5 | 100%: guard melee0.5 | 100%: Seeker 2+1 | 50% \"The nest stirs\": Seeker* 1+1, Tick 2+1");
+		Band("Swamp", "Draugr_Elite:Blighted*** tier2 | 100%: Draugr 2+1, Draugr_Ranged 1+0 | 50% \"The dead rise\": Draugr* 1+1, Blob 1+0, Skeleton 2+0");
+		Band("Mountain", "Fenring:Rimebound*** tier3 | 100%: Wolf 2+1 | 50% \"The howl\": Wolf* 1+1, Ulv 2+0");
+		Band("Plains", "GoblinBrute:Emberborn*** tier4 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% \"The shamans chant\": GoblinShaman 1+0, Goblin* 1+1");
+		Band("Mistlands", "SeekerBrute:Stormcalled*** tier5 | 100%: Seeker 2+1 | 50% \"The nest stirs\": Seeker* 1+1, Tick 2+1");
 		Band("Ashlands", "");
 		Band("Deep North", "");
 		WarbandPhaseOut = config("11 - Warbands", "Phase out, bosses ahead", 2, new ConfigDescription("A biome's warbands stop once the world has killed the boss this many biomes ahead of it: at 2, Swamp warbands stop when Yagluth is dead (Mountain ones when the Mistlands boss is), so nobody hunts warbands that are behind them. One already standing is left to be fought. 0 = never.", new AcceptableValueRange<int>(0, 7)), true);
@@ -361,6 +364,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		WarbandMaxActive = config("11 - Warbands", "At most, at once", 1, new ConfigDescription("How many warbands can stand at the same time, across all biomes.", new AcceptableValueRange<int>(1, 8)), true);
 		WarbandGap = config("11 - Warbands", "Gap between warbands (min)", 30f, new ConfigDescription("After any warband ends (cleared or moved on), no new one anywhere for this long: a breather, so it is not always a hunt.", new AcceptableValueRange<float>(0f, 720f)), true);
 		WarbandBossDamage = config("11 - Warbands", "Miniboss damage (x)", 1f, new ConfigDescription("What the miniboss's hits on players are multiplied by (on top of its stars).", new AcceptableValueRange<float>(0.2f, 5f)), true);
+		WarbandBreakMeter = config("11 - Warbands", "Minibosses have a break meter", false, "Off (default): a warband miniboss is a plain creature - it staggers and takes a parry like one, and a guard in its script is skipped. On: the break meter (and a guard) as on a boss.", true);
 		WarbandIdols = config("11 - Warbands", "Idols on the kill", 1, new ConfigDescription("Idols dropped where the miniboss dies.", new AcceptableValueRange<int>(0, 5)), true);
 		WarbandSureIdols = config("11 - Warbands", "Warband kills pay heroic idols", false, "On: the idols a warband pays are heroic idols (see 5 - Heroic fights, 'Heroic idol...'). Off (default): ordinary idols, which can break.", true);
 		WarbandMessage = config("11 - Warbands", "Message, new warband", "","Centre-screen message to everyone when a warband appears, e.g. 'A warband gathers in the {biome}'. Empty (default) = none: the map pin with its countdown is the announcement.", true);

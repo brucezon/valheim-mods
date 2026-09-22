@@ -229,8 +229,9 @@ of idols next to heroic fights, and a reason to cross the world.
   (the four `Message` settings are empty by default; fill one in for a message). Nothing stands there until a player
   comes within `Pack appears within (m)` (120): then the miniboss and its escort are spawned, the raid music and
   circle play at the site, and the miniboss
-  fights with a script of its own - waves at health thresholds, a guard, traits, anything a boss script can do - and
-  wears the boss bar with the break meter. A parry taunts it like a boss.
+  fights with a script of its own - waves at health thresholds, traits, strikes, anything a boss script can do - and
+  wears the boss bar. It is still a plain creature underneath: no break meter, it staggers and takes a parry like one
+  (`Minibosses have a break meter` turns the meter, and a scripted guard, on). A parry taunts it like a boss.
 - **The reward.** `Idols on the kill` (1) drop where the miniboss dies, of the biome's tier (Swamp pays tier 2,
   Mountain 3, Plains 4, Mistlands 5; a Meadows or Black Forest entry would pay 0 and 1). Ordinary idols, which can
   break. `Warband kills pay heroic idols` (off) makes them heroic idols instead - see Heroic fights and idols.
@@ -239,10 +240,9 @@ of idols next to heroic fights, and a reason to cross the world.
   Stormcalled): infused hits, a resistance, a weakness, the aura and the name under the bar. They hit for 2.5x, which
   would break any parry on its own, so a **timed** block against a starred RaidBoss spawn is judged as if the creature
   were unstarred (`Parry compensation for starred spawns`, 1 = fully): the parry holds when it would hold against the
-  plain creature, lets through only what the plain creature's hit would (a little, and the same share of the
-  infusion), and staggers it. A parry that fails, or a held block, takes the whole three-star hit, so a tank has a
-  role, but must parry. While the miniboss is staggered its guard is down: hits land in full, at the game's double damage for a
-  staggered enemy. The parry also feeds its break meter, and a break lifts the guard for longer.
+  plain creature, lets through `Starred parry, leak (x)` (2) times what the plain creature's hit would (a little, and
+  the same share of the infusion; your armour then applies), and staggers it. A parry that fails, or a held block, takes the whole three-star hit, so a tank has a
+  role, but must parry. A staggered miniboss takes the game's double damage, so the parry is the opening.
 - **It moves on, and there are breathers.** A warband nobody has come to is gone after `Moves on after (min)` (120,
   real time; a triggered one after twice that), and the biome waits `Next one after (min)` (90) for its next one - the
   same wait after a kill. Across all biomes, `At most, at once` (1) warbands stand at a time, and after any of them ends
@@ -250,7 +250,7 @@ of idols next to heroic fights, and a reason to cross the world.
 - **Written like a boss script**, one entry per biome in **11 - Warbands**: the miniboss, then its script.
 
 ```
-Plains = GoblinBrute*** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% "The shamans chant": GoblinShaman 1+0, Goblin* 1+1
+Plains = GoblinBrute:Emberborn*** tier4 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% "The shamans chant": GoblinShaman 1+0, Goblin* 1+1
 ```
 
   `GoblinBrute***` is a three-star Berserker - RaidBoss adds the third star the game lacks: four times the health, two and a half times the damage, the two-star look one size bigger, and ★★★ in its name (`:Ironhide` after the name gives it a trait); `tier4` is the idol it
@@ -333,7 +333,8 @@ by the server alone.
   shares, melee and weakness shares, `Break length (s)` 8, `Break damage taken (x)` 2, growth 1.5, `Break meter in heroic fights` on), `Traits`, `Strike effects`, `Ward label`.
 - **9 - Debug:** `Pretend this many players` (0), the hunt buttons, `Warband: biome` and the warband buttons.
 - **11 - Warbands:** `Enabled`, one script per biome, the distances, `Pack appears within (m)` (120), `Moves on after
-  (min)` (120), `Next one after (min)` (90), `Miniboss damage (x)` (1), `Idols on the kill` (1), `Warband kills pay
+  (min)` (120), `Next one after (min)` (90), `Miniboss damage (x)` (1), `Minibosses have a break meter` (off),
+  `Idols on the kill` (1), `Warband kills pay
   heroic idols` (off), `At most, at once` (1), `Gap between warbands (min)` (30), the four messages (empty), `Map pin`,
   `Start a warband`.
 

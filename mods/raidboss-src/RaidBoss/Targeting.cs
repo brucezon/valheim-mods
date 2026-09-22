@@ -100,10 +100,12 @@ internal static class Targeting
 		}
 
 		// A parry that HELD keeps the plain creature's leak (the residual the armour-style block lets through, and the
-		// same share of an infusion): the stars only bite when the parry fails, when the whole hit is scaled back up.
+		// same share of an infusion) times "Starred parry, leak (x)", never more than the stars would give; a parry that
+		// failed takes the whole hit scaled back up.
 		static void Postfix(HitData hit, bool __result, float __state)
 		{
-			if (hit != null && __state != 1f && !__result) hit.ApplyModifier(__state);
+			if (hit == null || __state == 1f) return;
+			hit.ApplyModifier(__result ? Mathf.Clamp(RaidBossPlugin.StarParryLeak.Value, 0.25f, __state) : __state);
 		}
 	}
 

@@ -776,6 +776,8 @@ internal static class Director
 		string M(string key, float global) => fight.Meter != null && fight.Meter.TryGetValue(key, out string v) ? v : global.ToString(System.Globalization.CultureInfo.InvariantCulture);
 		float size = float.TryParse(M("size", RaidBossPlugin.BreakSize.Value), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float sz) ? sz : RaidBossPlugin.BreakSize.Value;
 		if (fight.Heroic && !RaidBossPlugin.BreakInHeroic.Value) size = 0f;
+		// A warband miniboss is a plain creature: it staggers and takes a parry like one, so no break meter unless asked.
+		if (fight.Custom && !RaidBossPlugin.WarbandBreakMeter.Value) size = 0f;
 		bool healthSettled = !fight.Heroic || Mathf.Approximately(RaidBossPlugin.HeroicBossHealth.Value, 1f) || boss.GetFloat(Net.HealthKey, 0f) != 0f;
 		if (size > 0f && fight.Script != null && fight.Script.Rules.Count > 0 && healthSettled && fight.MeterAsks < 30 && boss.GetOwner() != 0L && boss.GetFloat("raidboss_brk_max".GetStableHashCode(), 0f) == 0f)
 		{
