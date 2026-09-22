@@ -216,7 +216,9 @@ idol whose upgrade cannot fail. A second source of idols next to heroic fights, 
 
 - **One per biome at a time, once its boss is dead.** A biome's warbands start when the boss before it has been
   defeated in this world (`Unlocked by`: the Elder opens the Swamp, Bonemass the Mountain, Moder the Plains, Yagluth
-  the Mistlands, and so on; the Meadows and Black Forest are empty by default, being starter ground). The server picks a site of that biome, on dry level ground, `Distance from players, at
+  the Mistlands, and so on; the Meadows and Black Forest are empty by default, being starter ground). And they stop again
+  once the world is `Phase out, bosses ahead` (2) bosses past that biome: with Yagluth dead there are no more Swamp
+  warbands, so nobody is sent hunting behind themselves; a warband already standing is left to be fought. The server picks a site of that biome, on dry level ground, `Distance from players, at
   least (m)` (400) from every player and away from anything a player built, announces it to everyone ("A warband
   gathers in the Black Forest") and pins it. Nothing stands there until a player comes within `Pack appears within (m)`
   (120): then the miniboss and its escort are spawned, the raid music and circle play at the site, and the miniboss

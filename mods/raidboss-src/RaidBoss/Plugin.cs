@@ -123,6 +123,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<bool> WarbandSureIdols;
 	internal static ConfigEntry<string> WarbandMessage, WarbandFightMessage, WarbandClearedMessage, WarbandGoneMessage, WarbandPinText, WarbandOrder;
 	internal static ConfigEntry<string> WarbandUnlocks;
+	internal static ConfigEntry<int> WarbandPhaseOut;
 	static readonly List<KeyValuePair<string, ConfigEntry<string>>> WarbandBiomes = new List<KeyValuePair<string, ConfigEntry<string>>>();
 	internal static IEnumerable<KeyValuePair<string, string>> WarbandEntries()
 	{
@@ -324,6 +325,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		Band("Mistlands", "SeekerBrute*** tier5 | 100%: guard melee0.5 | 100%: Seeker 2+1 | 50% \"The nest stirs\": Seeker* 1+1, Tick 2+1");
 		Band("Ashlands", "");
 		Band("Deep North", "");
+		WarbandPhaseOut = config("11 - Warbands", "Phase out, bosses ahead", 2, new ConfigDescription("A biome's warbands stop once the world has killed the boss this many biomes ahead of it: at 2, Swamp warbands stop when Yagluth is dead (Mountain ones when the Mistlands boss is), so nobody hunts warbands that are behind them. One already standing is left to be fought. 0 = never.", new AcceptableValueRange<int>(0, 7)), true);
 		WarbandUnlocks = config("11 - Warbands", "Unlocked by", "Black Forest=Eikthyr, Swamp=gd_king, Mountain=Bonemass, Plains=Dragon, Mistlands=GoblinKing, Ashlands=SeekerQueen, Deep North=FrozenKing_p3", "Biome=boss prefab: that biome's warbands start once that boss has been defeated in this world (the boss's own defeat key). A biome not listed is open from the start. 'Start a warband' ignores this.", true);
 		WarbandMinDistance = config("11 - Warbands", "Distance from players, at least (m)", 400f, new ConfigDescription("A new warband is placed at least this far from every player.", new AcceptableValueRange<float>(50f, 5000f)), true);
 		WarbandMaxDistance = config("11 - Warbands", "Distance from players, at most (m)", 1500f, new ConfigDescription("...and at most this far from the player it is placed around (a random one).", new AcceptableValueRange<float>(100f, 8000f)), true);

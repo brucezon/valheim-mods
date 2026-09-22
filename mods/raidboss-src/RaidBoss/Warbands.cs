@@ -128,7 +128,8 @@ internal static class Warbands
 			foreach (string err in parsed.Errors) RaidBossPlugin.Log.LogWarning($"warband {def.BiomeName} script: {err}");
 			defs.Add(def);
 			Log($"{def.BiomeName}: {def.Prefab}{(def.Trait.Length > 0 ? ":" + def.Trait : "")}{new string('*', def.Level - 1)}, idol tier {def.Tier}, " +
-				$"{(def.UnlockBoss.Length == 0 ? "open from the start" : $"opens when {def.UnlockBoss} is defeated ({UnlockKey(def)}: {(Unlocked(def) ? "set" : "not yet")})")}, script for 1 player: {parsed.Describe(1)}");
+				$"{(def.UnlockBoss.Length == 0 ? "open from the start" : $"opens when {def.UnlockBoss} is defeated ({UnlockKey(def)}: {(Unlocked(def) ? "set" : "not yet")})")}" +
+				$"{(PhasedOut(def) ? ", PHASED OUT (the world's kill level is " + KillLevel() + ")" : "")}, script for 1 player: {parsed.Describe(1)}");
 		}
 		// a biome that lost its entry loses its band
 		var gone = new List<Heightmap.Biome>();
@@ -178,6 +179,7 @@ internal static class Warbands
 			if (nextSearch.TryGetValue(def.Biome, out float next) && clock < next) continue;
 			nextSearch[def.Biome] = clock + 60f;
 			if (!Unlocked(def)) continue;                                      // its boss is not dead yet
+			if (PhasedOut(def)) continue;                                      // the world is past it
 			if (Director.PlayerCount == 0 && DebugAnchor == null) continue;   // an empty server has nobody to hunt
 			if (FindSite(def, null, RaidBossPlugin.WarbandMinDistance.Value, RaidBossPlugin.WarbandMaxDistance.Value, out Vector3 site))
 				Begin(def, site);
@@ -205,6 +207,7 @@ internal static class Warbands
 		if (!b.Spawned)
 		{
 			if (lifetime > 0f && b.Age > lifetime) { End(b, "nobody came", true); return; }
+			if (PhasedOut(b.Def)) { End(b, "the world has moved past this biome", false); return; }   // quietly; a pack already up is left to be fought
 			if (Director.CountPlayers(b.Site, RaidBossPlugin.WarbandTrigger.Value, out long nearest) > 0) Spawn(b, nearest);
 			return;
 		}
@@ -246,6 +249,7 @@ internal static class Warbands
 		if (!FindSite(def, anchor, 150f, 300f, out Vector3 site)) { Log($"no {def.BiomeName} ground within 300 m of {(who.Length > 0 ? who : "the first player")}"); return; }
 		readyAt.Remove(biome);
 		if (!Unlocked(def)) Log($"{def.BiomeName} is not unlocked yet ({UnlockKey(def)} is not set) - placed by order anyway");
+		else if (PhasedOut(def)) Log($"{def.BiomeName} is phased out (the world's kill level is {KillLevel()}) - placed by order anyway");
 		Begin(def, site);
 	}
 
@@ -262,24 +266,49 @@ internal static class Warbands
 		return "";
 	}
 
-	// The key that boss sets when it dies: read off its prefab, so it is right for any boss the game has.
-	static string UnlockKey(Def def)
+	// The key a boss sets when it dies: read off its prefab, so it is right for any boss the game has.
+	static readonly Dictionary<string, string> bossKeys = new Dictionary<string, string>();
+
+	static string KeyForBoss(string boss)
 	{
-		if (def.UnlockBoss.Length == 0) return "";
-		if (def.UnlockKeyCache != null) return def.UnlockKeyCache;
-		string key = "";
-		GameObject prefab = ZNetScene.instance != null ? ZNetScene.instance.GetPrefab(def.UnlockBoss) : null;
+		if (string.IsNullOrEmpty(boss)) return "";
+		if (bossKeys.TryGetValue(boss, out string cached)) return cached;
+		GameObject prefab = ZNetScene.instance != null ? ZNetScene.instance.GetPrefab(boss) : null;
 		Character c = prefab != null ? prefab.GetComponent<Character>() : null;
-		if (c != null && !string.IsNullOrEmpty(c.m_defeatSetGlobalKey)) key = c.m_defeatSetGlobalKey;
-		else key = "defeated_" + def.UnlockBoss.ToLowerInvariant();
-		def.UnlockKeyCache = key;
+		string key = c != null && !string.IsNullOrEmpty(c.m_defeatSetGlobalKey) ? c.m_defeatSetGlobalKey : "defeated_" + boss.ToLowerInvariant();
+		bossKeys[boss] = key;
 		return key;
 	}
 
-	static bool Unlocked(Def def)
+	static bool BossDead(string boss) => boss.Length > 0 && ZoneSystem.instance != null && ZoneSystem.instance.GetGlobalKey(KeyForBoss(boss));
+
+	static string UnlockKey(Def def) => KeyForBoss(def.UnlockBoss);
+
+	static bool Unlocked(Def def) => def.UnlockBoss.Length == 0 || BossDead(def.UnlockBoss);
+
+	// ---- phasing out: a biome's warbands stop once the world is a couple of bosses past it
+
+	// The boss of biome tier t is what unlocks tier t + 1, so it is read off the same "Unlocked by" list.
+	static string BossOfTier(int t)
 	{
-		if (def.UnlockBoss.Length == 0) return true;
-		return ZoneSystem.instance != null && ZoneSystem.instance.GetGlobalKey(UnlockKey(def));
+		foreach (var n in BiomeNames) if (DefaultTier(n.biome) == t + 1) return UnlockBossFor(n.name);
+		return "";
+	}
+
+	// The highest biome tier whose own boss is dead in this world (-1 = none).
+	static int KillLevel()
+	{
+		int level = -1;
+		for (int t = 0; t < 8; t++) if (BossDead(BossOfTier(t))) level = t;
+		return level;
+	}
+
+	static bool PhasedOut(Def def)
+	{
+		int ahead = RaidBossPlugin.WarbandPhaseOut.Value;
+		int tier = DefaultTier(def.Biome);
+		if (ahead <= 0 || tier < 0) return false;
+		return KillLevel() >= tier + ahead;
 	}
 
 	// A spot of the right biome: dry, fairly level, far enough from every player, away from anything built, and not on
