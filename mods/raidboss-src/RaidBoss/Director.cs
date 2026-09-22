@@ -40,6 +40,7 @@ internal static class Director
 		public int MeterAsks;
 		public float MechTimer;
 		public readonly List<Wave> Waves = new List<Wave>();
+		public Dictionary<string, string> Meter;   // per-boss break-meter numbers from a "meter" action in the script
 		public readonly Dictionary<Encounter.Act, int> Cycle = new Dictionary<Encounter.Act, int>();
 		public float[] Guard;             // taken, broken, melee share, size - waiting for the break meter before it is applied
 		public bool GuardApplied;
@@ -203,6 +204,19 @@ internal static class Director
 		foreach (string err in fight.Script.Errors) RaidBossPlugin.Log.LogWarning($"{fight.Prefab} script: {err}");
 		fight.Fired = new bool[fight.Script.Rules.Count];
 		fight.Timers = new float[fight.Script.Rules.Count];
+		// "meter size0.3 parry0.02 cap0.12 ...": read from any rule as the script loads, so it is in place before the first hit
+		fight.Meter = null;
+		foreach (Encounter.Rule r in fight.Script.Rules)
+			foreach (Encounter.Act a in r.Actions)
+				if (a.Verb == "meter")
+					foreach (string arg in a.Args)
+					{
+						int i = 0;
+						while (i < arg.Length && char.IsLetter(arg[i])) i++;
+						if (i == 0 || i == arg.Length) continue;
+						if (fight.Meter == null) fight.Meter = new Dictionary<string, string>();
+						fight.Meter[arg.Substring(0, i).ToLowerInvariant()] = arg.Substring(i);
+					}
 		for (int i = 0; i < fight.Script.Rules.Count; i++)
 		{
 			Encounter.Rule rule = fight.Script.Rules[i];
@@ -567,6 +581,7 @@ internal static class Director
 						fight.ShieldImmune = Array.Exists(act.Args, a => a.Equals("immune", StringComparison.OrdinalIgnoreCase));
 						fight.ShieldTimer = fight.ShieldArgs[1];   // the first living caster raises it at once
 						break;
+					case "meter": break;   // read when the script loads (LoadScript); nothing to do when its rule fires
 					case "guard":    // guard taken0.3 broken3 melee0.5 size0.2: hard to hurt until broken, very easy while broken
 						fight.Guard = new[] { Mathf.Clamp(Arg(act.Args, "taken", 0.3f), 0.01f, 1f), Mathf.Clamp(Arg(act.Args, "broken", 3f), 1f, 10f), Mathf.Max(0f, Arg(act.Args, "melee", 0.5f)), Mathf.Clamp(Arg(act.Args, "size", 0.2f), 0.02f, 5f) };
 						fight.GuardApplied = false;
@@ -721,13 +736,16 @@ internal static class Director
 
 	static void TickMechanics(Fight fight, ZDO boss)
 	{
-		float size = RaidBossPlugin.BreakSize.Value;
+		// the boss's own numbers from its script win over the settings
+		string M(string key, float global) => fight.Meter != null && fight.Meter.TryGetValue(key, out string v) ? v : global.ToString(System.Globalization.CultureInfo.InvariantCulture);
+		float size = float.TryParse(M("size", RaidBossPlugin.BreakSize.Value), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float sz) ? sz : RaidBossPlugin.BreakSize.Value;
 		if (fight.Heroic && !RaidBossPlugin.BreakInHeroic.Value) size = 0f;
 		bool healthSettled = !fight.Heroic || Mathf.Approximately(RaidBossPlugin.HeroicBossHealth.Value, 1f) || boss.GetFloat(Net.HealthKey, 0f) != 0f;
 		if (size > 0f && fight.Script != null && fight.Script.Rules.Count > 0 && healthSettled && fight.MeterAsks < 30 && boss.GetOwner() != 0L && boss.GetFloat("raidboss_brk_max".GetStableHashCode(), 0f) == 0f)
 		{
 			fight.MeterAsks++;
-			string text = FormattableString.Invariant($"size={size};drain={RaidBossPlugin.BreakDrain.Value};parry={RaidBossPlugin.BreakParry.Value};dur={RaidBossPlugin.BreakSeconds.Value};grow={RaidBossPlugin.BreakGrowth.Value};x={RaidBossPlugin.BreakTaken.Value};hit={RaidBossPlugin.BreakHit.Value};weak={RaidBossPlugin.BreakWeak.Value}");
+			string text = FormattableString.Invariant($"size={size};drain={M("drain", RaidBossPlugin.BreakDrain.Value)};parry={M("parry", RaidBossPlugin.BreakParry.Value)};dur={M("dur", RaidBossPlugin.BreakSeconds.Value)};grow={M("grow", RaidBossPlugin.BreakGrowth.Value)};x={M("x", RaidBossPlugin.BreakTaken.Value)};hit={M("hit", RaidBossPlugin.BreakHit.Value)};weak={M("weak", RaidBossPlugin.BreakWeak.Value)};cap={M("cap", 0f)}");
+			if (fight.Meter != null && fight.MeterAsks == 1) RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: break meter from its script: {text}");
 			Net.SendOps(boss.GetOwner(), fight.BossId, new Net.Op("meter", "", text));
 		}
 		if (fight.ShieldArgs != null && healthSettled && boss.GetOwner() != 0L) TickShield(fight, boss);

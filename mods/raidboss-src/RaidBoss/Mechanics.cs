@@ -35,6 +35,7 @@ internal static class Mechanics
 	static readonly int BrkTakenKey = "raidboss_brk_x".GetStableHashCode();
 	static readonly int BrkHitKey = "raidboss_brk_hit".GetStableHashCode();
 	static readonly int BrkWeakKey = "raidboss_brk_weak".GetStableHashCode();
+	static readonly int BrkCapKey = "raidboss_brk_cap".GetStableHashCode();   // the most of the meter one parry may fill (0 = no cap)
 	static readonly int GuardKey = "raidboss_guard".GetStableHashCode();
 	static readonly int GuardBrokenKey = "raidboss_guard_x".GetStableHashCode();
 	static readonly int BreakUntilKey = "raidboss_break_t".GetStableHashCode();
@@ -101,6 +102,7 @@ internal static class Mechanics
 				zdo.Set(BrkTakenKey, F(G("x", "2"), 2f));
 				zdo.Set(BrkHitKey, F(G("hit", "1"), 1f));      // absent (a 0.1.0 server) = weapon stagger counts in full, as it did
 				zdo.Set(BrkWeakKey, F(G("weak", "0"), 0f));
+				zdo.Set(BrkCapKey, Mathf.Clamp01(F(G("cap", "0"), 0f)));
 				break;
 			case "brk_add":  // a fraction of the meter
 				AddMeter(zdo, op.Value * zdo.GetFloat(BrkMaxKey, 0f), null);
@@ -189,7 +191,11 @@ internal static class Mechanics
 					if (until <= seen) continue;
 					bool first = seen == 0L && until < NowTicks;   // an old parry from before we owned the boss
 					st.Parries[id] = until;
-					if (!first) AddMeter(zdo, parry, boss);
+					if (!first)
+					{
+						float cap = zdo.GetFloat(BrkCapKey, 0f);
+						AddMeter(zdo, cap > 0f ? Mathf.Min(parry, cap * max) : parry, boss);
+					}
 				}
 			float value = zdo.GetFloat(BrkKey, 0f);
 			if (value >= max) TryBreak(zdo, boss);

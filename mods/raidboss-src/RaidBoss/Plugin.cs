@@ -22,7 +22,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.18";
+	public const string Version = "0.1.19";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
@@ -130,6 +130,8 @@ public class RaidBossPlugin : BaseUnityPlugin
 		"         GoblinBrute 1+0 @1-2, GoblinBrute* 1+0 @3+  sends a plain one to one or two players and a one-star instead from three.\n" +
 		"         Start a rule with  heroic  or  normal  to use it only in that kind of fight: normal 40%: ... | heroic 40%: ...\n" +
 		"         A heroic rule arrives exactly as written; every other threshold wave gains its star in a heroic fight.\n" +
+		"         meter size0.3 parry0.02 cap0.12 drain0.0004 hit0.6 weak1 grow1.5 dur8 x2  in any rule gives THIS boss its own break-meter\n" +
+		"         numbers (fractions of max health; cap = the most of the meter one parry may fill); unset ones follow the settings.\n" +
 		"Empty = this boss is left alone. Changes apply within a few seconds, also mid-fight (waves already passed do not fire late).\n" +
 		"These lines live on the server only; players' copies of this file do not need them.";
 
@@ -176,6 +178,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		"heroic every 30s below 30%: chase fire r3 d1.2 dmg90 every0.9 for5 | " +
 		"heroic every 30s below 30%: storm every1.5 for30 near30 dmg30 weather:ThunderStorm | " +
 		"heroic every 45s below 80%: boss cycle Emberborn Stormcalled 20 | " +
+		"100%: meter parry0.02 cap0.12 | " +
 		"heroic 100%: shield immune refresh25 range35 by:GoblinShaman | " +
 		"heroic every 40s: GoblinShaman 1+0 | " +
 		"normal 30% \"They will not bend or break\": Goblin* 1+0.5, Goblin 0+0.5, GoblinArcher 0+0.34 | " +

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.19
+
+- New `meter` action: a boss's own break-meter numbers from its script (`meter size0.3 parry0.02 cap0.12 ...`, any field,
+  unset ones follow the settings), read as the script loads. `cap` is the most of the meter a single parry may fill.
+  Yagluth's script: `meter parry0.02 cap0.12` - a parry is an eighth of his meter, not a quarter, and parrying his
+  attacks over and over cannot break him on its own.
+
 ## 0.1.18
 
 - Works with RaidArena's arenas in the sky: adds (and hunt waves) spawn at the boss's height when it stands far above
