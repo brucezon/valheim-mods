@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+- Warbands: a pack of a biome's creatures around a starred miniboss, camped at a spot in the open world and pinned on
+  everyone's map. One per biome at a time, placed hundreds of metres from every player; the pack appears when someone
+  comes within 120 m, with the raid music and circle. The miniboss fights with a boss script of its own (escort waves
+  at thresholds, a guard by default) and wears the boss bar. Killing it pays a warband idol of the biome's tier: an
+  idol whose upgrade cannot fail. A warband nobody comes to moves on after three hours; a biome waits 90 minutes for
+  its next one. Section 11 - Warbands; `Start a warband` for admins.
+- Minimum version 0.2.0: the map pins and warband idols are new for every player's game.
+
 ## 0.1.19
 
 - New `meter` action: a boss's own break-meter numbers from its script (`meter size0.3 parry0.02 cap0.12 ...`, any field,

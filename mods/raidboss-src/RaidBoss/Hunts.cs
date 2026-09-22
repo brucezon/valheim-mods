@@ -45,11 +45,17 @@ internal static class Hunts
 	{
 		static void Postfix(RandEventSystem __instance)
 		{
-			if (__instance.m_events == null || __instance.m_events.Exists(e => e != null && e.m_name == EventName)) return;
+			AddEvent(__instance, EventName);
+			AddEvent(__instance, Warbands.EventName);   // the same mood at a warband's site
+		}
+
+		static void AddEvent(RandEventSystem __instance, string name)
+		{
+			if (__instance.m_events == null || __instance.m_events.Exists(e => e != null && e.m_name == name)) return;
 			RandomEvent model = __instance.m_events.Find(e => e != null && e.m_name == "army_goblin") ?? __instance.m_events.Find(e => e != null);
 			if (model == null) return;
 			RandomEvent ev = model.Clone();
-			ev.m_name = EventName;
+			ev.m_name = name;
 			ev.m_enabled = true;
 			ev.m_random = false;               // never picked by chance
 			ev.m_standaloneInterval = 0f;
@@ -70,6 +76,12 @@ internal static class Hunts
 	{
 		static void Prefix(RandomEvent __instance)
 		{
+			if (__instance.m_name == Warbands.EventName)
+			{
+				__instance.m_startMessage = RaidBossPlugin.WarbandFightMessage.Value ?? "";
+				__instance.m_endMessage = "";
+				return;
+			}
 			if (__instance.m_name != EventName) return;
 			__instance.m_startMessage = RaidBossPlugin.HuntMessage.Value ?? "";
 			__instance.m_endMessage = RaidBossPlugin.HuntEndMessage.Value ?? "";

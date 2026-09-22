@@ -22,11 +22,11 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.1.19";
+	public const string Version = "0.2.0";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
-	const string MinimumVersion = "0.1.13";   // 0.1.13: a chase is drawn and judged by the players' games; an older game would neither see nor feel it
+	const string MinimumVersion = "0.2.0";   // 0.2.0: warband pins and warband idols are new messages and item data every player must understand
 
 	static readonly ConfigSync configSync = new(Name) { DisplayName = Name, CurrentVersion = Version, MinimumRequiredVersion = MinimumVersion, ModRequired = true };
 
@@ -115,6 +115,27 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<string> HuntMessage;
 	internal static ConfigEntry<string> HuntEndMessage;
 	internal static ConfigEntry<float> HuntWaveGap;
+
+	// 11 - Warbands (Warbands.cs)
+	internal static ConfigEntry<bool> WarbandsEnabled;
+	internal static ConfigEntry<float> WarbandMinDistance, WarbandMaxDistance, WarbandTrigger, WarbandLifetime, WarbandCooldown, WarbandBossDamage;
+	internal static ConfigEntry<int> WarbandIdols;
+	internal static ConfigEntry<bool> WarbandSureIdols;
+	internal static ConfigEntry<string> WarbandMessage, WarbandFightMessage, WarbandClearedMessage, WarbandGoneMessage, WarbandPinText, WarbandOrder;
+	static readonly List<KeyValuePair<string, ConfigEntry<string>>> WarbandBiomes = new List<KeyValuePair<string, ConfigEntry<string>>>();
+	internal static IEnumerable<KeyValuePair<string, string>> WarbandEntries()
+	{
+		foreach (KeyValuePair<string, ConfigEntry<string>> kv in WarbandBiomes) yield return new KeyValuePair<string, string>(kv.Key, kv.Value.Value);
+	}
+	internal static IEnumerable<string> WarbandLines()
+	{
+		foreach (KeyValuePair<string, ConfigEntry<string>> kv in WarbandBiomes) yield return kv.Value.Value;
+	}
+
+	const string WarbandHelp =
+		"A warband: the miniboss, then its boss script.   Boss[:Trait][*|**] [tierN] | <script as for a boss>\n" +
+		"The script's 100% rules fire the moment the pack is triggered: they are the escort standing with the miniboss.\n" +
+		"tierN = which idol it pays (Upgrader<N>...); unset = the biome's own boss tier. Empty = no warband in this biome.";
 
 	static readonly Dictionary<string, ConfigEntry<string>> Scripts = new Dictionary<string, ConfigEntry<string>>();
 
@@ -288,6 +309,32 @@ public class RaidBossPlugin : BaseUnityPlugin
 		HuntEndMessage = config("9 - Debug", "Hunt over message", "The hunt is over", "Centre-screen message when a hunt's last wave is dead. Empty = none.", true);
 		ForcePlayers = config("9 - Debug", "Pretend this many players", 0, "0 = count real players. Anything else sizes every boss wave as if that many were fighting, so one person can see a four-player fight. Someone still has to be in range.", false);
 
+		WarbandsEnabled = config("11 - Warbands", "Enabled", true, "Warbands: a pack of a biome's creatures around a starred miniboss, camped at a spot marked on everyone's map. One per biome at a time; the pack appears when a player comes close. Killing the miniboss pays a warband idol.", true);
+		WarbandBiomes.Clear();
+		void Band(string biome, string value) => WarbandBiomes.Add(new KeyValuePair<string, ConfigEntry<string>>(biome, config("11 - Warbands", biome, value, WarbandHelp, true)));
+		Band("Meadows", "Greydwarf** tier0 | 100%: guard melee0.5 | 100%: Greyling 3+1, Neck 1+1 | 50% \"The pack closes in\": Greyling 2+1, Boar* 1+0");
+		Band("Black Forest", "Troll** tier1 | 100%: guard melee0.5 | 100%: Greydwarf 3+1, GreydwarfShaman 1+0 | 50% \"The brute roars\": Greydwarf_Elite* 1+0, Greydwarf 2+1");
+		Band("Swamp", "Draugr_Elite** tier2 | 100%: guard melee0.5 | 100%: Draugr 2+1, Draugr_Ranged 1+0 | 50% \"The dead rise\": Draugr* 1+1, Blob 1+0, Skeleton 2+0");
+		Band("Mountain", "Fenring** tier3 | 100%: guard melee0.5 | 100%: Wolf 2+1 | 50% \"The howl\": Wolf* 1+1, Ulv 2+0");
+		Band("Plains", "GoblinBrute** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% \"The shamans chant\": GoblinShaman 1+0, Goblin* 1+1");
+		Band("Mistlands", "SeekerBrute** tier5 | 100%: guard melee0.5 | 100%: Seeker 2+1 | 50% \"The nest stirs\": Seeker* 1+1, Tick 2+1");
+		Band("Ashlands", "");
+		Band("Deep North", "");
+		WarbandMinDistance = config("11 - Warbands", "Distance from players, at least (m)", 400f, new ConfigDescription("A new warband is placed at least this far from every player.", new AcceptableValueRange<float>(50f, 5000f)), true);
+		WarbandMaxDistance = config("11 - Warbands", "Distance from players, at most (m)", 1500f, new ConfigDescription("...and at most this far from the player it is placed around (a random one).", new AcceptableValueRange<float>(100f, 8000f)), true);
+		WarbandTrigger = config("11 - Warbands", "Pack appears within (m)", 120f, new ConfigDescription("The pack is spawned when a player comes this close to the site.", new AcceptableValueRange<float>(40f, 300f)), true);
+		WarbandLifetime = config("11 - Warbands", "Moves on after (min)", 180f, new ConfigDescription("A warband nobody has come to is gone after this long (real time), and a triggered one after twice that. 0 = never.", new AcceptableValueRange<float>(0f, 1440f)), true);
+		WarbandCooldown = config("11 - Warbands", "Next one after (min)", 90f, new ConfigDescription("How long a biome waits for its next warband after one was cleared or moved on.", new AcceptableValueRange<float>(0f, 1440f)), true);
+		WarbandBossDamage = config("11 - Warbands", "Miniboss damage (x)", 1f, new ConfigDescription("What the miniboss's hits on players are multiplied by (on top of its stars).", new AcceptableValueRange<float>(0.2f, 5f)), true);
+		WarbandIdols = config("11 - Warbands", "Idols on the kill", 1, new ConfigDescription("Idols dropped where the miniboss dies.", new AcceptableValueRange<int>(0, 5)), true);
+		WarbandSureIdols = config("11 - Warbands", "Warband idols cannot fail", true, "On: the idols a warband pays are warband idols - an upgrade made with one always succeeds. Off: ordinary idols.", true);
+		WarbandMessage = config("11 - Warbands", "Message, new warband", "A warband gathers in the {biome}", "Centre-screen message to everyone when a warband appears; {biome} is the biome's name. Empty = none.", true);
+		WarbandFightMessage = config("11 - Warbands", "Message, at the site", "The warband attacks", "Centre-screen message when players reach a triggered warband (with the raid music and circle). Empty = none.", true);
+		WarbandClearedMessage = config("11 - Warbands", "Message, cleared", "The {biome} warband is broken", "Centre-screen message to everyone when the miniboss dies. Empty = none.", true);
+		WarbandGoneMessage = config("11 - Warbands", "Message, moved on", "The {biome} warband has moved on", "Centre-screen message to everyone when a warband is gone unfought. Empty = none.", true);
+		WarbandPinText = config("11 - Warbands", "Map pin", "Warband: {biome}", "The name on the map pin.", true);
+		WarbandOrder = config("11 - Warbands", "Start a warband", "", "Admin: write a biome and optionally a player's name ('Plains Anthony') and save: that biome's warband is placed 150-300 m from that player (the first connected if none is named), replacing the biome's current one. 'stop' ends every warband.", true);
+
 		new Harmony(GUID).PatchAll();
 		configStamp = Stamp();
 	}
@@ -453,5 +500,6 @@ public class RaidBossPlugin : BaseUnityPlugin
 		try { Director.Tick(step); }
 		catch (Exception e) { Log.LogError(e); }
 		try { Hunts.Tick(step); } catch (Exception e) { Log.LogError(e); }
+		try { Warbands.Tick(step); } catch (Exception e) { Log.LogError(e); }
 	}
 }

@@ -34,6 +34,7 @@ internal static class Net
 	const string EnvRpc = "RaidBoss_Env";
 	const string EventRpc = "RaidBoss_Event";
 	const string HuntRpc = "RaidBoss_Hunt";
+	const string PinRpc = "RaidBoss_Pin";
 	internal static readonly int HealthKey = "raidboss_hp".GetStableHashCode();
 
 	// Server side: filled by the director every tick.
@@ -69,6 +70,33 @@ internal static class Net
 		ZRoutedRpc.instance.Register<ZPackage>(EnvRpc, RPC_Env);
 		ZRoutedRpc.instance.Register<ZPackage>(EventRpc, RPC_Event);
 		ZRoutedRpc.instance.Register<ZPackage>(HuntRpc, RPC_Hunt);
+		ZRoutedRpc.instance.Register<ZPackage>(PinRpc, RPC_Pin);
+	}
+
+	// ---- server -> everyone: the warband pins on the map (the whole list, every 20 s and on any change)
+
+	internal static void SendPins(List<Warbands.Pin> pins)
+	{
+		if (ZRoutedRpc.instance == null) return;
+		var pkg = new ZPackage();
+		pkg.Write(pins.Count);
+		foreach (Warbands.Pin p in pins)
+		{
+			pkg.Write(p.Id);
+			pkg.Write(p.Pos);
+			pkg.Write(p.Text ?? "");
+		}
+		ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, PinRpc, pkg);
+	}
+
+	static void RPC_Pin(long sender, ZPackage pkg)
+	{
+		if (ZNet.instance == null || (!ZNet.instance.IsServer() && sender != ZRoutedRpc.instance.GetServerPeerID())) return;
+		var list = new List<Warbands.Pin>();
+		int count = pkg.ReadInt();
+		for (int i = 0; i < count && i < 32; i++)
+			list.Add(new Warbands.Pin { Id = pkg.ReadInt(), Pos = pkg.ReadVector3(), Text = pkg.ReadString() });
+		Warbands.ApplyPins(list);
 	}
 
 	// ---- server -> clients

@@ -76,7 +76,7 @@ does not replay the waves it is already past. With nobody in range the fight pau
 
 ## Heroic fights and idols
 
-A harder fight that the players choose, and the only one that pays idols. **Hold Shift and press Use on the boss's altar
+A harder fight that the players choose, and one of the two things that pay idols (the other is a warband, below). **Hold Shift and press Use on the boss's altar
 before summoning.** It is free, so a group can take the heroic fight the first time it meets a boss. The altar's hover
 text then reads "Heroic fight: the challenge is set" for everyone, and when the boss appears the server shows "The
 challenge is accepted". The challenge stays on the altar until a boss takes it up, across server restarts. A server
@@ -208,6 +208,38 @@ trickles run in between. After the last wave: "The hunt is over". `stop` ends on
 it has read it. Boss mechanics - ground strikes, wards, guards, breaks - are left out: a hunt is only the waves. A hunt
 will not start while a real raid is on.
 
+## Warbands: minibosses to hunt across the world
+
+A pack of a biome's creatures around a starred miniboss, camped at a spot in the open world and marked on everyone's
+map: **Warband: Black Forest**. Travel there, break the pack, kill the miniboss, and it pays a **warband idol** - an
+idol whose upgrade cannot fail. A second source of idols next to heroic fights, and a reason to cross the world.
+
+- **One per biome at a time.** The server picks a site of that biome, on dry level ground, `Distance from players, at
+  least (m)` (400) from every player and away from anything a player built, announces it to everyone ("A warband
+  gathers in the Black Forest") and pins it. Nothing stands there until a player comes within `Pack appears within (m)`
+  (120): then the miniboss and its escort are spawned, the raid music and circle play at the site, and the miniboss
+  fights with a script of its own - waves at health thresholds, a guard, traits, anything a boss script can do - and
+  wears the boss bar with the break meter. A parry taunts it like a boss.
+- **The reward.** `Idols on the kill` (1) drop where the miniboss dies, of the biome's tier (Meadows pays tier 0,
+  Black Forest 1, Swamp 2, Mountain 3, Plains 4, Mistlands 5). They are warband idols: quality 2 so they never merge
+  with ordinary ones, and marked so that refining with one always succeeds and only that idol is spent. `Warband
+  idols cannot fail` off makes them ordinary idols.
+- **It moves on.** A warband nobody has come to is gone after `Moves on after (min)` (180, real time; a triggered one
+  after twice that), "The Black Forest warband has moved on", and the biome waits `Next one after (min)` (90) for its
+  next one - the same wait after a kill.
+- **Written like a boss script**, one entry per biome in **11 - Warbands**: the miniboss, then its script.
+
+```
+Plains = GoblinBrute** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% "The shamans chant": GoblinShaman 1+0, Goblin* 1+1
+```
+
+  `GoblinBrute**` is a two-star Berserker (the most the game allows) (`:Ironhide` after the name gives it a trait); `tier4` is the idol it
+  pays (unset = the biome's boss tier); the script's 100% rules are the escort standing with it when the pack
+  appears, and the rest fires as its health falls. Empty = no warband in that biome. Ashlands and the Deep North are
+  empty by default.
+- **Admins:** in the server's config, `Start a warband` = `Plains Anthony` places the Plains warband 150-300 m from
+  that player (the first connected if no name) - for testing; `stop` ends every warband.
+
 ## Recovery
 
 Dying in a hard fight costs a corpse run, your food and a wait by the fire. For `Counts as just died for` (120 s) after a
@@ -277,6 +309,9 @@ by the server alone.
 - **8 - Mechanics:** the break meter (`Break meter size` 0.4 of the boss's max health, drain, parry and cleared-wave
   shares, melee and weakness shares, `Break length (s)` 8, `Break damage taken (x)` 2, growth 1.5, `Break meter in heroic fights` on), `Traits`, `Strike effects`, `Ward label`.
 - **9 - Debug:** `Pretend this many players` (0).
+- **11 - Warbands:** `Enabled`, one script per biome, the distances, `Pack appears within (m)` (120), `Moves on after
+  (min)` (180), `Next one after (min)` (90), `Miniboss damage (x)` (1), `Idols on the kill` (1), `Warband idols cannot
+  fail` (on), the four messages, `Map pin`, `Start a warband`.
 
 ## Known limits
 

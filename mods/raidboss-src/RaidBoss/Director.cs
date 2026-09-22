@@ -27,6 +27,11 @@ internal static class Director
 		public ZDOID BossId;
 		public string Prefab;
 		public string RawScript;
+		// A custom fight (a warband's miniboss): its script comes with it, not from the boss's config line, it is never
+		// heroic, and it hits with its own multiplier.
+		public bool Custom;
+		public string CustomScript;
+		public float DamageMult = -1f;
 		public Encounter Script;
 		public bool[] Fired;
 		public float[] Timers;
@@ -145,7 +150,7 @@ internal static class Director
 				// What a boss does to a player is worked out on that player's game, so the clients are told which
 				// bosses are being fought and how hard each one hits.
 				if (UpdateFight(fight, boss, dt))
-					Net.ActiveFights[fight.BossId] = RaidBossPlugin.BossDamage.Value * (fight.Heroic ? RaidBossPlugin.HeroicBossDamageFor(fight.Prefab) : 1f);
+					Net.ActiveFights[fight.BossId] = fight.DamageMult > 0f ? fight.DamageMult : RaidBossPlugin.BossDamage.Value * (fight.Heroic ? RaidBossPlugin.HeroicBossDamageFor(fight.Prefab) : 1f);
 			}
 			catch (Exception e) { RaidBossPlugin.Log.LogError($"{fight.Prefab}: {e}"); }
 		}
@@ -195,7 +200,7 @@ internal static class Director
 
 	static void LoadScript(Fight fight, bool firstSight, float fraction)
 	{
-		string raw = RaidBossPlugin.ScriptFor(fight.Prefab);
+		string raw = fight.CustomScript ?? RaidBossPlugin.ScriptFor(fight.Prefab);
 		if (fight.Script != null && raw == fight.RawScript) return;
 		bool[] oldFired = fight.Fired;
 		Encounter old = fight.Script;
@@ -250,11 +255,32 @@ internal static class Director
 			(fight.Script.Rules.Count == 0 ? "no script for this boss" : $"script for 1 player: {fight.Script.Describe(1)}"));
 	}
 
+	// A fight for a creature that is not one of the game's bosses, with a script of its own: a warband's miniboss. It is
+	// followed like any other fight (waves, mechanics, the kill report); when it ends, FightEnded says whether it was a kill.
+	internal static void StartCustomFight(ZDOID id, string prefab, string script, float damageMult, string why)
+	{
+		ZDO boss = ZDOMan.instance.GetZDO(id);
+		if (boss == null || !boss.IsValid() || Fights.ContainsKey(id)) return;
+		var fight = new Fight { BossId = id, Prefab = prefab, LastPos = boss.GetPosition(), Custom = true, CustomScript = script ?? "", DamageMult = damageMult };
+		LoadScript(fight, true, 1f);
+		Fights[id] = fight;
+		RaidBossPlugin.Log.LogInfo($"{why}: fight started for {prefab} {id} at {boss.GetPosition():0}; " +
+			(fight.Script.Rules.Count == 0 ? "no script" : $"script for 1 player: {fight.Script.Describe(1)}"));
+	}
+
+	// (boss id, it was a kill, where it ended) - for whoever started a custom fight.
+	internal static event Action<ZDOID, bool, Vector3> FightEnded;
+
 	static void EndFight(ZDOID id)
 	{
 		if (!Fights.TryGetValue(id, out Fight fight)) return;
 		Fights.Remove(id);
 		Net.Forget(id);
+		if (fight.Custom)
+		{
+			try { FightEnded?.Invoke(id, fight.Killed || fight.LastFraction <= 0.1f, fight.LastPos); }
+			catch (Exception e) { RaidBossPlugin.Log.LogError($"{fight.Prefab}: {e}"); }
+		}
 		int removed = 0, alive = 0;
 		foreach (Add add in fight.Adds)
 		{
@@ -300,7 +326,9 @@ internal static class Director
 	}
 
 	// An item lying in the world is its own prefab with an ItemDrop on it; a bare ZDO of that prefab is a stack of one.
-	static bool SpawnItem(string prefabName, Vector3 at, long owner)
+	// "sure": a warband idol - quality 2 so it never merges into a stack of ordinary ones, and marked in its custom data,
+	// which the player's game reads when refining (Warbands.SureCraftPatch).
+	internal static bool SpawnItem(string prefabName, Vector3 at, long owner, bool sure = false)
 	{
 		GameObject prefab = ZNetScene.instance.GetPrefab(prefabName);
 		ZNetView view = prefab != null ? prefab.GetComponent<ZNetView>() : null;
@@ -322,6 +350,14 @@ internal static class Director
 		zdo.Distant = view.m_distant;
 		zdo.SetPrefab(hash);
 		zdo.Set("raidboss_loot".GetStableHashCode(), true);
+		if (sure)
+		{
+			// the keys ItemDrop.LoadFromZDO reads for a world item (index -1): dataCount, data_0, data__0
+			zdo.Set(ZDOVars.s_quality, 2);
+			zdo.Set(ZDOVars.s_dataCount, 1);
+			zdo.Set("data_0".GetStableHashCode(), Warbands.SureKey);
+			zdo.Set("data__0".GetStableHashCode(), "1");
+		}
 		zdo.SetRotation(Quaternion.identity);
 		if (owner != 0L) zdo.SetOwner(owner);
 		return true;
@@ -400,7 +436,7 @@ internal static class Director
 		// Two ways to make it: Shift + Use on the altar (ClientSide.cs; the altar carries the challenge), or the older one,
 		// the boss's trophy lying on the ground near the boss.
 		string how = null;
-		if (!fight.Heroic && RaidBossPlugin.HeroicEnabled.Value && Fraction(boss) >= 0.999f)
+		if (!fight.Custom && !fight.Heroic && RaidBossPlugin.HeroicEnabled.Value && Fraction(boss) >= 0.999f)
 		{
 			if (TakeAltarChallenge(bossPos)) how = "the altar carried a challenge";
 			else if (TakeTrophy(fight, bossPos)) how = $"a {fight.TrophyName} lay within {RaidBossPlugin.HeroicTrophyRadius.Value:0} m and was taken";
@@ -981,9 +1017,50 @@ internal static class Director
 				ZRoutedRpc.instance.InvokeRoutedRPC(p.Uid, "ShowMessage", (int)MessageHud.MessageType.Center, text);
 	}
 
+	// To every player, wherever they are.
+	internal static void MessageAll(string text)
+	{
+		if (DebugPlayers != null) return;
+		foreach (PlayerPos p in Players)
+			ZRoutedRpc.instance.InvokeRoutedRPC(p.Uid, "ShowMessage", (int)MessageHud.MessageType.Center, text);
+	}
+
 	internal static void Reset()
 	{
 		Fights.Clear();
+		Warbands.Reset();
+	}
+
+	// ---- shared with Warbands ----
+
+	internal static int PlayerCount { get { GatherPlayers(); return Players.Count; } }
+
+	internal static long NearestPlayerUid(Vector3 pos) { GatherPlayers(); return NearestPlayer(pos); }
+
+	internal static float NearestPlayerDistance(Vector3 pos)
+	{
+		GatherPlayers();
+		float best = float.MaxValue;
+		foreach (PlayerPos p in Players) best = Mathf.Min(best, Flat(p.Pos, pos));
+		return best;
+	}
+
+	internal static Vector3 RandomPlayerPosition()
+	{
+		GatherPlayers();
+		if (Players.Count == 0) return Vector3.zero;
+		return Players[UnityEngine.Random.Range(0, Players.Count)].Pos;
+	}
+
+	// A connected player's position by name (empty = the first one), or the test harness's first fake player.
+	internal static Vector3? PlayerPosition(string who)
+	{
+		if (DebugPlayers != null && DebugPlayers.Count > 0) return DebugPlayers[0].Value;
+		foreach (ZNetPeer p in ZNet.instance.GetPeers())
+			if (p.IsReady() && (who.Length == 0 || p.m_playerName.Equals(who, StringComparison.OrdinalIgnoreCase))) return p.m_refPos;
+		if (!ZNet.instance.IsDedicated() && (who.Length == 0 || (Player.m_localPlayer != null && Player.m_localPlayer.GetPlayerName().Equals(who, StringComparison.OrdinalIgnoreCase))))
+			return ZNet.instance.GetReferencePosition();
+		return null;
 	}
 
 	// ---- shared with WorldEncounters ----

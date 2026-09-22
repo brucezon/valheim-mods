@@ -1,0 +1,487 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using HarmonyLib;
+using UnityEngine;
+
+namespace RaidBoss;
+
+// Warbands: a pack of a biome's creatures around a starred miniboss, camped at a spot in the open world that is marked
+// on everyone's map. Travel there, break the pack, kill the miniboss, and it pays a warband idol: an idol whose upgrade
+// cannot fail. A reason to cross the world, and a second source of idols next to heroic boss fights.
+//
+// One warband per biome at a time. The server picks a site (that biome, on dry level ground, hundreds of metres from
+// every player and away from anything a player built), announces it and pins it. Nothing stands there until a player
+// comes within the trigger range: then the miniboss is spawned and a fight is started for it with the warband's own
+// script, so everything a boss script can do (escort waves at health thresholds, guard, traits, strikes) works for it,
+// and it wears the boss bar. When the miniboss dies the band is cleared; if nobody comes for long enough it moves on.
+//
+// A warband is written like a boss script with a head:   Boss[:Trait][*..*] [tierN] | <boss script>
+//   Plains = GoblinBrute*** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1 | 50% "The shamans chant": GoblinShaman 1+0
+// The script's 100% rules fire the moment the pack is triggered, so they are the escort standing with the miniboss.
+internal static class Warbands
+{
+	internal static readonly int BossKey = "raidboss_warboss".GetStableHashCode();   // on the miniboss: boss bar, parry taunt
+	internal const string SureKey = "raidboss_sure";                                  // on an idol: the upgrade cannot fail
+	internal const string EventName = "raidboss_warband";
+	static readonly int ModeKey = Modes.ModeName.GetStableHashCode();
+
+	sealed class Def
+	{
+		public Heightmap.Biome Biome;
+		public string BiomeName;
+		public string Prefab;
+		public string Trait = "";
+		public int Level = 1;
+		public int Tier = -1;
+		public string Script = "";
+	}
+
+	sealed class Band
+	{
+		public Def Def;
+		public int Id;
+		public Vector3 Site;
+		public float Age;
+		public bool Spawned;
+		public ZDOID BossId;
+		public float LastTry = -999f;
+		public bool EventOn;
+	}
+
+	static readonly List<Def> defs = new List<Def>();
+	static readonly Dictionary<Heightmap.Biome, Band> bands = new Dictionary<Heightmap.Biome, Band>();
+	static readonly Dictionary<Heightmap.Biome, float> readyAt = new Dictionary<Heightmap.Biome, float>();
+	static readonly Dictionary<Heightmap.Biome, float> nextSearch = new Dictionary<Heightmap.Biome, float>();
+	static readonly List<ZDO> scan = new List<ZDO>();
+	static string parsedFrom;
+	static float clock;
+	static float pinTimer = 999f;
+	static bool pinsDirty;
+	static int nextId = 1;
+	static bool hooked;
+
+	// Test hook: the site search starts from here instead of the players.
+	internal static Vector3? DebugAnchor;
+	internal static IEnumerable<(string biome, Vector3 site, bool spawned, ZDOID boss)> Snapshot()
+	{
+		foreach (Band b in bands.Values) yield return (b.Def.BiomeName, b.Site, b.Spawned, b.BossId);
+	}
+
+	static readonly (Heightmap.Biome biome, string name)[] BiomeNames =
+	{
+		(Heightmap.Biome.Meadows, "Meadows"), (Heightmap.Biome.BlackForest, "Black Forest"), (Heightmap.Biome.Swamp, "Swamp"),
+		(Heightmap.Biome.Mountain, "Mountain"), (Heightmap.Biome.Plains, "Plains"), (Heightmap.Biome.Mistlands, "Mistlands"),
+		(Heightmap.Biome.AshLands, "Ashlands"), (Heightmap.Biome.DeepNorth, "Deep North"),
+	};
+
+	static string NameOf(Heightmap.Biome b)
+	{
+		foreach (var n in BiomeNames) if (n.biome == b) return n.name;
+		return b.ToString();
+	}
+
+	static bool ParseBiome(string text, out Heightmap.Biome biome)
+	{
+		string key = text.Replace(" ", "").Replace("_", "").ToLowerInvariant();
+		foreach (var n in BiomeNames)
+			if (n.name.Replace(" ", "").ToLowerInvariant() == key || n.biome.ToString().ToLowerInvariant() == key) { biome = n.biome; return true; }
+		biome = Heightmap.Biome.None;
+		return false;
+	}
+
+	static void Log(string s) => RaidBossPlugin.Log.LogInfo("warband: " + s);
+
+	// ---- the config: one entry per biome
+
+	static void Parse()
+	{
+		string all = string.Join("\n", RaidBossPlugin.WarbandLines());
+		if (all == parsedFrom) return;
+		parsedFrom = all;
+		defs.Clear();
+		foreach (KeyValuePair<string, string> kv in RaidBossPlugin.WarbandEntries())
+		{
+			string raw = (kv.Value ?? "").Trim();
+			if (raw.Length == 0) continue;
+			if (!ParseBiome(kv.Key, out Heightmap.Biome biome)) { RaidBossPlugin.Log.LogWarning($"warband '{kv.Key}': not a biome"); continue; }
+			int bar = raw.IndexOf('|');
+			string head = (bar < 0 ? raw : raw.Substring(0, bar)).Trim();
+			string script = bar < 0 ? "" : raw.Substring(bar + 1).Trim();
+			var def = new Def { Biome = biome, BiomeName = NameOf(biome), Script = script };
+			foreach (string word in head.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+			{
+				if (word.StartsWith("tier", StringComparison.OrdinalIgnoreCase) && int.TryParse(word.Substring(4), out int t)) { def.Tier = t; continue; }
+				string spec = word;
+				while (spec.EndsWith("*")) { def.Level++; spec = spec.Substring(0, spec.Length - 1); }
+				int colon = spec.IndexOf(':');
+				if (colon > 0) { def.Trait = spec.Substring(colon + 1); spec = spec.Substring(0, colon); }
+				def.Prefab = spec;
+			}
+			def.Level = Mathf.Clamp(def.Level, 1, 3);
+			if (string.IsNullOrEmpty(def.Prefab)) { RaidBossPlugin.Log.LogWarning($"warband {def.BiomeName}: no miniboss named"); continue; }
+			if (def.Tier < 0) def.Tier = DefaultTier(biome);
+			Encounter parsed = Encounter.Parse(def.Script);
+			foreach (string err in parsed.Errors) RaidBossPlugin.Log.LogWarning($"warband {def.BiomeName} script: {err}");
+			defs.Add(def);
+			Log($"{def.BiomeName}: {def.Prefab}{(def.Trait.Length > 0 ? ":" + def.Trait : "")}{new string('*', def.Level - 1)}, idol tier {def.Tier}, script for 1 player: {parsed.Describe(1)}");
+		}
+		// a biome that lost its entry loses its band
+		var gone = new List<Heightmap.Biome>();
+		foreach (Band b in bands.Values) if (!defs.Exists(d => d.Biome == b.Def.Biome)) gone.Add(b.Def.Biome);
+		foreach (Heightmap.Biome b in gone) End(bands[b], "its entry was removed", false);
+	}
+
+	static int DefaultTier(Heightmap.Biome b)
+	{
+		switch (b)
+		{
+			case Heightmap.Biome.Meadows: return 0;
+			case Heightmap.Biome.BlackForest: return 1;
+			case Heightmap.Biome.Swamp: return 2;
+			case Heightmap.Biome.Mountain: return 3;
+			case Heightmap.Biome.Plains: return 4;
+			case Heightmap.Biome.Mistlands: return 5;
+			case Heightmap.Biome.AshLands: return 6;
+			case Heightmap.Biome.DeepNorth: return 7;
+			default: return -1;
+		}
+	}
+
+	// ---- the server's tick
+
+	internal static void Tick(float dt)
+	{
+		if (!hooked) { Director.FightEnded += OnFightEnded; hooked = true; }
+		clock += dt;
+		if (!RaidBossPlugin.WarbandsEnabled.Value)
+		{
+			if (bands.Count > 0) { foreach (Band b in new List<Band>(bands.Values)) End(b, "warbands were turned off", false); }
+			return;
+		}
+		Parse();
+		string order = (RaidBossPlugin.WarbandOrder.Value ?? "").Trim();
+		if (order.Length > 0)
+		{
+			RaidBossPlugin.WarbandOrder.Value = "";
+			try { Order(order); } catch (Exception e) { RaidBossPlugin.Log.LogWarning("warband order: " + e.Message); }
+		}
+
+		foreach (Def def in defs)
+		{
+			if (bands.ContainsKey(def.Biome)) continue;
+			if (readyAt.TryGetValue(def.Biome, out float ready) && clock < ready) continue;
+			if (nextSearch.TryGetValue(def.Biome, out float next) && clock < next) continue;
+			nextSearch[def.Biome] = clock + 60f;
+			if (Director.PlayerCount == 0 && DebugAnchor == null) continue;   // an empty server has nobody to hunt
+			if (FindSite(def, null, RaidBossPlugin.WarbandMinDistance.Value, RaidBossPlugin.WarbandMaxDistance.Value, out Vector3 site))
+				Begin(def, site);
+		}
+
+		foreach (Band b in new List<Band>(bands.Values))
+		{
+			try { Step(b, dt); }
+			catch (Exception e) { RaidBossPlugin.Log.LogError($"warband {b.Def.BiomeName}: {e}"); End(b, "an error", false); }
+		}
+
+		pinTimer += dt;
+		if (pinsDirty || pinTimer >= 20f)
+		{
+			pinTimer = 0f;
+			pinsDirty = false;
+			Net.SendPins(PinList());
+		}
+	}
+
+	static void Step(Band b, float dt)
+	{
+		b.Age += dt;
+		float lifetime = RaidBossPlugin.WarbandLifetime.Value * 60f;
+		if (!b.Spawned)
+		{
+			if (lifetime > 0f && b.Age > lifetime) { End(b, "nobody came", true); return; }
+			if (Director.CountPlayers(b.Site, RaidBossPlugin.WarbandTrigger.Value, out long nearest) > 0) Spawn(b, nearest);
+			return;
+		}
+		// the fight itself is the director's; here only the mood at the site and the end
+		ZDO boss = ZDOMan.instance.GetZDO(b.BossId);
+		if (boss == null || !boss.IsValid()) return;   // EndFight fires OnFightEnded, which ends the band
+		if (lifetime > 0f && b.Age > lifetime * 2f) { End(b, "it was left standing too long", true); return; }
+		int near = Director.CountPlayers(b.Site, RaidBossPlugin.Range.Value, out _);
+		RandomEvent current = RandEventSystem.instance != null ? RandEventSystem.instance.GetCurrentRandomEvent() : null;
+		if (near > 0 && !b.EventOn && current == null && Director.DebugPlayers == null)
+		{
+			RandEventSystem.instance.SetRandomEventByName(EventName, b.Site);
+			b.EventOn = true;
+		}
+		else if (b.EventOn && near == 0)
+		{
+			if (current != null && current.m_name == EventName) RandEventSystem.instance.ResetRandomEvent();
+			b.EventOn = false;
+		}
+		else if (b.EventOn && current != null && current.m_name == EventName) current.m_pos = b.Site;
+	}
+
+	static void Order(string order)
+	{
+		string[] words = order.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+		if (words[0].Equals("stop", StringComparison.OrdinalIgnoreCase))
+		{
+			foreach (Band b in new List<Band>(bands.Values)) End(b, "stopped by order", false);
+			Log("all warbands stopped");
+			return;
+		}
+		if (!ParseBiome(words[0], out Heightmap.Biome biome)) { Log($"'{words[0]}' is not a biome"); return; }
+		Def def = defs.Find(d => d.Biome == biome);
+		if (def == null) { Log($"no warband entry for {NameOf(biome)}"); return; }
+		if (bands.TryGetValue(biome, out Band old)) End(old, "replaced by order", false);
+		string who = words.Length > 1 ? string.Join(" ", words, 1, words.Length - 1) : "";
+		Vector3? anchor = Director.PlayerPosition(who);
+		if (anchor == null) { Log(who.Length > 0 ? $"no player called '{who}'" : "nobody is connected"); return; }
+		if (!FindSite(def, anchor, 150f, 300f, out Vector3 site)) { Log($"no {def.BiomeName} ground within 300 m of {(who.Length > 0 ? who : "the first player")}"); return; }
+		readyAt.Remove(biome);
+		Begin(def, site);
+	}
+
+	// A spot of the right biome: dry, fairly level, far enough from every player, away from anything built, and not on
+	// top of another band. Random points in a ring around the anchor (a random player, or the given one).
+	static bool FindSite(Def def, Vector3? anchor, float minDist, float maxDist, out Vector3 site)
+	{
+		site = Vector3.zero;
+		WorldGenerator wg = WorldGenerator.instance;
+		if (wg == null || ZoneSystem.instance == null) return false;
+		Vector3 from = anchor ?? DebugAnchor ?? Director.RandomPlayerPosition();
+		float water = ZoneSystem.instance.m_waterLevel;
+		for (int attempt = 0; attempt < 60; attempt++)
+		{
+			float angle = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
+			float dist = UnityEngine.Random.Range(minDist, Mathf.Max(minDist, maxDist));
+			var p = new Vector3(from.x + Mathf.Cos(angle) * dist, 0f, from.z + Mathf.Sin(angle) * dist);
+			if (p.magnitude > 9500f) continue;
+			if (wg.GetBiome(p.x, p.z) != def.Biome) continue;
+			p.y = wg.GetHeight(p.x, p.z);
+			if (p.y < water + 2f) continue;
+			float h1 = wg.GetHeight(p.x + 8f, p.z), h2 = wg.GetHeight(p.x - 8f, p.z), h3 = wg.GetHeight(p.x, p.z + 8f), h4 = wg.GetHeight(p.x, p.z - 8f);
+			if (Mathf.Max(Mathf.Abs(h1 - h2), Mathf.Abs(h3 - h4)) > 6f) continue;
+			if (anchor == null && Director.NearestPlayerDistance(p) < minDist) continue;
+			bool crowded = false;
+			foreach (Band other in bands.Values) if (Utils.DistanceXZ(other.Site, p) < 400f) { crowded = true; break; }
+			if (crowded || Built(p)) continue;
+			site = p;
+			return true;
+		}
+		return false;
+	}
+
+	// Anything a player built within two zones of the point (a creator id on the object).
+	static bool Built(Vector3 p)
+	{
+		scan.Clear();
+		SimulationDistance synced = ZNet.instance.GetSyncedSimulationDistance();
+		ZDOMan.instance.FindSectorObjects(ZoneSystem.GetZone(p), new SimulationDistance(2, 0, synced.IsClassic), scan);
+		foreach (ZDO zdo in scan)
+			if (zdo.GetLong(ZDOVars.s_creator, 0L) != 0L && Utils.DistanceXZ(zdo.GetPosition(), p) < 150f) { scan.Clear(); return true; }
+		scan.Clear();
+		return false;
+	}
+
+	static void Begin(Def def, Vector3 site)
+	{
+		var b = new Band { Def = def, Id = nextId++, Site = site };
+		bands[def.Biome] = b;
+		pinsDirty = true;
+		Log($"{def.BiomeName} warband at {site:0} ({Director.NearestPlayerDistance(site):0} m from the nearest player)");
+		string msg = Fill(RaidBossPlugin.WarbandMessage.Value, def);
+		if (msg.Length > 0) Director.MessageAll(msg);
+	}
+
+	static string Fill(string text, Def def) => (text ?? "").Replace("{biome}", def.BiomeName).Trim();
+
+	static void Spawn(Band b, long owner)
+	{
+		Def def = b.Def;
+		ZDOID id = Director.SpawnCreature(def.Prefab, def.Level, b.Site, 0f, 1f, owner, BossKey, "warband " + def.BiomeName);
+		if (id.IsNone()) { End(b, $"'{def.Prefab}' could not be spawned", false); return; }
+		ZDO zdo = ZDOMan.instance.GetZDO(id);
+		if (def.Trait.Length > 0)
+		{
+			string mode = RaidBossPlugin.TraitMode(def.Trait);
+			if (mode.Length > 0) zdo.Set(ModeKey, mode);
+		}
+		b.BossId = id;
+		b.Spawned = true;
+		Director.StartCustomFight(id, def.Prefab, def.Script, RaidBossPlugin.WarbandBossDamage.Value, "warband " + def.BiomeName);
+		Log($"{def.BiomeName}: the pack is up - {def.Prefab}{new string('*', def.Level - 1)} {id} at {b.Site:0}");
+	}
+
+	static void OnFightEnded(ZDOID id, bool killed, Vector3 at)
+	{
+		foreach (Band b in bands.Values)
+		{
+			if (b.BossId != id) continue;
+			if (killed) Reward(b, at);
+			End(b, killed ? "the miniboss was killed" : "the miniboss vanished", false);
+			if (killed)
+			{
+				string msg = Fill(RaidBossPlugin.WarbandClearedMessage.Value, b.Def);
+				if (msg.Length > 0) Director.MessageAll(msg);
+			}
+			return;
+		}
+	}
+
+	static void Reward(Band b, Vector3 at)
+	{
+		int count = Mathf.Max(0, RaidBossPlugin.WarbandIdols.Value);
+		if (count == 0 || b.Def.Tier < 0) { Log($"{b.Def.BiomeName}: cleared, no idols ({(count == 0 ? "idols set to 0" : "no tier")})"); return; }
+		long owner = Director.NearestPlayerUid(at);
+		var given = new List<string>();
+		for (int i = 0; i < count; i++)
+		{
+			bool battle = UnityEngine.Random.value < RaidBossPlugin.IdolBattleShare.Value;
+			string item = $"Upgrader{b.Def.Tier}{(battle ? "Weapon" : "Armor")}";
+			if (Director.SpawnItem(item, at, owner, RaidBossPlugin.WarbandSureIdols.Value)) given.Add(item);
+		}
+		Log($"{b.Def.BiomeName}: cleared, dropped {given.Count} {(RaidBossPlugin.WarbandSureIdols.Value ? "warband" : "plain")} idol(s): {string.Join(", ", given)}");
+	}
+
+	// The band is over: its creatures go if it expired unfought, its pin goes, and the biome waits for the next one.
+	static void End(Band b, string why, bool expired)
+	{
+		bands.Remove(b.Def.Biome);
+		pinsDirty = true;
+		if (b.EventOn && RandEventSystem.instance != null)
+		{
+			RandomEvent current = RandEventSystem.instance.GetCurrentRandomEvent();
+			if (current != null && current.m_name == EventName) RandEventSystem.instance.ResetRandomEvent();
+		}
+		if (b.Spawned)
+		{
+			ZDO boss = ZDOMan.instance.GetZDO(b.BossId);
+			if (boss != null && boss.IsValid())
+			{
+				boss.SetOwner(ZDOMan.GetSessionID());
+				ZDOMan.instance.DestroyZDO(boss);   // EndFight follows on the next tick and removes the escort
+			}
+		}
+		readyAt[b.Def.Biome] = clock + RaidBossPlugin.WarbandCooldown.Value * 60f;
+		Log($"{b.Def.BiomeName} warband over: {why}. Next one in {RaidBossPlugin.WarbandCooldown.Value:0} min.");
+		if (expired)
+		{
+			string msg = Fill(RaidBossPlugin.WarbandGoneMessage.Value, b.Def);
+			if (msg.Length > 0) Director.MessageAll(msg);
+		}
+	}
+
+	internal static void Reset()
+	{
+		bands.Clear();
+		readyAt.Clear();
+		nextSearch.Clear();
+		parsedFrom = null;
+	}
+
+	// ---- map pins: the server's list, mirrored on every player's map
+
+	internal struct Pin { public int Id; public Vector3 Pos; public string Text; }
+
+	static List<Pin> PinList()
+	{
+		var list = new List<Pin>();
+		foreach (Band b in bands.Values)
+			list.Add(new Pin { Id = b.Id, Pos = b.Site, Text = Fill(RaidBossPlugin.WarbandPinText.Value, b.Def) });
+		return list;
+	}
+
+	static readonly Dictionary<int, Minimap.PinData> shown = new Dictionary<int, Minimap.PinData>();
+
+	internal static void ApplyPins(List<Pin> list)
+	{
+		if (Minimap.instance == null) return;
+		var keep = new HashSet<int>();
+		foreach (Pin p in list)
+		{
+			keep.Add(p.Id);
+			if (shown.TryGetValue(p.Id, out Minimap.PinData old))
+			{
+				bool alive = Minimap.instance.m_pins.Contains(old);
+				if (alive && old.m_name == p.Text && Utils.DistanceXZ(old.m_pos, p.Pos) < 1f) continue;
+				if (alive) Minimap.instance.RemovePin(old);
+				shown.Remove(p.Id);
+			}
+			shown[p.Id] = Minimap.instance.AddPin(p.Pos, Minimap.PinType.Boss, p.Text, false, false);
+		}
+		var gone = new List<int>();
+		foreach (KeyValuePair<int, Minimap.PinData> kv in shown) if (!keep.Contains(kv.Key)) gone.Add(kv.Key);
+		foreach (int id in gone)
+		{
+			if (Minimap.instance.m_pins.Contains(shown[id])) Minimap.instance.RemovePin(shown[id]);
+			shown.Remove(id);
+		}
+	}
+
+	// ---- client side
+
+	// The miniboss counts as a boss on every player's game: the boss bar with the break meter and the mode under its
+	// name, and a parry taunts it like a boss.
+	[HarmonyPatch(typeof(Character), nameof(Character.IsBoss))]
+	static class BossPatch
+	{
+		static void Postfix(Character __instance, ref bool __result)
+		{
+			if (__result || __instance.m_nview == null || !__instance.m_nview.IsValid()) return;
+			if (__instance.m_nview.GetZDO().GetBool(BossKey)) __result = true;
+		}
+	}
+
+	internal static bool IsSure(ItemDrop.ItemData item) => item != null && item.m_customData != null && item.m_customData.ContainsKey(SureKey);
+
+	// A warband idol says what it is.
+	[HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip), typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int), typeof(bool))]
+	static class TooltipPatch
+	{
+		static void Postfix(ItemDrop.ItemData item, ref string __result)
+		{
+			if (IsSure(item)) __result += "\n\n<color=#ffd24a>Warband idol: an upgrade made with it cannot fail.</color>";
+		}
+	}
+
+	// Refining with a warband idol: the game rolls against the idol's own numbers, so for this one attempt they are
+	// certain. The warband idol is taken here, and the recipe's own idol cost is waived for the attempt, so exactly one
+	// idol goes: the warband one.
+	[HarmonyPatch(typeof(InventoryGui), "DoCrafting")]
+	static class SureCraftPatch
+	{
+		static ItemDrop.ItemData.SharedData shared;
+		static float savedUp, savedBreak;
+		static Piece.Requirement req;
+		static int savedAmount, savedPerLevel;
+
+		static void Prefix(InventoryGui __instance, Player player)
+		{
+			shared = null; req = null;
+			if (player == null || __instance.m_craftUpgradeItem == null || __instance.m_craftRecipe == null || __instance.m_craftRecipe.m_resources == null) return;
+			Piece.Requirement upgrader = null;
+			foreach (Piece.Requirement r in __instance.m_craftRecipe.m_resources)
+				if (r.m_upgraderResource && r.m_resItem != null) { upgrader = r; break; }
+			if (upgrader == null) return;
+			string name = upgrader.m_resItem.m_itemData.m_shared.m_name;
+			ItemDrop.ItemData sure = null;
+			foreach (ItemDrop.ItemData it in player.GetInventory().GetAllItems())
+				if (it.m_shared.m_name == name && IsSure(it)) { sure = it; break; }
+			if (sure == null) return;
+			player.GetInventory().RemoveItem(sure, 1);
+			req = upgrader; savedAmount = req.m_amount; savedPerLevel = req.m_amountPerLevel;
+			req.m_amount = 0; req.m_amountPerLevel = 0;
+			shared = upgrader.m_resItem.m_itemData.m_shared;
+			savedUp = shared.m_upgradeChance; savedBreak = shared.m_breakChance;
+			shared.m_upgradeChance = 1f; shared.m_breakChance = 0f;
+		}
+
+		static void Finalizer()
+		{
+			if (shared != null) { shared.m_upgradeChance = savedUp; shared.m_breakChance = savedBreak; shared = null; }
+			if (req != null) { req.m_amount = savedAmount; req.m_amountPerLevel = savedPerLevel; req = null; }
+		}
+	}
+}
