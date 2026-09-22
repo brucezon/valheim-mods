@@ -107,9 +107,14 @@ internal static class Warbands
 		defs.Clear();
 		foreach (KeyValuePair<string, string> kv in RaidBossPlugin.WarbandEntries())
 		{
-			string raw = (kv.Value ?? "").Trim();
-			if (raw.Length == 0) continue;
+			string line = (kv.Value ?? "").Trim();
+			if (line.Length == 0) continue;
 			if (!ParseBiome(kv.Key, out Heightmap.Biome biome)) { RaidBossPlugin.Log.LogWarning($"warband '{kv.Key}': not a biome"); continue; }
+			// several warbands for one biome, "... OR ...": one is picked at random each time
+			foreach (string rawVariant in System.Text.RegularExpressions.Regex.Split(line, @"\s+OR\s+", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+			{
+			string raw = rawVariant.Trim();
+			if (raw.Length == 0) continue;
 			int bar = raw.IndexOf('|');
 			string head = (bar < 0 ? raw : raw.Substring(0, bar)).Trim();
 			string script = bar < 0 ? "" : raw.Substring(bar + 1).Trim();
@@ -133,11 +138,19 @@ internal static class Warbands
 			Log($"{def.BiomeName}: {def.Prefab}{(def.Trait.Length > 0 ? ":" + def.Trait : "")}{new string('*', def.Level - 1)}, idol tier {def.Tier}, " +
 				$"{(def.UnlockBoss.Length == 0 ? "open from the start" : $"opens when {def.UnlockBoss} is defeated ({UnlockKey(def)}: {(Unlocked(def) ? "set" : "not yet")})")}" +
 				$"{(PhasedOut(def) ? ", PHASED OUT (the world's kill level is " + KillLevel() + ")" : "")}, script for 1 player: {parsed.Describe(1)}");
+			}
 		}
 		// a biome that lost its entry loses its band
 		var gone = new List<Heightmap.Biome>();
 		foreach (Band b in bands.Values) if (!defs.Exists(d => d.Biome == b.Def.Biome)) gone.Add(b.Def.Biome);
 		foreach (Heightmap.Biome b in gone) End(bands[b], "its entry was removed", false);
+	}
+
+	// A biome's warband: one of its variants at random.
+	static Def PickDef(Heightmap.Biome biome)
+	{
+		var mine = defs.FindAll(d => d.Biome == biome);
+		return mine.Count == 0 ? null : mine[UnityEngine.Random.Range(0, mine.Count)];
 	}
 
 	static int DefaultTier(Heightmap.Biome b)
@@ -179,9 +192,13 @@ internal static class Warbands
 		// anywhere. Biomes take turns: the one whose last warband is longest ago goes first.
 		if (bands.Count < Mathf.Max(1, RaidBossPlugin.WarbandMaxActive.Value) && clock >= globalReadyAt && (Director.PlayerCount > 0 || DebugAnchor != null))
 		{
+			// one candidate per biome: a random one of its variants ("... OR ...")
 			var eligible = new List<Def>();
-			foreach (Def def in defs)
+			var seen = new HashSet<Heightmap.Biome>();
+			foreach (Def any in defs)
 			{
+				if (!seen.Add(any.Biome)) continue;
+				Def def = PickDef(any.Biome);
 				if (bands.ContainsKey(def.Biome)) continue;
 				if (readyAt.TryGetValue(def.Biome, out float ready) && clock < ready) continue;
 				if (nextSearch.TryGetValue(def.Biome, out float next) && clock < next) continue;
@@ -261,7 +278,7 @@ internal static class Warbands
 			return n == 0 ? "no warband is standing" : $"stopped {n} warband(s)";
 		}
 		if (!ParseBiome(words[0], out Heightmap.Biome biome)) return $"'{words[0]}' is not a biome";
-		Def def = defs.Find(d => d.Biome == biome);
+		Def def = PickDef(biome);
 		if (def == null) return $"no warband entry for {NameOf(biome)}";
 		bool here = words.Count > 1 && words[1].Equals("here", StringComparison.OrdinalIgnoreCase);
 		if (here) words.RemoveAt(1);

@@ -237,7 +237,9 @@ of idols next to heroic fights, and a reason to cross the world.
   break. `Warband kills pay heroic idols` (off) makes them heroic idols instead - see Heroic fights and idols.
 - **Deadly, but a parry is the answer.** The minibosses are three-star and carry an element (the Swamp's Draugr Elite
   is Blighted, the Mountain's Fenring Rimebound, the Plains Berserker Emberborn, the Mistlands Seeker Soldier
-  Stormcalled): infused hits, a resistance, a weakness, the aura and the name under the bar. They hit for 2.5x, which
+  Stormcalled): infused hits, a resistance, a weakness, the aura and the name under the bar. The Mountain has a second
+  option, picked at random: Hildir's blue-flame cultist from the Howling Cavern, one-star (double life, 1.5x damage),
+  without his chest, with cultists and wolves around him. They hit for 2.5x, which
   would break any parry on its own, so a **timed** block against a starred RaidBoss spawn is judged as if the creature
   were unstarred (`Parry compensation for starred spawns`, 1 = fully): the parry holds when it would hold against the
   plain creature, lets through `Starred parry, leak (x)` (2) times what the plain creature's hit would (a little, and
@@ -247,7 +249,8 @@ of idols next to heroic fights, and a reason to cross the world.
   real time; a triggered one after twice that), and the biome waits `Next one after (min)` (90) for its next one - the
   same wait after a kill. Across all biomes, `At most, at once` (1) warbands stand at a time, and after any of them ends
   nothing new comes anywhere for `Gap between warbands (min)` (30), so it is not always a hunt. Biomes take turns.
-- **Written like a boss script**, one entry per biome in **11 - Warbands**: the miniboss, then its script.
+- **Written like a boss script**, one entry per biome in **11 - Warbands**: the miniboss, then its script. Two or more
+  for one biome, one picked at random each time: `<warband> OR <warband>`.
 
 ```
 Plains = GoblinBrute:Emberborn*** tier4 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% "The shamans chant": GoblinShaman 1+0, Goblin* 1+1

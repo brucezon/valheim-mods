@@ -159,7 +159,8 @@ public class RaidBossPlugin : BaseUnityPlugin
 	const string WarbandHelp =
 		"A warband: the miniboss, then its boss script.   Boss[:Trait][*|**|***] [tierN] | <script as for a boss>\n" +
 		"The script's 100% rules fire the moment the pack is triggered: they are the escort standing with the miniboss.\n" +
-		"tierN = which idol it pays (Upgrader<N>...); unset = the biome's own boss tier. Empty = no warband in this biome.";
+		"tierN = which idol it pays (Upgrader<N>...); unset = the biome's own boss tier. Empty = no warband in this biome.\n" +
+		"Several for one biome, one picked at random each time:  <warband> OR <warband>  (the Mountain ships with two).";
 
 	static readonly Dictionary<string, ConfigEntry<string>> Scripts = new Dictionary<string, ConfigEntry<string>>();
 
@@ -349,7 +350,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		Band("Meadows", "");
 		Band("Black Forest", "");
 		Band("Swamp", "Draugr_Elite:Blighted*** tier2 | 100%: Draugr 2+1, Draugr_Ranged 1+0 | 50% \"The dead rise\": Draugr* 1+1, Blob 1+0, Skeleton 2+0");
-		Band("Mountain", "Fenring:Rimebound*** tier3 | 100%: Wolf 2+1 | 50% \"The howl\": Wolf* 1+1, Ulv 2+0");
+		Band("Mountain", "Fenring:Rimebound*** tier3 | 100%: Wolf 2+1 | 50% \"The howl\": Wolf* 1+1, Ulv 2+0 OR Fenring_Cultist_Hildir_nochest* tier3 | 100%: Fenring_Cultist 1+0, Wolf 1+1 | 50% \"The cult stirs\": Fenring_Cultist 1+0 @2+, Ulv 2+0");
 		Band("Plains", "GoblinBrute:Emberborn*** tier4 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% \"The shamans chant\": GoblinShaman 1+0, Goblin* 1+1");
 		Band("Mistlands", "SeekerBrute:Stormcalled*** tier5 | 100%: Seeker 2+1 | 50% \"The nest stirs\": Seeker* 1+1, Tick 2+1");
 		Band("Ashlands", "");
