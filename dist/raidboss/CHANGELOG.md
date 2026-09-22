@@ -5,8 +5,8 @@
 - Warbands: a pack of a biome's creatures around a starred miniboss, camped at a spot in the open world and pinned on
   everyone's map. One per biome at a time, placed hundreds of metres from every player; the pack appears when someone
   comes within 120 m, with the raid music and circle. The miniboss fights with a boss script of its own (escort waves
-  at thresholds, a guard by default) and wears the boss bar. Killing it pays a warband idol of the biome's tier: an
-  idol whose upgrade cannot fail. A warband nobody comes to moves on after three hours; a biome waits 90 minutes for
+  at thresholds, a guard by default) and wears the boss bar. Killing it pays an idol of the biome's tier. A warband
+  nobody comes to moves on after three hours; a biome waits 90 minutes for
   its next one; at most one stands at a time and there is a 30-minute breather after any of them ends. The pin
   carries a countdown ("Warband: Swamp (2h 58m)") and is the only announcement: no centre-screen messages unless a
   server fills the `Message` settings in. Section 11 - Warbands; `Start a warband` for admins.
@@ -16,6 +16,9 @@
 - A third star: a `***` creature (level 4) gets the two-star look one size bigger and ★★★ in its name, on top of the
   game's own level formula (four times the health, two and a half times the damage). The warband minibosses are
   three-star.
+- Warband idols, off by default for both heroic kills and warband kills (`Heroic kills pay warband idols`, `Warband
+  kills pay warband idols`): a marked idol that is certain up to level 6 and above that may break the item by a chance
+  per level (20% at 7, 35% from 8) but never drops it a level. Only that idol is spent.
 - Minimum version 0.2.0: the map pins and warband idols are new for every player's game.
 
 ## 0.1.19

@@ -320,7 +320,7 @@ internal static class Director
 		{
 			bool battle = UnityEngine.Random.value < RaidBossPlugin.IdolBattleShare.Value;
 			string item = $"Upgrader{tier}{(battle ? "Weapon" : "Armor")}";
-			if (SpawnItem(item, fight.LastPos, owner)) given.Add(item);
+			if (SpawnItem(item, fight.LastPos, owner, RaidBossPlugin.HeroicSureIdols.Value)) given.Add(item);
 		}
 		RaidBossPlugin.Log.LogInfo($"{fight.Prefab}: heroic kill by up to {fight.MaxPlayers} player(s): dropped {given.Count} idol(s): {string.Join(", ", given)}");
 	}

@@ -74,6 +74,9 @@ public class RaidBossPlugin : BaseUnityPlugin
 	internal static ConfigEntry<float> IdolPerPlayer;
 	internal static ConfigEntry<float> IdolBattleShare;
 	internal static ConfigEntry<string> IdolTiers;
+	internal static ConfigEntry<bool> HeroicSureIdols;
+	internal static ConfigEntry<int> SureIdolUpTo;
+	internal static ConfigEntry<string> SureIdolBreak;
 	internal static ConfigEntry<float> RestingTimeAfterDeath;
 	internal static ConfigEntry<float> JustDiedWindow;
 	internal static ConfigEntry<float> ParryTaunt;
@@ -276,7 +279,10 @@ public class RaidBossPlugin : BaseUnityPlugin
 		IdolBase = config("5 - Heroic fights", "Idols on the kill, base", -1f, "Idols dropped by a heroic kill = base + per player x players, rounded down, never below 0. Players = the most that were in range at once during the fight. Default -1 + 1: none solo, 1 for two players, 2 for three, 3 for four.", false);
 		IdolPerPlayer = config("5 - Heroic fights", "Idols on the kill, per player", 1f, "See above.", false);
 		IdolBattleShare = config("5 - Heroic fights", "Battle idol share", 0.5f, new ConfigDescription("Each idol is a Battle (weapon) idol with this chance, otherwise a Protection (armour) idol. 0.5 = even. Vanilla chests hold weapon idols half as often as protection ones (0.33).", new AcceptableValueRange<float>(0f, 1f)), false);
-		IdolTiers = config("5 - Heroic fights", "Idol tier by boss", "Eikthyr=0, gd_king=1, Bonemass=2, Dragon=3, GoblinKing=4, SeekerQueen=5, Fader=6, FrozenKing_p3=7", "Which idol tier each boss pays: the item is Upgrader<tier>Weapon or Upgrader<tier>Armor. 0 Wooden, 1 Bronze, 2 Iron, 3 Silver, 4 Black Metal, and so on up. A boss not listed pays nothing.", false);
+		HeroicSureIdols = config("5 - Heroic fights", "Heroic kills pay warband idols", false, "On: the idols a heroic kill pays are warband idols. Off (default): ordinary idols, which can break.", true);
+		SureIdolUpTo = config("5 - Heroic fights", "Warband idol, sure up to level", 6, new ConfigDescription("A warband idol cannot fail when upgrading an item to this level or below. It is quality 2 (never merges with ordinary idols) and says what it is in its tooltip. Only the warband idol is spent on the attempt.", new AcceptableValueRange<int>(0, 20)), true);
+		SureIdolBreak = config("5 - Heroic fights", "Warband idol, break chance by level", "7=0.2, 8=0.35, 9=0.35, 10=0.35", "Above the sure level: level=chance that the item is destroyed, the rest succeeds (no drop to a lower level). A level not listed uses the nearest listed one below it.", true);
+		IdolTiers = config("5 - Heroic fights", "Idol tier byboss", "Eikthyr=0, gd_king=1, Bonemass=2, Dragon=3, GoblinKing=4, SeekerQueen=5, Fader=6, FrozenKing_p3=7", "Which idol tier each boss pays: the item is Upgrader<tier>Weapon or Upgrader<tier>Armor. 0 Wooden, 1 Bronze, 2 Iron, 3 Silver, 4 Black Metal, and so on up. A boss not listed pays nothing.", false);
 
 		RestingTimeAfterDeath = config("6 - Recovery", "Resting time after a death (x)", 0.25f, new ConfigDescription("Multiplier on the fireside wait before the Rested buff arrives, while you have recently died. 1 = vanilla. 0.25 = a quarter of the wait. 0 = Rested the moment you are resting (by a fire, under a roof, unnoticed by enemies). Food, the tombstone and the length of the Rested buff are untouched.", new AcceptableValueRange<float>(0f, 1f)), true);
 		JustDiedWindow = config("6 - Recovery", "Counts as just died for (seconds)", 120f, new ConfigDescription("How long after a death the shorter wait applies. The clock is the game's own time-since-death; it starts when you die and keeps running while you respawn and walk back.", new AcceptableValueRange<float>(0f, 3600f)), true);
@@ -338,7 +344,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 		WarbandGap = config("11 - Warbands", "Gap between warbands (min)", 30f, new ConfigDescription("After any warband ends (cleared or moved on), no new one anywhere for this long: a breather, so it is not always a hunt.", new AcceptableValueRange<float>(0f, 720f)), true);
 		WarbandBossDamage = config("11 - Warbands", "Miniboss damage (x)", 1f, new ConfigDescription("What the miniboss's hits on players are multiplied by (on top of its stars).", new AcceptableValueRange<float>(0.2f, 5f)), true);
 		WarbandIdols = config("11 - Warbands", "Idols on the kill", 1, new ConfigDescription("Idols dropped where the miniboss dies.", new AcceptableValueRange<int>(0, 5)), true);
-		WarbandSureIdols = config("11 - Warbands", "Warband idols cannot fail", true, "On: the idols a warband pays are warband idols - an upgrade made with one always succeeds. Off: ordinary idols.", true);
+		WarbandSureIdols = config("11 - Warbands", "Warband kills pay warband idols", false, "On: the idols a warband pays are warband idols (see 5 - Heroic fights, 'Warband idol...'). Off (default): ordinary idols, which can break.", true);
 		WarbandMessage = config("11 - Warbands", "Message, new warband", "","Centre-screen message to everyone when a warband appears, e.g. 'A warband gathers in the {biome}'. Empty (default) = none: the map pin with its countdown is the announcement.", true);
 		WarbandFightMessage = config("11 - Warbands", "Message, at the site", "", "Centre-screen message when players reach a triggered warband (with the raid music and circle). Empty = none.", true);
 		WarbandClearedMessage = config("11 - Warbands", "Message, cleared", "", "Centre-screen message to everyone when the miniboss dies. Empty = none.", true);

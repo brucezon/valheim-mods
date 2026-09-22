@@ -561,13 +561,34 @@ internal static class Warbands
 	{
 		static void Postfix(ItemDrop.ItemData item, ref string __result)
 		{
-			if (IsSure(item)) __result += "\n\n<color=#ffd24a>Warband idol: an upgrade made with it cannot fail.</color>";
+			if (!IsSure(item)) return;
+			int upTo = RaidBossPlugin.SureIdolUpTo.Value;
+			__result += $"\n\n<color=#ffd24a>Warband idol: an upgrade to level {upTo} or below cannot fail. Above that, {BreakChance(upTo + 1) * 100f:0}% may break the item; the rest succeeds.</color>";
 		}
 	}
 
-	// Refining with a warband idol: the game rolls against the idol's own numbers, so for this one attempt they are
-	// certain. The warband idol is taken here, and the recipe's own idol cost is waived for the attempt, so exactly one
-	// idol goes: the warband one.
+	// The warband idol's odds above the sure level: "7=0.2, 8=0.35" - a level not listed takes the nearest listed
+	// one below it (or the lowest listed).
+	internal static float BreakChance(int level)
+	{
+		float best = -1f; int bestLevel = int.MinValue; float lowest = -1f; int lowestLevel = int.MaxValue;
+		foreach (string part in (RaidBossPlugin.SureIdolBreak.Value ?? "").Split(','))
+		{
+			int eq = part.IndexOf('=');
+			if (eq <= 0) continue;
+			if (!int.TryParse(part.Substring(0, eq).Trim(), out int l) || !float.TryParse(part.Substring(eq + 1).Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float chance)) continue;
+			chance = Mathf.Clamp01(chance);
+			if (l <= level && l > bestLevel) { bestLevel = l; best = chance; }
+			if (l < lowestLevel) { lowestLevel = l; lowest = chance; }
+		}
+		if (best >= 0f) return best;
+		return lowest >= 0f ? lowest : 0.35f;
+	}
+
+	// Refining with a warband idol: the game rolls against the idol's own numbers, so for this one attempt they are the
+	// warband idol's - certain up to the sure level, above it a break chance by level and no drop to a lower level. The
+	// warband idol is taken here, and the recipe's own idol cost is waived for the attempt, so exactly one idol goes:
+	// the warband one.
 	[HarmonyPatch(typeof(InventoryGui), "DoCrafting")]
 	static class SureCraftPatch
 	{
@@ -594,7 +615,10 @@ internal static class Warbands
 			req.m_amount = 0; req.m_amountPerLevel = 0;
 			shared = upgrader.m_resItem.m_itemData.m_shared;
 			savedUp = shared.m_upgradeChance; savedBreak = shared.m_breakChance;
-			shared.m_upgradeChance = 1f; shared.m_breakChance = 0f;
+			int target = __instance.m_craftUpgradeItem.m_quality + 1;   // the level being made, as DoCrafting counts it
+			float brk = target <= RaidBossPlugin.SureIdolUpTo.Value ? 0f : BreakChance(target);
+			// the game's roll: r in [0,1]; success if upgradeChance >= r, else broken if breakChance >= 1 - r, else down a level
+			shared.m_upgradeChance = 1f - brk; shared.m_breakChance = 1f;   // breakChance 1 = never the "down a level" branch
 		}
 
 		static void Finalizer()

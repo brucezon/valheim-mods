@@ -98,6 +98,11 @@ server takes the whole stack that was dropped. A trophy on an item stand does no
 - **the kill drops idols: players minus one.** None solo, 1 for two players, 2 for three, 3 for four, counted as the most
   players in range at once during the fight. Each is randomly a Battle or a Protection idol of the boss's tier: Wooden
   for Eikthyr, Bronze for the Elder, Iron for Bonemass, Silver for Moder, Black Metal for Yagluth, and so on up.
+- **Warband idols** (off by default; `Heroic kills pay warband idols`, and `Warband kills pay warband idols` under
+  11 - Warbands). A marked idol, quality 2 so it never merges with ordinary ones, that says what it is in its tooltip.
+  Refining with one is certain up to `Warband idol, sure up to level` (6); above that the item may break by `Warband
+  idol, break chance by level` (`7=0.2, 8=0.35, 9=0.35, 10=0.35`) and otherwise succeeds - it never drops a level.
+  Only the warband idol is spent on the attempt.
 
 In vanilla, idols come only from treasure chests at a few per cent a chest.
 
@@ -211,8 +216,8 @@ will not start while a real raid is on.
 ## Warbands: minibosses to hunt across the world
 
 A pack of a biome's creatures around a starred miniboss, camped at a spot in the open world and marked on everyone's
-map: **Warband: Black Forest**. Travel there, break the pack, kill the miniboss, and it pays a **warband idol** - an
-idol whose upgrade cannot fail. A second source of idols next to heroic fights, and a reason to cross the world.
+map: **Warband: Swamp (2h 58m)**. Travel there, break the pack, kill the miniboss, and it pays an idol. A second source
+of idols next to heroic fights, and a reason to cross the world.
 
 - **One per biome at a time, once its boss is dead.** A biome's warbands start when the boss before it has been
   defeated in this world (`Unlocked by`: the Elder opens the Swamp, Bonemass the Mountain, Moder the Plains, Yagluth
@@ -227,9 +232,8 @@ idol whose upgrade cannot fail. A second source of idols next to heroic fights, 
   fights with a script of its own - waves at health thresholds, a guard, traits, anything a boss script can do - and
   wears the boss bar with the break meter. A parry taunts it like a boss.
 - **The reward.** `Idols on the kill` (1) drop where the miniboss dies, of the biome's tier (Swamp pays tier 2,
-  Mountain 3, Plains 4, Mistlands 5; a Meadows or Black Forest entry would pay 0 and 1). They are warband idols: quality 2 so they never merge
-  with ordinary ones, and marked so that refining with one always succeeds and only that idol is spent. `Warband
-  idols cannot fail` off makes them ordinary idols.
+  Mountain 3, Plains 4, Mistlands 5; a Meadows or Black Forest entry would pay 0 and 1). Ordinary idols, which can
+  break. `Warband kills pay warband idols` (off) makes them warband idols instead - see Heroic fights and idols.
 - **It moves on, and there are breathers.** A warband nobody has come to is gone after `Moves on after (min)` (180,
   real time; a triggered one after twice that), and the biome waits `Next one after (min)` (90) for its next one - the
   same wait after a kill. Across all biomes, `At most, at once` (1) warbands stand at a time, and after any of them ends
@@ -317,8 +321,8 @@ by the server alone.
   shares, melee and weakness shares, `Break length (s)` 8, `Break damage taken (x)` 2, growth 1.5, `Break meter in heroic fights` on), `Traits`, `Strike effects`, `Ward label`.
 - **9 - Debug:** `Pretend this many players` (0).
 - **11 - Warbands:** `Enabled`, one script per biome, the distances, `Pack appears within (m)` (120), `Moves on after
-  (min)` (180), `Next one after (min)` (90), `Miniboss damage (x)` (1), `Idols on the kill` (1), `Warband idols cannot
-  fail` (on), `At most, at once` (1), `Gap between warbands (min)` (30), the four messages (empty), `Map pin`,
+  (min)` (180), `Next one after (min)` (90), `Miniboss damage (x)` (1), `Idols on the kill` (1), `Warband kills pay
+  warband idols` (off), `At most, at once` (1), `Gap between warbands (min)` (30), the four messages (empty), `Map pin`,
   `Start a warband`.
 
 ## Known limits
