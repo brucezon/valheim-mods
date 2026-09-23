@@ -14,14 +14,15 @@ namespace RaidBoss;
 // every player and away from anything a player built), announces it and pins it. Nothing stands there until a player
 // comes within the trigger range: then the miniboss is spawned and a fight is started for it with the warband's own
 // script, so everything a boss script can do (escort waves at health thresholds, guard, traits, strikes) works for it,
-// and it wears the boss bar. When the miniboss dies the band is cleared; if nobody comes for long enough it moves on.
+// its escort (the script's 100% rules) stands with it from the first moment. It keeps an ordinary creature's health bar,
+// with its stars. When the miniboss dies the band is cleared; if nobody comes for long enough it moves on.
 //
 // A warband is written like a boss script with a head:   Boss[:Trait][*..*] [tierN] | <boss script>
 //   Plains = GoblinBrute*** tier4 | 100%: guard melee0.5 | 100%: Goblin 3+1 | 50% "The shamans chant": GoblinShaman 1+0
 // The script's 100% rules fire the moment the pack is triggered, so they are the escort standing with the miniboss.
 internal static class Warbands
 {
-	internal static readonly int BossKey = "raidboss_warboss".GetStableHashCode();   // on the miniboss: boss bar, parry taunt
+	internal static readonly int BossKey = "raidboss_warboss".GetStableHashCode();   // on the miniboss: marks it for the parry compensation
 	internal const string SureKey = "raidboss_sure";                                  // on an idol: the upgrade cannot fail
 	internal const string EventName = "raidboss_warband";
 	static readonly int ModeKey = Modes.ModeName.GetStableHashCode();
@@ -34,6 +35,7 @@ internal static class Warbands
 		public string Trait = "";
 		public int Level = 1;
 		public int Tier = -1;
+		public float Hp;                  // "hp2000": the miniboss's max health after its stars (0 = the game's own)
 		public string Script = "";
 		public string UnlockBoss = "";    // prefab of the boss whose death opens this biome's warbands ("" = open)
 		public string UnlockKeyCache;
@@ -122,6 +124,7 @@ internal static class Warbands
 			foreach (string word in head.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
 			{
 				if (word.StartsWith("tier", StringComparison.OrdinalIgnoreCase) && int.TryParse(word.Substring(4), out int t)) { def.Tier = t; continue; }
+				if (word.StartsWith("hp", StringComparison.OrdinalIgnoreCase) && float.TryParse(word.Substring(2), NumberStyles.Float, CultureInfo.InvariantCulture, out float hp)) { def.Hp = hp; continue; }
 				string spec = word;
 				while (spec.EndsWith("*")) { def.Level++; spec = spec.Substring(0, spec.Length - 1); }
 				int colon = spec.IndexOf(':');
@@ -135,7 +138,7 @@ internal static class Warbands
 			Encounter parsed = Encounter.Parse(def.Script);
 			foreach (string err in parsed.Errors) RaidBossPlugin.Log.LogWarning($"warband {def.BiomeName} script: {err}");
 			defs.Add(def);
-			Log($"{def.BiomeName}: {def.Prefab}{(def.Trait.Length > 0 ? ":" + def.Trait : "")}{new string('*', def.Level - 1)}, idol tier {def.Tier}, " +
+			Log($"{def.BiomeName}: {def.Prefab}{(def.Trait.Length > 0 ? ":" + def.Trait : "")}{new string('*', def.Level - 1)}{(def.Hp > 0f ? $" hp{def.Hp:0}" : "")}, idol tier {def.Tier}, " +
 				$"{(def.UnlockBoss.Length == 0 ? "open from the start" : $"opens when {def.UnlockBoss} is defeated ({UnlockKey(def)}: {(Unlocked(def) ? "set" : "not yet")})")}" +
 				$"{(PhasedOut(def) ? ", PHASED OUT (the world's kill level is " + KillLevel() + ")" : "")}, script for 1 player: {parsed.Describe(1)}");
 			}
@@ -432,7 +435,16 @@ internal static class Warbands
 		}
 		b.BossId = id;
 		b.Spawned = true;
-		Director.StartCustomFight(id, def.Prefab, def.Script, RaidBossPlugin.WarbandBossDamage.Value, "warband " + def.BiomeName);
+		// health: the game gives base x level; "hpN" asks for N instead, and "Miniboss health (x)" multiplies either
+		Character pc = ZNetScene.instance.GetPrefab(def.Prefab)?.GetComponent<Character>();
+		float baseHp = pc != null ? pc.m_health * def.Level : 0f;
+		float healthMult = Mathf.Max(0.1f, RaidBossPlugin.WarbandBossHealth.Value);
+		if (def.Hp > 0f && baseHp > 0f) healthMult *= def.Hp / baseHp;
+		healthMult = Mathf.Clamp(healthMult, 0.1f, 10f);
+		Director.StartCustomFight(id, def.Prefab, def.Script, RaidBossPlugin.WarbandBossDamage.Value, healthMult, "warband " + def.BiomeName);
+		// the escort stands with it from the start: the script's 100% rules, sized for the players who triggered it
+		Director.FireOpening(id, Director.CountPlayers(b.Site, RaidBossPlugin.WarbandTrigger.Value, out _));
+		Log($"{def.BiomeName}: health {baseHp:0} x{healthMult:0.##} = {baseHp * healthMult:0} (asked of its owner), damage x{RaidBossPlugin.WarbandBossDamage.Value:0.##} on top of its stars");
 		Log($"{def.BiomeName}: the pack is up - {def.Prefab}{new string('*', def.Level - 1)} {id} at {b.Site:0}");
 	}
 
@@ -584,17 +596,8 @@ internal static class Warbands
 
 	// ---- client side
 
-	// The miniboss counts as a boss on every player's game: the boss bar with the break meter and the mode under its
-	// name, and a parry taunts it like a boss.
-	[HarmonyPatch(typeof(Character), nameof(Character.IsBoss))]
-	static class BossPatch
-	{
-		static void Postfix(Character __instance, ref bool __result)
-		{
-			if (__result || __instance.m_nview == null || !__instance.m_nview.IsValid()) return;
-			if (__instance.m_nview.GetZDO().GetBool(BossKey)) __result = true;
-		}
-	}
+	// The miniboss is shown like any creature: its own health bar with the stars, its trait before its name. (It is not
+	// made a boss on the players' games: no boss bar, no parry taunt.)
 
 	internal static bool IsSure(ItemDrop.ItemData item) => item != null && item.m_customData != null && item.m_customData.ContainsKey(SureKey);
 

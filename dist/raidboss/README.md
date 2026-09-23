@@ -231,9 +231,10 @@ of idols next to heroic fights, and a reason to cross the world.
   (the four `Message` settings are empty by default; fill one in for a message). Nothing stands there until a player
   comes within `Pack appears within (m)` (120): then the miniboss and its escort are spawned, the raid music and
   circle play at the site, and the miniboss
-  fights with a script of its own - waves at health thresholds, traits, strikes, anything a boss script can do - and
-  wears the boss bar. It is still a plain creature underneath: no break meter, it staggers and takes a parry like one
-  (`Minibosses have a break meter` turns the meter, and a scripted guard, on). A parry taunts it like a boss.
+  fights with a script of its own - waves at health thresholds, traits, strikes, anything a boss script can do - with
+  its escort (the script's 100% rules) standing with it from the first moment. It is a plain creature otherwise: an
+  ordinary health bar with its stars, no break meter, it staggers and takes a parry like one (`Minibosses have a
+  break meter` turns the meter, and a scripted guard, on).
 - **The reward.** `Idols on the kill` (1) drop where the miniboss dies, of the biome's tier (Swamp pays tier 2,
   Mountain 3, Plains 4, Mistlands 5; a Meadows or Black Forest entry would pay 0 and 1). Ordinary idols, which can
   break. `Warband kills pay heroic idols` (off) makes them heroic idols instead - see Heroic fights and idols.
@@ -255,12 +256,13 @@ of idols next to heroic fights, and a reason to cross the world.
   for one biome, one picked at random each time: `<warband> OR <warband>`.
 
 ```
-Plains = GoblinBrute:Emberborn*** tier4 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% "The shamans chant": GoblinShaman 1+0, Goblin* 1+1
+Plains = GoblinBrute:Emberborn*** tier4 hp5000 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% "The shamans chant": GoblinShaman 1+0, Goblin* 1+1
 ```
 
   `GoblinBrute***` is a three-star Berserker - RaidBoss adds the third star the game lacks: four times the health, two and a half times the damage, the two-star look one size bigger, and ★★★ in its name (`:Ironhide` after the name gives it a trait); `tier4` is the idol it
-  pays (unset = the biome's boss tier); the script's 100% rules are the escort standing with it when the pack
-  appears, and the rest fires as its health falls. Empty = no warband in that biome. Ashlands and the Deep North are
+  pays (unset = the biome's boss tier); `hp5000` is its max health after the stars (without it a three-star has only
+  four times the plain creature's health, 800 for a Draugr Elite; `Miniboss health (x)` multiplies either); the
+  script's 100% rules are the escort standing with it when the pack appears, and the rest fires as its health falls. Empty = no warband in that biome. Ashlands and the Deep North are
   empty by default.
 - **Admins, for testing:** in the in-game config menu (F1, RaidBoss, 9 - Debug) choose `Warband: biome` and press
   **Start near me** (150-300 m away, a proper site, walk to it), **Start on me** (right beside you, no site checks: the

@@ -1,13 +1,23 @@
 # Changelog
 
+## 0.2.1
+
+- Minibosses have real health: a `hpN` in a warband line is the miniboss's max health after its stars (the Swamp's
+  Draugr Elite 2000, the Mountain's Fenring 3000 and Hildir's cultist 4000, the Plains Berserker 5000, the Mistlands
+  Seeker Soldier 6000), asked of its owner the way heroic health is; `Miniboss health (x)` (1) multiplies it. A
+  three-star alone had only four times the plain creature's health - 800 for a Draugr Elite, two good swings.
+- The escort stands with the miniboss from the moment the pack appears (it waited for the fight's first tick with a
+  player within 100 m, so the miniboss could be met alone first).
+- The miniboss keeps an ordinary creature's health bar, with its stars, instead of the boss bar; no parry taunt.
+
 ## 0.2.0
 
 - Warbands: a pack of a biome's creatures around a starred miniboss, camped at a spot in the open world and pinned on
   everyone's map. One per biome at a time, placed 1.5 to 6 km from a random player and 400 m from anything built, so
   it is a reason to explore rather than farm the biome by the base; the pack appears when someone
   comes within 120 m, with the raid music and circle. The miniboss fights with a boss script of its own (escort waves
-  at thresholds) and wears the boss bar, but has no break meter: it staggers and takes a parry like the plain creature
-  (`Minibosses have a break meter` turns it on). Killing it pays an idol of the biome's tier. A warband
+  at thresholds) but keeps an ordinary creature's health bar and has no break meter: it staggers and takes a parry
+  like the plain creature (`Minibosses have a break meter` turns it on). Killing it pays an idol of the biome's tier. A warband
   nobody comes to moves on after two hours; a biome waits 90 minutes for
   its next one; at most one stands at a time and there is a 30-minute breather after any of them ends. The pin
   carries a countdown ("Warband: Swamp (2h 58m)") and is the only announcement: no centre-screen messages unless a

@@ -32,6 +32,7 @@ internal static class Director
 		public bool Custom;
 		public string CustomScript;
 		public float DamageMult = -1f;
+		public float HealthMult = 1f;     // custom fights: asked of the owner once, like heroic health
 		public Encounter Script;
 		public bool[] Fired;
 		public float[] Timers;
@@ -257,15 +258,48 @@ internal static class Director
 
 	// A fight for a creature that is not one of the game's bosses, with a script of its own: a warband's miniboss. It is
 	// followed like any other fight (waves, mechanics, the kill report); when it ends, FightEnded says whether it was a kill.
-	internal static void StartCustomFight(ZDOID id, string prefab, string script, float damageMult, string why)
+	internal static void StartCustomFight(ZDOID id, string prefab, string script, float damageMult, float healthMult, string why)
 	{
 		ZDO boss = ZDOMan.instance.GetZDO(id);
 		if (boss == null || !boss.IsValid() || Fights.ContainsKey(id)) return;
-		var fight = new Fight { BossId = id, Prefab = prefab, LastPos = boss.GetPosition(), Custom = true, CustomScript = script ?? "", DamageMult = damageMult };
+		var fight = new Fight { BossId = id, Prefab = prefab, LastPos = boss.GetPosition(), Custom = true, CustomScript = script ?? "", DamageMult = damageMult, HealthMult = healthMult };
 		LoadScript(fight, true, 1f);
 		Fights[id] = fight;
 		RaidBossPlugin.Log.LogInfo($"{why}: fight started for {prefab} {id} at {boss.GetPosition():0}; " +
 			(fight.Script.Rules.Count == 0 ? "no script" : $"script for 1 player: {fight.Script.Describe(1)}"));
+	}
+
+	// The script's 100% rules, fired right now (a warband's escort stands with the miniboss from the first moment, not
+	// from the fight's first tick with a player in range). Sized for this many players.
+	internal static void FireOpening(ZDOID id, int players)
+	{
+		if (!Fights.TryGetValue(id, out Fight fight)) return;
+		ZDO boss = ZDOMan.instance.GetZDO(id);
+		if (boss == null || !boss.IsValid() || fight.Script == null) return;
+		players = Math.Max(1, players);
+		if (RaidBossPlugin.ForcePlayers.Value > 0) players = RaidBossPlugin.ForcePlayers.Value;
+		float saved = Encounter.CountMultiplier;
+		Encounter.CountMultiplier = RaidBossPlugin.MoreAdds.Value;
+		try
+		{
+			for (int i = 0; i < fight.Script.Rules.Count; i++)
+			{
+				Encounter.Rule rule = fight.Script.Rules[i];
+				if (rule.Repeating || fight.Fired[i] || rule.Threshold < 0.999f || (rule.HeroicOnly && !fight.Heroic) || (rule.NormalOnly && fight.Heroic)) continue;
+				fight.Fired[i] = true;
+				int before = fight.Adds.Count;
+				SpawnRule(fight, boss, rule, players, int.MaxValue);
+				if (fight.Adds.Count > before)
+				{
+					fight.PrevWave.Clear();
+					for (int k = before; k < fight.Adds.Count; k++) fight.PrevWave.Add(fight.Adds[k].Id);
+					fight.PrevWaveAt = fight.Clock;
+				}
+				AfterRule(fight, boss, rule, before);
+			}
+		}
+		finally { Encounter.CountMultiplier = saved; }
+		if (players != fight.LastPlayers) fight.LastPlayers = -1;   // the next tick prints the script for the real count
 	}
 
 	// (boss id, it was a kill, where it ended) - for whoever started a custom fight.
@@ -778,7 +812,8 @@ internal static class Director
 		if (fight.Heroic && !RaidBossPlugin.BreakInHeroic.Value) size = 0f;
 		// A warband miniboss is a plain creature: it staggers and takes a parry like one, so no break meter unless asked.
 		if (fight.Custom && !RaidBossPlugin.WarbandBreakMeter.Value) size = 0f;
-		bool healthSettled = !fight.Heroic || Mathf.Approximately(RaidBossPlugin.HeroicBossHealth.Value, 1f) || boss.GetFloat(Net.HealthKey, 0f) != 0f;
+		float wantHp = fight.Custom ? fight.HealthMult : (fight.Heroic ? RaidBossPlugin.HeroicBossHealth.Value : 1f);
+		bool healthSettled = Mathf.Approximately(wantHp, 1f) || boss.GetFloat(Net.HealthKey, 0f) != 0f;
 		if (size > 0f && fight.Script != null && fight.Script.Rules.Count > 0 && healthSettled && fight.MeterAsks < 30 && boss.GetOwner() != 0L && boss.GetFloat("raidboss_brk_max".GetStableHashCode(), 0f) == 0f)
 		{
 			fight.MeterAsks++;
