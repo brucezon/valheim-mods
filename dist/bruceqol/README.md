@@ -188,6 +188,19 @@ while levelling.
 - Each player's own map; nothing is sent to anyone. The log prints the game's own radius in metres the
   first time the map updates. The idea is Smoothbrain's Exploration, without the skill.
 
+## 21 - Refinement forge
+- **Refinement odds** (On): apply the two chances below to every idol used at the Forge of Potential.
+  Off = vanilla.
+- **Success chance** (0.65): share of attempts that raise the item one level. Vanilla 0.65.
+- **Break chance** (0.2): share of ALL attempts that destroy the item. Vanilla 1, which is why the game's
+  third outcome never shows: whatever is left after success and break drops the item one level instead
+  (0.65 + 0.2 leaves 15%). A break refunds materials the vanilla way (35% of the base cost plus the level
+  you were at). 1 - success (0.35 by default) = no drops, vanilla odds.
+- Level 4 to 7 needs three wins. Vanilla: 27.5% of items make it, 7.5 idols and 2.6 items lost on average.
+  Default here: 41%, 7 idols, 1.4 items. Idols are the currency that hardly moves; the knob decides how
+  often you rebuild the item. The roll happens on the crafting player's own game, so the odds are synced
+  to every client.
+
 Skill ideas follow Smoothbrain's SmartSkills and PackHorse; the container, station, beehive and
 swim features follow OdinsQOL; skill-scaled gathering follows Smoothbrain's Mining and Lumberjacking.
 All are independent implementations.

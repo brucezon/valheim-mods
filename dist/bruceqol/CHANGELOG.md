@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.21.0 - 2026-09-22
+- **21 - Refinement forge: the idol odds are yours to set.** `Success chance` (0.65) and `Break chance` (0.2), both
+  as shares of all attempts; whatever is left drops the item one level instead of destroying it. Vanilla is
+  65% success and 35% destroyed: the game has the third outcome (down a level) but every vanilla idol has its
+  break chance at 100%, so it never fires. The default here is 65% up, 20% destroyed, 15% down: from level 4
+  to 7 about 41% of items make it clean and 1.4 are lost on average, against 27.5% and 2.6 in vanilla; the idol
+  count barely moves (7 against 7.5). `Refinement odds` Off = vanilla.
+- **Optional update.** The minimum version is unchanged (1.16.0). The roll runs on the crafting player's own
+  game, so a player on an older version rolls the vanilla odds until they update.
+
 ## 1.20.0 - 2026-09-20
 - **Boss-fight pieces moved out to the RaidBoss mod**, which is installed on clients too and does these jobs itself:
   section 21 (shorter fireside wait after a death), section 22 (scaled damage from BossDirector's adds, and the player

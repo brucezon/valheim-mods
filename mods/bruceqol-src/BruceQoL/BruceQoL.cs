@@ -18,7 +18,7 @@ namespace BruceQoL;
 public class BruceQoLPlugin : BaseUnityPlugin
 {
 	private const string ModName = "BruceQoL";
-	private const string ModVersion = "1.20.0";
+	private const string ModVersion = "1.21.0";
 	private const string ModGUID = "bruceirons.BruceQoL";
 	// Oldest client/server version still let in. RULE (host, 18 Sep 2026): this is the PREVIOUS release unless a
 	// release is truly breaking (changes data both sides must agree on, or makes an old client misbehave rather
@@ -371,6 +371,12 @@ public class BruceQoLPlugin : BaseUnityPlugin
 		Stars.TwoStarMax = config("19 - Stars", "Two-star chance max (%)", 10f, new ConfigDescription("Ceiling on the two-star chance. It can also never exceed the one-star chance at that spot, because a two-star creature is a starred creature: with a 14% one-star chance, asking for 20% two-stars gives 14%, all of them two-star.", new AcceptableValueRange<float>(0f, 50f)));
 		Exploration.RadiusMult = config("20 - Exploration", "Map reveal radius (x)", 1.5f, new ConfigDescription("Multiplier on how far around you the map is uncovered while on foot. 1 = vanilla. 1.5 = half as far again, which is a little over twice the area per step. 2 = twice as far, four times the area. The log prints the game's own radius in metres the first time the map updates. Each player's own map; nothing is sent to anyone.", new AcceptableValueRange<float>(0.1f, 10f)));
 		Exploration.ShipRadiusMult = config("20 - Exploration", "Map reveal radius aboard a ship (x)", 2f, new ConfigDescription("The same multiplier while you are aboard a ship, used INSTEAD of the one above, not on top of it. 1 = vanilla. 2 = a coastline is charted from twice as far out. Aboard means inside the ship's deck area, the same test the game uses for its own ship checks, so rafts, karves, longships and modded hulls all count.", new AcceptableValueRange<float>(0.1f, 10f)));
+		Refinement.Enabled = config("21 - Refinement forge", "Refinement odds", Toggle.On, "Apply the two chances below to every idol used at the Forge of Potential. Off = vanilla: 65% success, 35% the item is destroyed, and the game's third outcome (the item drops one level) never happens because every vanilla idol has its break chance at 100%.");
+		Refinement.SuccessChance = config("21 - Refinement forge", "Success chance", 0.65f, new ConfigDescription("Chance that a refinement attempt raises the item one level, as a share of all attempts. Vanilla 0.65.", new AcceptableValueRange<float>(0f, 1f)));
+		Refinement.BreakChance = config("21 - Refinement forge", "Break chance", 0.2f, new ConfigDescription("Chance that an attempt destroys the item, as a share of ALL attempts (0.2 = one attempt in five). Vanilla 1 = every failed attempt destroys. Whatever is left after success and break drops the item one level instead: 0.65 + 0.2 leaves 0.15, so 65% up, 20% destroyed, 15% down. Set it to 1 - success (0.35 with the default success) for no drops at all. A break refunds materials the vanilla way. From level 4 to 7 with 0.65 / 0.2: about 41% of items make it without breaking, 7 idols and 1.4 items lost on average; vanilla is 27.5%, 7.5 idols and 2.6 items.", new AcceptableValueRange<float>(0f, 1f)));
+		Refinement.Enabled.SettingChanged += (_, _) => Refinement.Apply();
+		Refinement.SuccessChance.SettingChanged += (_, _) => Refinement.Apply();
+		Refinement.BreakChance.SettingChanged += (_, _) => Refinement.Apply();
 		foreach (ConfigEntry<float> e in new[] { raidIntervalMult, raidChanceMult, raidDurationMult })
 		{
 			e.SettingChanged += (_, _) => ApplyRaids();
