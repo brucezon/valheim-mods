@@ -22,7 +22,7 @@ public class RaidBossPlugin : BaseUnityPlugin
 {
 	public const string GUID = "bruceirons.RaidBoss";
 	public const string Name = "RaidBoss";
-	public const string Version = "0.2.1";
+	public const string Version = "0.2.2";
 	// Oldest version still let in. Rule: this is the PREVIOUS release unless a release changes something both sides
 	// must agree on (the three network messages in Net.cs, or the ZDO keys). Pinning it to Version locks out every
 	// player who has not updated yet.
@@ -349,10 +349,10 @@ public class RaidBossPlugin : BaseUnityPlugin
 		//   Black Forest  Troll** tier1 | 100%: Greydwarf 3+1, GreydwarfShaman 1+0 | 50% "The brute roars": Greydwarf_Elite* 1+0, Greydwarf 2+1
 		Band("Meadows", "");
 		Band("Black Forest", "");
-		Band("Swamp", "Draugr_Elite:Blighted*** tier2 hp2000 | 100%: Draugr 2+1, Draugr_Ranged 1+0 | 50% \"The dead rise\": Draugr* 1+1, Blob 1+0, Skeleton 2+0");
-		Band("Mountain", "Fenring:Rimebound*** tier3 hp3000 | 100%: Wolf 2+1 | 50% \"The howl\": Wolf* 1+1, Ulv 2+0 OR Fenring_Cultist_Hildir_nochest* tier3 hp4000 | 100%: Fenring_Cultist 1+0, Wolf 1+1 | 50% \"The cult stirs\": Fenring_Cultist 1+0 @2+, Ulv 2+0");
-		Band("Plains", "GoblinBrute:Emberborn*** tier4 hp5000 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% \"The shamans chant\": GoblinShaman 1+0, Goblin* 1+1");
-		Band("Mistlands", "SeekerBrute:Stormcalled*** tier5 hp6000 | 100%: Seeker 2+1 | 50% \"The nest stirs\": Seeker* 1+1, Tick 2+1");
+		Band("Swamp", "Draugr_Elite:Blighted*** tier2 hp2000 | 100%: Draugr 1+1, Draugr_Ranged 1+0, Skeleton_Poison 1+0, Blob 1+0 | 60% \"The mire answers\": Draugr* 1+0, Skeleton 2+0, BlobElite 1+0 @2+, Wraith 1+0 @3+ | 30% \"The last of the drowned\": Draugr_Ranged 1+1, Draugr 1+0, Blob 1+0");
+		Band("Mountain", "Fenring:Rimebound*** tier3 hp3000 | 100%: Wolf 1+1, Ulv 1+0, Fenring_Cultist 1+0, Hatchling 1+0 | 60% \"The howl\": Wolf* 1+0, Ulv 2+0, Hatchling 0+1 @2+ | 30% \"The mountain answers\": Fenring 1+0, Wolf 1+1, Bat 2+0 OR Fenring_Cultist_Hildir_nochest* tier3 hp4000 | 100%: Fenring_Cultist 1+0, Ulv 2+0, Wolf 1+1 | 60% \"The cult stirs\": Fenring_Cultist 1+0 @2+, Fenring 1+0, Hatchling 1+0, Wolf 0+1 | 30% \"Fenrings answer\": Fenring* 1+0, Ulv 2+0, Wolf 1+1");
+		Band("Plains", "GoblinBrute:Emberborn*** tier4 hp5000 | 100%: Goblin 1+1, GoblinArcher 1+0, GoblinShaman 1+0, Deathsquito 1+0 | 60% \"The tribe rallies\": Goblin* 1+0, GoblinArcher 1+1, GoblinBrute 1+0 @2+, Goblin 1+0 | 30% \"The last stand\": Goblin 1+1, GoblinShaman 1+0, Lox 1+0 @3+, Deathsquito 1+0");
+		Band("Mistlands", "SeekerBrute:Stormcalled*** tier5 hp6000 | 100%: Seeker 1+1, Tick 2+0, Seeker* 1+0 @3+ | 60% \"The nest stirs\": Seeker 2+0, Tick 1+1, Gjall 1+0 @2+ | 30% \"The brood swarms\": Seeker* 1+1, Tick 2+0, SeekerBrute 1+0 @3+");
 		Band("Ashlands", "");
 		Band("Deep North", "");
 		WarbandPhaseOut = config("11 - Warbands", "Phase out, bosses ahead", 2, new ConfigDescription("A biome's warbands stop once the world has killed the boss this many biomes ahead of it: at 2, Swamp warbands stop when Yagluth is dead (Mountain ones when the Mistlands boss is), so nobody hunts warbands that are behind them. One already standing is left to be fought. 0 = never.", new AcceptableValueRange<int>(0, 7)), true);

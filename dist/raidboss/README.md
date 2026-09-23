@@ -256,7 +256,7 @@ of idols next to heroic fights, and a reason to cross the world.
   for one biome, one picked at random each time: `<warband> OR <warband>`.
 
 ```
-Plains = GoblinBrute:Emberborn*** tier4 hp5000 | 100%: Goblin 3+1, GoblinArcher 1+0 | 50% "The shamans chant": GoblinShaman 1+0, Goblin* 1+1
+Plains = GoblinBrute:Emberborn*** tier4 hp5000 | 100%: Goblin 1+1, GoblinArcher 1+0, GoblinShaman 1+0, Deathsquito 1+0 | 60% "The tribe rallies": Goblin* 1+0, GoblinArcher 1+1, GoblinBrute 1+0 @2+, Goblin 1+0 | 30% "The last stand": Goblin 1+1, GoblinShaman 1+0, Lox 1+0 @3+, Deathsquito 1+0
 ```
 
   `GoblinBrute***` is a three-star Berserker - RaidBoss adds the third star the game lacks: four times the health, two and a half times the damage, the two-star look one size bigger, and ★★★ in its name (`:Ironhide` after the name gives it a trait); `tier4` is the idol it

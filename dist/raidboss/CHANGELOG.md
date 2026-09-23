@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.2
+
+- The escorts are bands: three to five creatures of mixed kinds per wave from the biome's own roster (the Swamp's
+  draugr, archer, poison skeleton and blob; the Mountain's wolves, ulv, cultist and drake; the Plains' fulings,
+  archer, shaman and deathsquito, a berserker and a lox for bigger groups; the Mistlands' seekers, ticks and a gjall),
+  in three waves at 100, 60 and 30%, all of one faction so they never turn on each other.
+
 ## 0.2.1
 
 - Minibosses have real health: a `hpN` in a warband line is the miniboss's max health after its stars (the Swamp's
